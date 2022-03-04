@@ -1,0 +1,6 @@
+qontract: 
+  serverurl: "http://localhost:4000/graphql"
+
+vault:
+  addr: "http://localhost:8200"
+  authtype: "token"

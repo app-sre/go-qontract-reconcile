@@ -1,0 +1,15 @@
+package pkg
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewAuthedGithubClient(t *testing.T) {
+	ctx := context.Background()
+	token := "FOOBAR"
+	client := NewAuthedGithubClient(&ctx, token)
+	assert.NotNil(t, client)
+}

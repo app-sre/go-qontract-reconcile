@@ -1,0 +1,290 @@
+package internal
+
+import (
+	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/google/go-github/v42/github"
+	"github.com/janboll/user-validator/internal/queries"
+	. "github.com/janboll/user-validator/pkg"
+	"github.com/stretchr/testify/assert"
+)
+
+var (
+	okayFile    = "../test/data/valid_key.pub.b64"
+	expiredFile = "../test/data/expired_key.pub.b64"
+)
+
+func readKeyFile(t *testing.T, fileName string) []byte {
+	key, err := ioutil.ReadFile(okayFile)
+	if err != nil {
+		t.Fatalf("Could not read public key test data %s, error: %s", okayFile, err.Error())
+	}
+	return key
+}
+
+func TestDecodePgpKeyFailDecode(t *testing.T) {
+	entity, err := decodePgpKey("a")
+	assert.Nil(t, entity)
+	assert.EqualError(t, err, "error decoding given PGP key: illegal base64 data at input byte 0")
+}
+
+func TestDecodePgpKeyFailEntity(t *testing.T) {
+	entity, err := decodePgpKey("Zm9vCg==")
+	assert.Nil(t, entity)
+	assert.EqualError(t, err, "error parsing given PGP key: openpgp: invalid data: tag byte does not have MSB set")
+}
+
+func TestDecodePgpKeyOkay(t *testing.T) {
+	key := readKeyFile(t, okayFile)
+	entity, err := decodePgpKey(string(key))
+	assert.Nil(t, err)
+	assert.NotNil(t, entity)
+}
+
+func TestTestEncryptOkay(t *testing.T) {
+	key := readKeyFile(t, okayFile)
+	entity, err := decodePgpKey(string(key))
+	assert.Nil(t, err)
+	err = testEncrypt(entity)
+	assert.Nil(t, err)
+}
+
+func TestTestEncryptFailExpired(t *testing.T) {
+	key := readKeyFile(t, expiredFile)
+	entity, err := decodePgpKey(string(key))
+	assert.Nil(t, err)
+	err = testEncrypt(entity)
+	// assert.NotNil(t, err)
+}
+
+func TestDecodePgpKeyInvalidSpaces(t *testing.T) {
+	_, err := decodePgpKey("key with spaces")
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "PGP key has spaces in it")
+}
+
+func TestDecodePgpKeyInvalidEqualSigns(t *testing.T) {
+	_, err := decodePgpKey("keywith=equalsign=")
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "Equals signs are not add the end")
+}
+
+func TestValidatePgpKeysValid(t *testing.T) {
+	v := ValidateUser{}
+	userResponse := queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Public_gpg_key: string(readKeyFile(t, okayFile)),
+		}},
+	}
+	validationErrors := v.validatePgpKeys(userResponse)
+	assert.Len(t, validationErrors, 0)
+}
+
+func TestValidatePgpKeysInValid(t *testing.T) {
+	// Todo add fixture for expired key
+	v := ValidateUser{}
+	userResponse := queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path:           "/foo/bar",
+			Public_gpg_key: "a",
+		}},
+	}
+	validationErrors := v.validatePgpKeys(userResponse)
+	assert.Len(t, validationErrors, 1)
+	assert.Equal(t, "validatePgpKeys", validationErrors[0].Validation)
+	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
+	assert.EqualError(t, validationErrors[0].Error, "error decoding given PGP key: illegal base64 data at input byte 0")
+}
+
+func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
+	// Todo add fixture for expired key
+	v := ValidateUser{}
+	userResponse := queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}, {
+			Path:         "/foo/rab",
+			Org_username: "foo",
+		}},
+	}
+	validationErrors := v.validateUsersSinglePath(userResponse)
+	assert.Len(t, validationErrors, 2)
+	assert.Equal(t, "validateUsersSinglePath", validationErrors[0].Validation)
+	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
+	assert.Equal(t, "/foo/rab", validationErrors[1].Path)
+	assert.EqualError(t, validationErrors[0].Error, "user \"foo\" has multiple user files")
+}
+
+func TestValidateValidateUsersSinglePathValid(t *testing.T) {
+	// Todo add fixture for expired key
+	v := ValidateUser{}
+	userResponse := queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}, {
+			Path:         "/foo/rab",
+			Org_username: "rab",
+		}},
+	}
+	validationErrors := v.validateUsersSinglePath(userResponse)
+	assert.Len(t, validationErrors, 0)
+}
+
+func createGithubUsersMock(t *testing.T, retBody string, retCode int) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.URL.Path, "/api/v3/users")
+		_, err := ioutil.ReadAll(r.Body)
+		assert.Nil(t, err)
+
+		fmt.Fprint(w, retBody)
+
+	}))
+}
+
+func TestGetAndValidateUserOK(t *testing.T) {
+	var err error
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:      1,
+		GithubApiTimeout: 1,
+	}
+	v.ctx = context.Background()
+
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+
+	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
+
+	assert.Nil(t, err)
+	validationError := v.getAndValidateUser(queries.UsersUsers_v1User_v1{
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	})
+	assert.Nil(t, validationError)
+}
+
+func TestGetAndValidateUserFailed(t *testing.T) {
+	var err error
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:      1,
+		GithubApiTimeout: 1,
+	}
+	v.ctx = context.Background()
+
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+
+	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
+
+	assert.Nil(t, err)
+	validationError := v.getAndValidateUser(queries.UsersUsers_v1User_v1{
+		Path:            "/foo/bar",
+		Github_username: "Bar",
+	})
+	assert.NotNil(t, validationError)
+	assert.Equal(t, "validateUsersGithub", validationError.Validation)
+	assert.Equal(t, "/foo/bar", validationError.Path)
+	assert.EqualError(t, validationError.Error, "Github username is case sensitive in OSD. GithubUsername \"bar\", configured Username \"Bar\"")
+}
+
+func TestGetAndValidateUserApiFailed(t *testing.T) {
+	var err error
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:      1,
+		GithubApiTimeout: 1,
+	}
+	v.ctx = context.Background()
+
+	githubMock := createGithubUsersMock(t, `{}`, 500)
+
+	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
+
+	assert.Nil(t, err)
+	validationError := v.getAndValidateUser(queries.UsersUsers_v1User_v1{
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	})
+	assert.NotNil(t, validationError)
+	assert.Equal(t, "validateUsersGithub", validationError.Validation)
+	assert.Equal(t, "/foo/bar", validationError.Path)
+	// Just assert an error, it could vary ...
+	assert.Error(t, validationError.Error)
+}
+
+func TestValidateUsersGithubErrorsReturned(t *testing.T) {
+	var err error
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:      1,
+		GithubApiTimeout: 1,
+	}
+	v.ctx = context.Background()
+
+	v.githubValidateFunc = v.getAndValidateUser
+
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+
+	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
+	assert.Nil(t, err)
+
+	validationErrors := v.validateUsersGithub(queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path:            "/foo/bar",
+			Github_username: "Bar",
+		}},
+	})
+	assert.NotNil(t, validationErrors)
+	assert.Len(t, validationErrors, 1)
+}
+
+func TestValidateUsersGithubCallingValidate(t *testing.T) {
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:      1,
+		GithubApiTimeout: 1,
+	}
+	v.ctx = context.Background()
+	validated := false
+	v.githubValidateFunc = func(user queries.UsersUsers_v1User_v1) *ValidationError {
+		validated = true
+		return nil
+	}
+
+	v.validateUsersGithub(queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path:            "/foo/bar",
+			Github_username: "bar",
+		}},
+	})
+	assert.True(t, validated)
+}
+
+func TestValidateUsersGithubValidateError(t *testing.T) {
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:      1,
+		GithubApiTimeout: 1,
+	}
+	v.ctx = context.Background()
+	v.githubValidateFunc = func(user queries.UsersUsers_v1User_v1) *ValidationError {
+		return &ValidationError{}
+	}
+
+	v.validateUsersGithub(queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path:            "/foo/bar",
+			Github_username: "bar",
+		}, {
+			Path:            "/foo/bar",
+			Github_username: "bar",
+		}},
+	})
+	fmt.Println("mnpsdf")
+}
