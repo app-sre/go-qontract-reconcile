@@ -16,7 +16,6 @@ type VaultClient struct {
 type VaultConfig struct {
 	Addr     string
 	AuthType string
-	Approles string
 	Token    string
 	RoleID   string
 	SecretID string
@@ -26,6 +25,8 @@ type VaultConfig struct {
 func NewVaultConfig(v *viper.Viper) *VaultConfig {
 	var vc VaultConfig
 	sub := EnsureViperSub(v, "vault")
+	sub.BindEnv("addr", "VAULT_ADDR")
+	sub.BindEnv("authtype", "VAULT_AUTHTYPE")
 	sub.BindEnv("token", "VAULT_TOKEN")
 	sub.BindEnv("roleid", "VAULT_ROLE_ID")
 	sub.BindEnv("secretid", "VAULT_SECRET_ID")
