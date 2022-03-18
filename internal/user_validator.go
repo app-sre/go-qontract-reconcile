@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/google/go-github/v42/github"
 	"github.com/janboll/user-validator/internal/queries"
 	. "github.com/janboll/user-validator/pkg"
 	"github.com/keybase/go-crypto/openpgp"
@@ -17,17 +15,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type githubValidateFunc func(user queries.UsersUsers_v1User_v1) *ValidationError
+type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError
 
 // ValidateUser is a Validationa s described in github.com/janboll/user-validator/pkg/integration.go
 type ValidateUser struct {
-	QClient            *QontractClient
-	Gh                 *github.Client
-	Vc                 *VaultClient
-	ctx                context.Context
-	VaultConfig        *VaultConfig
-	QontractConfig     *QontractConfig
-	ValidateUserConfig *ValidateUserConfig
+	QClient                   *QontractClient
+	AuthenticatedGithubClient *AuthenticatedGithubClient
+	Vc                        *VaultClient
+	ValidateUserConfig        *ValidateUserConfig
 
 	// Used for mocking
 	githubValidateFunc githubValidateFunc
@@ -35,18 +30,14 @@ type ValidateUser struct {
 
 // ValidateUserConfig is used to unmarshal yaml configuration for the user validator
 type ValidateUserConfig struct {
-	Concurrency      int
-	GithubApiTimeout int
+	Concurrency int
 }
 
-// NewValidateUserConfig creates a new ValidateUserConfig from viper
-func NewValidateUserConfig(v *viper.Viper) *ValidateUserConfig {
+func newValidateUserConfig() *ValidateUserConfig {
 	var vuc ValidateUserConfig
-	sub := EnsureViperSub(v, "user_validate")
+	sub := EnsureViperSub(viper.GetViper(), "user_validator")
 	sub.SetDefault("concurrency", 10)
-	sub.SetDefault("githubapitimeout", 60)
 	sub.BindEnv("concurrency", "USER_VALIDATOR_CONCURRENCY")
-	sub.BindEnv("githubapitimeout", "USER_VALIDATOR_GITHUB_API_TIMEOUT")
 	if err := sub.Unmarshal(&vuc); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
@@ -54,26 +45,23 @@ func NewValidateUserConfig(v *viper.Viper) *ValidateUserConfig {
 }
 
 // NewValidateUser Create a new ValidateUser integration struct
-func NewValidateUser(validateUserconfig *ValidateUserConfig, config *RunnerConfig) *ValidateUser {
+func NewValidateUser() *ValidateUser {
 	validateUser := ValidateUser{
-		VaultConfig:        config.VaultConfig,
-		QontractConfig:     config.QontractConfig,
-		ctx:                context.Background(),
-		ValidateUserConfig: validateUserconfig,
+		ValidateUserConfig: newValidateUserConfig(),
 	}
 	validateUser.githubValidateFunc = validateUser.getAndValidateUser
 	return &validateUser
 }
 
 // Setup runs setup for user validator
-func (i *ValidateUser) Setup() error {
-	i.QClient = NewQontractClient(i.QontractConfig)
-	orgs, err := queries.GithubOrgs(i.ctx, i.QClient.Client)
+func (i *ValidateUser) Setup(ctx context.Context) error {
+	i.QClient = NewQontractClient()
+	orgs, err := queries.GithubOrgs(ctx, i.QClient.Client)
 	if err != nil {
 		return err
 	}
 
-	i.Vc, err = NewVaultClient(i.VaultConfig)
+	i.Vc, err = NewVaultClient()
 	if err != nil {
 		return err
 	}
@@ -93,7 +81,7 @@ func (i *ValidateUser) Setup() error {
 	if secret == nil {
 		return fmt.Errorf("Github Secret \"%s\" not found", tokenPath)
 	}
-	i.Gh = NewAuthedGithubClient(&i.ctx, secret.Data[tokenField].(string))
+	i.AuthenticatedGithubClient = NewAuthenticatedGithubClient(ctx, secret.Data[tokenField].(string))
 
 	return nil
 }
@@ -194,19 +182,18 @@ func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []Va
 	return validationErrors
 }
 
-func (i *ValidateUser) getAndValidateUser(user queries.UsersUsers_v1User_v1) *ValidationError {
+func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
 	Log().Debugw("Getting github user", "user", user.GetOrg_username())
-	ctx, cancel := context.WithTimeout(i.ctx, time.Duration(i.ValidateUserConfig.GithubApiTimeout)*time.Second)
-	defer cancel()
-	ghUser, _, err := i.Gh.Users.Get(ctx, user.GetGithub_username())
-	if err != nil {
-		Log().Debugw("API error", "user", user.Org_username, "error", err.Error())
-		return &ValidationError{
-			Path:       user.Path,
-			Validation: "validateUsersGithub",
-			Error:      err,
-		}
-	} else if ghUser.GetLogin() != user.GetGithub_username() {
+	ghUser := i.AuthenticatedGithubClient.GetUsers(ctx, user.GetGithub_username())
+	// if err != nil {
+	// 	Log().Debugw("API error", "user", user.Org_username, "error", err.Error())
+	// 	return &ValidationError{
+	// 		Path:       user.Path,
+	// 		Validation: "validateUsersGithub",
+	// 		Error:      err,
+	// 	}
+	// } else
+	if ghUser.GetLogin() != user.GetGithub_username() {
 		return &ValidationError{
 			Path:       user.Path,
 			Validation: "validateUsersGithub",
@@ -217,7 +204,7 @@ func (i *ValidateUser) getAndValidateUser(user queries.UsersUsers_v1User_v1) *Va
 	return nil
 }
 
-func (i *ValidateUser) validateUsersGithub(users queries.UsersResponse) []ValidationError {
+func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.UsersResponse) []ValidationError {
 	validationErrors := make([]ValidationError, 0)
 	validateWg := sync.WaitGroup{}
 	gatherWg := sync.WaitGroup{}
@@ -239,7 +226,7 @@ func (i *ValidateUser) validateUsersGithub(users queries.UsersResponse) []Valida
 		go func() {
 			defer validateWg.Done()
 			for user := range userChan {
-				validationError := i.githubValidateFunc(user)
+				validationError := i.githubValidateFunc(ctx, user)
 				if validationError != nil {
 					retChan <- *validationError
 				}
@@ -263,41 +250,16 @@ func (i *ValidateUser) validateUsersGithub(users queries.UsersResponse) []Valida
 }
 
 // Validate run user validation
-func (i *ValidateUser) Validate() ([]ValidationError, error) {
+func (i *ValidateUser) Validate(ctx context.Context) ([]ValidationError, error) {
 	allValidationErrors := make([]ValidationError, 0)
-	users, err := queries.Users(i.ctx, i.QClient.Client)
+	users, err := queries.Users(ctx, i.QClient.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	wg := sync.WaitGroup{}
-	retChan := make(chan []ValidationError)
-
-	wg.Add(3)
-
-	go func() {
-		wg.Wait()
-		close(retChan)
-	}()
-
-	go func() {
-		defer wg.Done()
-
-		retChan <- i.validateUsersSinglePath(*users)
-	}()
-	go func() {
-		defer wg.Done()
-
-		retChan <- i.validatePgpKeys(*users)
-	}()
-	go func() {
-		defer wg.Done()
-		retChan <- i.validateUsersGithub(*users)
-	}()
-
-	for retErrors := range retChan {
-		allValidationErrors = ConcatValidationErrors(allValidationErrors, retErrors)
-	}
+	allValidationErrors = ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(*users))
+	allValidationErrors = ConcatValidationErrors(allValidationErrors, i.validatePgpKeys(*users))
+	allValidationErrors = ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, *users))
 
 	return allValidationErrors, nil
 }

@@ -10,17 +10,16 @@ import (
 // QontractClient abstraction for generated GraphQL client
 type QontractClient struct {
 	Client graphql.Client
+	config *qontractConfig
 }
 
-// QontractConfig is used to unmarshal yaml configuration for GQL Clients
-type QontractConfig struct {
+type qontractConfig struct {
 	ServerURL string
 }
 
-// NewQontractConfig creates a new Qontractconfig from viper
-func NewQontractConfig(v *viper.Viper) *QontractConfig {
-	var qc QontractConfig
-	sub := EnsureViperSub(v, "qontract")
+func newQontractConfig() *qontractConfig {
+	var qc qontractConfig
+	sub := EnsureViperSub(viper.GetViper(), "qontract")
 	sub.BindEnv("serverurl", "QONTRACT_SERVER_URL")
 	if err := sub.Unmarshal(&qc); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -29,8 +28,10 @@ func NewQontractConfig(v *viper.Viper) *QontractConfig {
 }
 
 // NewQontractClient creates a new QontractClient
-func NewQontractClient(config *QontractConfig) *QontractClient {
+func NewQontractClient() *QontractClient {
+	config := newQontractConfig()
 	return &QontractClient{
 		Client: graphql.NewClient(config.ServerURL, http.DefaultClient),
+		config: config,
 	}
 }

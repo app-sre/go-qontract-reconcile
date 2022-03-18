@@ -23,7 +23,9 @@ vault:
 
 user_validator:
   concurrency: Number of coroutines to use to query Github (default: 10)
-  github_api_timeout: Timeout in seconds for Github request (default: 60s)
+
+github
+  timeout: Timeout in seconds for Github request (default: 60s)
 ```
 
 ### Environment variables
@@ -37,7 +39,7 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * VAULT_ROLE_ID
  * VAULT_SECRET_ID
  * USER_VALIDATOR_CONCURRENCY
- * USER_VALIDATOR_GITHUB_API_TIMEOUT
+ * GITHUB_API_TIMEOUT
 
 ## Licence
 [Apache License Version 2.0](LICENSE).
