@@ -22,7 +22,7 @@ vault:
   secretid: Secret ID to use for authentication, requires setting authtype to approle 
 
 user_validator:
-  concurrency: Number of coroutines to use to query Github (default: Number of CPU cores)
+  concurrency: Number of coroutines to use to query Github (default: 10)
   github_api_timeout: Timeout in seconds for Github request (default: 60s)
 ```
 

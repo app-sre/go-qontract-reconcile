@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -44,7 +43,7 @@ type ValidateUserConfig struct {
 func NewValidateUserConfig(v *viper.Viper) *ValidateUserConfig {
 	var vuc ValidateUserConfig
 	sub := EnsureViperSub(v, "user_validate")
-	sub.SetDefault("concurrency", runtime.NumCPU())
+	sub.SetDefault("concurrency", 10)
 	sub.SetDefault("githubapitimeout", 60)
 	sub.BindEnv("concurrency", "USER_VALIDATOR_CONCURRENCY")
 	sub.BindEnv("githubapitimeout", "USER_VALIDATOR_GITHUB_API_TIMEOUT")
