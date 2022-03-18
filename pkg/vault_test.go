@@ -20,7 +20,6 @@ func setupViperAll() *viper.Viper {
 	vaultCfg["token"] = "fooToken"
 	vaultCfg["roleid"] = "fooRoleID"
 	vaultCfg["authType"] = "fooAuthType"
-	vaultCfg["approles"] = "fooAppRoles"
 	vaultCfg["secretid"] = "fooSecretID"
 
 	v.Set("vault", vaultCfg)
@@ -46,7 +45,6 @@ func TestNewVaultConfigAll(t *testing.T) {
 	assert.Equal(t, vc.Token, "fooToken")
 	assert.Equal(t, vc.RoleID, "fooRoleID")
 	assert.Equal(t, vc.AuthType, "fooAuthType")
-	assert.Equal(t, vc.Approles, "fooAppRoles")
 	assert.Equal(t, vc.SecretID, "fooSecretID")
 }
 
