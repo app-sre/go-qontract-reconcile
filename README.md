@@ -11,7 +11,7 @@ You can either specify a configuration via _--config_ or set configuration via E
 ### Yaml configuration
 
 ```YAML
-timeout: Timeout in seconds for the validator, defines maximum runtime. (default: 0)
+timeout: Timeout in seconds for the run, defines maximum runtime. (default: 0)
 
 qontract: 
   serverurl: URL to the GraphQL API. REQUIRED
@@ -26,14 +26,14 @@ vault:
 user_validator:
   concurrency: Number of coroutines to use to query Github (default: 10)
 
-github
+github:
   timeout: Timeout in seconds for Github request (default: 60s)
 ```
 
 ### Environment variables
 
 Instead of using a yaml file, all parameters can be set via environment variables:
-
+ * RUNNER_TIMEOUT
  * QONTRACT_SERVER_URL
  * VAULT_ADDR
  * VAULT_AUTHTYPE

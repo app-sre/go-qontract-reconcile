@@ -5,9 +5,10 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"testing"
+	"time"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"gopkg.in/square/go-jose.v2/json"
@@ -18,6 +19,7 @@ type TestValidation struct {
 	SetupError    bool
 	ValidateRun   bool
 	ValidateError bool
+	SleepDuration int
 }
 
 func (t *TestValidation) Setup(ctx context.Context) error {
@@ -29,6 +31,19 @@ func (t *TestValidation) Setup(ctx context.Context) error {
 }
 
 func (t *TestValidation) Validate(ctx context.Context) ([]ValidationError, error) {
+	if t.SleepDuration > 0 {
+		finished := make(chan bool)
+		go func() {
+			time.Sleep(time.Duration(t.SleepDuration) * time.Second)
+			finished <- true
+		}()
+		select {
+		case <-finished:
+			break
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	if t.ValidateError {
 		return nil, fmt.Errorf("Error during validate")
 	}
@@ -114,21 +129,40 @@ func TestValidationRunnerLogs(t *testing.T) {
 	assert.Equal(t, "test", structuredOutput["error"])
 }
 
-func reconcileSetupViper() *viper.Viper {
-	v := viper.New()
-
-	qontract := make(map[string]interface{})
-	qontract["foo"] = "bar"
-	vault := make(map[string]interface{})
-	vault["foo"] = "bar"
-
-	v.Set("dry_run", false)
-	v.Set("qontract", qontract)
-	v.Set("vault", vault)
-	return v
-}
-
 func TestNewRunnerConfig(t *testing.T) {
 	runnerConfg := newRunnerConfig()
-	assert.False(t, runnerConfg.DryRun)
+	assert.Equal(t, 0, runnerConfg.Timeout)
+}
+
+func TestValidationTimeoutFail(t *testing.T) {
+	tv := TestValidation{
+		ValidateRun:   false,
+		SetupRun:      false,
+		SleepDuration: 2,
+	}
+
+	os.Setenv("RUNNER_TIMEOUT", "1")
+
+	vr := NewValidationRunner(&tv)
+	err := vr.Run()
+	assert.NotNil(t, err)
+	assert.Error(t, err, "context.deadlineExceededError{}")
+	assert.True(t, tv.SetupRun)
+	assert.False(t, tv.ValidateRun)
+}
+
+func TestValidationTimeoutOK(t *testing.T) {
+	tv := TestValidation{
+		ValidateRun:   false,
+		SetupRun:      false,
+		SleepDuration: 2,
+	}
+
+	os.Setenv("RUNNER_TIMEOUT", "4")
+
+	vr := NewValidationRunner(&tv)
+	err := vr.Run()
+	assert.Nil(t, err)
+	assert.True(t, tv.SetupRun)
+	assert.True(t, tv.ValidateRun)
 }
