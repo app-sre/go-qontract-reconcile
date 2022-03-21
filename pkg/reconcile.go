@@ -1,31 +1,28 @@
 package pkg
 
 import (
+	"context"
+	"time"
+
 	"github.com/spf13/viper"
 )
 
 // RunnerConfig is used to unmarshal yaml configuration Runners
-type RunnerConfig struct {
-	DryRun         bool
-	QontractConfig *QontractConfig
-	VaultConfig    *VaultConfig
+type runnerConfig struct {
+	DryRun  bool
+	Timeout int
 }
 
 // NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
-func NewRunnerConfig(v *viper.Viper) *RunnerConfig {
-	if v == nil {
-		v = viper.GetViper()
-	}
-	ic := RunnerConfig{
-		DryRun: v.GetBool("dry_run"),
-	}
+func newRunnerConfig() *runnerConfig {
+	v := viper.GetViper()
+	var ic runnerConfig
+	v.SetDefault("dry_run", false)
+	v.SetDefault("timeout", 0)
 
-	if ic.DryRun {
-		Log().Debugw("dry_run is enabled")
+	if err := v.Unmarshal(&ic); err != nil {
+		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
-
-	ic.QontractConfig = NewQontractConfig(v)
-	ic.VaultConfig = NewVaultConfig(v)
 
 	return &ic
 }
@@ -48,9 +45,9 @@ type Diff struct {
 // Validation describes the methods an Validation must implement
 type Validation interface {
 	// Setup method is used to fetch secrets, setup clients or prepare state...
-	Setup() error
+	Setup(context.Context) error
 	// Validate is doing the actual validation
-	Validate() ([]ValidationError, error)
+	Validate(context.Context) ([]ValidationError, error)
 }
 
 // ValidationError contains errors, that are discovered during Validate()
@@ -67,22 +64,33 @@ type Runner interface {
 
 // ValidationRunner is an implementation of Runner
 type ValidationRunner struct {
-	Target Validation
+	Target  Validation
+	Timeout int
 }
 
 // NewValidationRunner creates a ValidationRunner for a given Validation
 func NewValidationRunner(target Validation) *ValidationRunner {
+	c := newRunnerConfig()
 	return &ValidationRunner{
-		Target: target,
+		Target:  target,
+		Timeout: c.Timeout,
 	}
 }
 
 // Run executes the validation configured as target
 func (v *ValidationRunner) Run() error {
-	if err := v.Target.Setup(); err != nil {
+	var ctx context.Context
+	var cancel func()
+	if v.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(v.Timeout)*time.Second)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	defer cancel()
+	if err := v.Target.Setup(ctx); err != nil {
 		return err
 	}
-	validationErrors, err := v.Target.Validate()
+	validationErrors, err := v.Target.Validate(ctx)
 	if err != nil {
 		return err
 	}

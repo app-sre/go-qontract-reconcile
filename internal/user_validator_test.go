@@ -152,17 +152,19 @@ func TestGetAndValidateUserOK(t *testing.T) {
 	var err error
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:      1,
-		GithubApiTimeout: 1,
+		Concurrency: 1,
 	}
-	v.ctx = context.Background()
 
 	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
 
-	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
-
+	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
-	validationError := v.getAndValidateUser(queries.UsersUsers_v1User_v1{
+
+	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+		GithubClient: gh,
+	}
+
+	validationError := v.getAndValidateUser(context.Background(), queries.UsersUsers_v1User_v1{
 		Path:            "/foo/bar",
 		Github_username: "bar",
 	})
@@ -173,17 +175,19 @@ func TestGetAndValidateUserFailed(t *testing.T) {
 	var err error
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:      1,
-		GithubApiTimeout: 1,
+		Concurrency: 1,
 	}
-	v.ctx = context.Background()
 
 	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
 
-	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
-
+	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
-	validationError := v.getAndValidateUser(queries.UsersUsers_v1User_v1{
+
+	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+		GithubClient: gh,
+	}
+
+	validationError := v.getAndValidateUser(context.Background(), queries.UsersUsers_v1User_v1{
 		Path:            "/foo/bar",
 		Github_username: "Bar",
 	})
@@ -197,17 +201,18 @@ func TestGetAndValidateUserApiFailed(t *testing.T) {
 	var err error
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:      1,
-		GithubApiTimeout: 1,
+		Concurrency: 1,
 	}
-	v.ctx = context.Background()
-
 	githubMock := createGithubUsersMock(t, `{}`, 500)
 
-	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
-
+	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
-	validationError := v.getAndValidateUser(queries.UsersUsers_v1User_v1{
+
+	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+		GithubClient: gh,
+	}
+
+	validationError := v.getAndValidateUser(context.Background(), queries.UsersUsers_v1User_v1{
 		Path:            "/foo/bar",
 		Github_username: "bar",
 	})
@@ -222,19 +227,21 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 	var err error
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:      1,
-		GithubApiTimeout: 1,
+		Concurrency: 1,
 	}
-	v.ctx = context.Background()
 
 	v.githubValidateFunc = v.getAndValidateUser
 
 	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
 
-	v.Gh, err = github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
+	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
 
-	validationErrors := v.validateUsersGithub(queries.UsersResponse{
+	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+		GithubClient: gh,
+	}
+
+	validationErrors := v.validateUsersGithub(context.Background(), queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Path:            "/foo/bar",
 			Github_username: "Bar",
@@ -247,17 +254,15 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 func TestValidateUsersGithubCallingValidate(t *testing.T) {
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:      1,
-		GithubApiTimeout: 1,
+		Concurrency: 1,
 	}
-	v.ctx = context.Background()
 	validated := false
-	v.githubValidateFunc = func(user queries.UsersUsers_v1User_v1) *ValidationError {
+	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
 		validated = true
 		return nil
 	}
 
-	v.validateUsersGithub(queries.UsersResponse{
+	v.validateUsersGithub(context.Background(), queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Path:            "/foo/bar",
 			Github_username: "bar",
@@ -269,15 +274,13 @@ func TestValidateUsersGithubCallingValidate(t *testing.T) {
 func TestValidateUsersGithubValidateError(t *testing.T) {
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:      1,
-		GithubApiTimeout: 1,
+		Concurrency: 1,
 	}
-	v.ctx = context.Background()
-	v.githubValidateFunc = func(user queries.UsersUsers_v1User_v1) *ValidationError {
+	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
 		return &ValidationError{}
 	}
 
-	v.validateUsersGithub(queries.UsersResponse{
+	v.validateUsersGithub(context.Background(), queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Path:            "/foo/bar",
 			Github_username: "bar",

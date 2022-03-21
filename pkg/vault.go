@@ -12,8 +12,7 @@ type VaultClient struct {
 	client *api.Client
 }
 
-// VaultConfig is used to unmarshal yaml configuration for VaultClients
-type VaultConfig struct {
+type vaultConfig struct {
 	Addr     string
 	AuthType string
 	Token    string
@@ -21,10 +20,9 @@ type VaultConfig struct {
 	SecretID string
 }
 
-// NewVaultConfig creates a new VaultConfig from viper configuration
-func NewVaultConfig(v *viper.Viper) *VaultConfig {
-	var vc VaultConfig
-	sub := EnsureViperSub(v, "vault")
+func newVaultConfig() *vaultConfig {
+	var vc vaultConfig
+	sub := EnsureViperSub(viper.GetViper(), "vault")
 	sub.BindEnv("addr", "VAULT_ADDR")
 	sub.BindEnv("authtype", "VAULT_AUTHTYPE")
 	sub.BindEnv("token", "VAULT_TOKEN")
@@ -37,7 +35,8 @@ func NewVaultConfig(v *viper.Viper) *VaultConfig {
 }
 
 // NewVaultClient creates a new VaultClient from a VaultConfig
-func NewVaultClient(vc *VaultConfig) (*VaultClient, error) {
+func NewVaultClient() (*VaultClient, error) {
+	vc := newVaultConfig()
 	vaultClient := &VaultClient{}
 	vaultCFG := api.DefaultConfig()
 	vaultCFG.Address = vc.Addr
@@ -66,7 +65,7 @@ func NewVaultClient(vc *VaultConfig) (*VaultClient, error) {
 		vaultClient.client.SetToken(vc.Token)
 
 	default:
-		return nil, fmt.Errorf("Unsupported auth type \"%s\"", vc.AuthType)
+		return nil, fmt.Errorf("unsupported auth type \"%s\"", vc.AuthType)
 	}
 
 	return vaultClient, nil

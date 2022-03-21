@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/url"
 	"testing"
@@ -19,7 +20,7 @@ type TestValidation struct {
 	ValidateError bool
 }
 
-func (t *TestValidation) Setup() error {
+func (t *TestValidation) Setup(ctx context.Context) error {
 	if t.SetupError {
 		return fmt.Errorf("Error during setup")
 	}
@@ -27,7 +28,7 @@ func (t *TestValidation) Setup() error {
 	return nil
 }
 
-func (t *TestValidation) Validate() ([]ValidationError, error) {
+func (t *TestValidation) Validate(ctx context.Context) ([]ValidationError, error) {
 	if t.ValidateError {
 		return nil, fmt.Errorf("Error during validate")
 	}
@@ -128,6 +129,6 @@ func reconcileSetupViper() *viper.Viper {
 }
 
 func TestNewRunnerConfig(t *testing.T) {
-	runnerConfg := NewRunnerConfig(reconcileSetupViper())
+	runnerConfg := newRunnerConfig()
 	assert.False(t, runnerConfg.DryRun)
 }

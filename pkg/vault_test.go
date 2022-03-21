@@ -12,9 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupViperAll() *viper.Viper {
-	v := viper.New()
-
+func setupViperAll() {
 	vaultCfg := make(map[string]interface{})
 	vaultCfg["addr"] = "fooAddr"
 	vaultCfg["token"] = "fooToken"
@@ -22,24 +20,39 @@ func setupViperAll() *viper.Viper {
 	vaultCfg["authType"] = "fooAuthType"
 	vaultCfg["secretid"] = "fooSecretID"
 
-	v.Set("vault", vaultCfg)
-	return v
+	viper.GetViper().Set("vault", vaultCfg)
 }
 
-func setupViperEnv() *viper.Viper {
-	v := viper.New()
-
-	vaultCfg := make(map[string]interface{})
+func setupViperEnv() {
 	os.Setenv("VAULT_TOKEN", "fooToken")
 	os.Setenv("VAULT_ROLE_ID", "fooRoleID")
 	os.Setenv("VAULT_SECRET_ID", "fooSecretID")
 
-	v.Set("vault", vaultCfg)
-	return v
+	vaultCfg := make(map[string]interface{})
+	viper.GetViper().Set("vault", vaultCfg)
+}
+
+func setupViperToken() {
+	os.Setenv("VAULT_TOKEN", "token")
+	os.Setenv("VAULT_ADDR", "http://foo.example")
+	os.Setenv("VAULT_AUTHTYPE", "token")
+
+	vaultCfg := make(map[string]interface{})
+	viper.GetViper().Set("vault", vaultCfg)
+}
+
+func setupViperAppRole() {
+	os.Setenv("VAULT_ROLE_ID", "bar")
+	os.Setenv("VAULT_SECRET_ID", "foo")
+	os.Setenv("VAULT_AUTHTYPE", "approle")
+
+	vaultCfg := make(map[string]interface{})
+	viper.GetViper().Set("vault", vaultCfg)
 }
 
 func TestNewVaultConfigAll(t *testing.T) {
-	vc := NewVaultConfig(setupViperAll())
+	setupViperAll()
+	vc := newVaultConfig()
 
 	assert.Equal(t, vc.Addr, "fooAddr")
 	assert.Equal(t, vc.Token, "fooToken")
@@ -49,7 +62,8 @@ func TestNewVaultConfigAll(t *testing.T) {
 }
 
 func TestNewVaultConfigEnv(t *testing.T) {
-	vc := NewVaultConfig(setupViperEnv())
+	setupViperEnv()
+	vc := newVaultConfig()
 
 	assert.Equal(t, vc.Token, "fooToken")
 	assert.Equal(t, vc.RoleID, "fooRoleID")
@@ -57,51 +71,39 @@ func TestNewVaultConfigEnv(t *testing.T) {
 }
 
 func TestNewVaultClientToken(t *testing.T) {
-	vc := VaultConfig{
-		Addr:     "http://foo.example",
-		AuthType: "token",
-		Token:    "xxx",
-	}
+	setupViperToken()
+	v, err := NewVaultClient()
 
-	v, err := NewVaultClient(&vc)
 	assert.Nil(t, err)
-
-	assert.Equal(t, vc.Token, v.client.Token())
+	assert.Equal(t, "token", v.client.Token())
 }
 
 func TestNewVaultClientAppRole(t *testing.T) {
-	vc := VaultConfig{
-		AuthType: "approle",
-		SecretID: "foo",
-		RoleID:   "bar",
-	}
+	setupViperAppRole()
 	mockedToken := "65b74ffd-842c-fd43-1386-f7d7006e520a"
 	vaultMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "auth/approle/login")
 		sentBody, err := ioutil.ReadAll(r.Body)
 		assert.Nil(t, err)
-		assert.Equal(t, fmt.Sprintf(`{"role_id":"%s","secret_id":"%s"}`, vc.RoleID, vc.SecretID), string(sentBody))
+		assert.Equal(t, `{"role_id":"bar","secret_id":"foo"}`, string(sentBody))
 
 		fmt.Fprintf(w, `{"auth": {"client_token": "%s"}}`, mockedToken)
 
 	}))
 	defer vaultMock.Close()
 
-	vc.Addr = vaultMock.URL
+	os.Setenv("VAULT_ADDR", vaultMock.URL)
 
-	v, err := NewVaultClient(&vc)
+	v, err := NewVaultClient()
 	assert.Nil(t, err)
 
 	assert.Equal(t, mockedToken, v.client.Token())
 }
 
 func TestNewVaultClientUnsuportedAuthType(t *testing.T) {
-	vc := VaultConfig{
-		Addr:     "http://localhost",
-		AuthType: "foo",
-	}
+	os.Setenv("VAULT_AUTHTYPE", "jkjisdf")
 
-	_, err := NewVaultClient(&vc)
+	_, err := NewVaultClient()
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Unsupported auth type \"foo\"")
+	assert.EqualError(t, err, "unsupported auth type \"jkjisdf\"")
 }

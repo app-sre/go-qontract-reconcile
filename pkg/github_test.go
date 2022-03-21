@@ -10,6 +10,6 @@ import (
 func TestNewAuthedGithubClient(t *testing.T) {
 	ctx := context.Background()
 	token := "FOOBAR"
-	client := NewAuthedGithubClient(&ctx, token)
+	client := NewAuthenticatedGithubClient(ctx, token)
 	assert.NotNil(t, client)
 }

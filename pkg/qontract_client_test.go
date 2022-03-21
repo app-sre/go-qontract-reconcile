@@ -8,37 +8,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func qontractSetupViper() *viper.Viper {
-	v := viper.New()
+func qontractSetupViper() {
+	v := viper.GetViper()
 
 	qontractCfg := make(map[string]interface{})
 	qontractCfg["serverurl"] = "http://conf.example"
 
 	v.Set("qontract", qontractCfg)
-	return v
-}
-
-func qontractSetupViperEnv() *viper.Viper {
-	v := viper.New()
-	os.Setenv("QONTRACT_SERVER_URL", "http://env.example")
-
-	qontractCfg := make(map[string]interface{})
-	v.Set("qontract", qontractCfg)
-	return v
 }
 
 func TestNewQontractClient(t *testing.T) {
-	qc := NewQontractConfig(qontractSetupViper())
-	assert.Equal(t, "http://conf.example", qc.ServerURL)
+	qontractSetupViper()
 
-	client := NewQontractClient(qc)
+	client := NewQontractClient()
+	assert.Equal(t, "http://conf.example", client.config.ServerURL)
 	assert.NotNil(t, client)
 }
 
 func TestNewQontractClientEnv(t *testing.T) {
-	qc := NewQontractConfig(qontractSetupViperEnv())
-	assert.Equal(t, "http://env.example", qc.ServerURL)
+	qontractSetupViper()
+	os.Setenv("QONTRACT_SERVER_URL", "http://env.example")
 
-	client := NewQontractClient(qc)
+	client := NewQontractClient()
+	assert.Equal(t, "http://env.example", client.config.ServerURL)
 	assert.NotNil(t, client)
 }
