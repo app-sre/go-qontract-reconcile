@@ -11,6 +11,8 @@ You can either specify a configuration via _--config_ or set configuration via E
 ### Yaml configuration
 
 ```YAML
+timeout: Timeout in seconds for the validator, defines maximum runtime. (default: 0)
+
 qontract: 
   serverurl: URL to the GraphQL API. REQUIRED
 

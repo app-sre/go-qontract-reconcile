@@ -184,16 +184,15 @@ func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []Va
 
 func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
 	Log().Debugw("Getting github user", "user", user.GetOrg_username())
-	ghUser := i.AuthenticatedGithubClient.GetUsers(ctx, user.GetGithub_username())
-	// if err != nil {
-	// 	Log().Debugw("API error", "user", user.Org_username, "error", err.Error())
-	// 	return &ValidationError{
-	// 		Path:       user.Path,
-	// 		Validation: "validateUsersGithub",
-	// 		Error:      err,
-	// 	}
-	// } else
-	if ghUser.GetLogin() != user.GetGithub_username() {
+	ghUser, err := i.AuthenticatedGithubClient.GetUsers(ctx, user.GetGithub_username())
+	if err != nil {
+		Log().Debugw("API error", "user", user.Org_username, "error", err.Error())
+		return &ValidationError{
+			Path:       user.Path,
+			Validation: "validateUsersGithub",
+			Error:      err,
+		}
+	} else if ghUser.GetLogin() != user.GetGithub_username() {
 		return &ValidationError{
 			Path:       user.Path,
 			Validation: "validateUsersGithub",

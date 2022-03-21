@@ -16,11 +16,14 @@ type runnerConfig struct {
 // NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
 func newRunnerConfig() *runnerConfig {
 	v := viper.GetViper()
-	// Todo: use unmarshal
-	ic := runnerConfig{
-		DryRun:  v.GetBool("dry_run"),
-		Timeout: v.GetInt("timeout"),
+	var ic runnerConfig
+	v.SetDefault("dry_run", false)
+	v.SetDefault("timeout", 0)
+
+	if err := v.Unmarshal(&ic); err != nil {
+		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
+
 	return &ic
 }
 
@@ -76,7 +79,13 @@ func NewValidationRunner(target Validation) *ValidationRunner {
 
 // Run executes the validation configured as target
 func (v *ValidationRunner) Run() error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(v.Timeout)*time.Second)
+	var ctx context.Context
+	var cancel func()
+	if v.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(v.Timeout)*time.Second)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
 	defer cancel()
 	if err := v.Target.Setup(ctx); err != nil {
 		return err

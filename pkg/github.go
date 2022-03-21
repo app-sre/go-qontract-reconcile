@@ -44,7 +44,7 @@ func NewAuthenticatedGithubClient(ctx context.Context, token string) *Authentica
 	}
 }
 
-func (c *AuthenticatedGithubClient) GetUsers(ctx context.Context, user string) *github.User {
-	ghUser, _, _ := c.GithubClient.Users.Get(ctx, user)
-	return ghUser
+func (c *AuthenticatedGithubClient) GetUsers(ctx context.Context, user string) (*github.User, error) {
+	ghUser, _, err := c.GithubClient.Users.Get(ctx, user)
+	return ghUser, err
 }

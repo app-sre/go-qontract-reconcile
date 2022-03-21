@@ -1,5 +1,3 @@
-timeout: 3
-
 qontract: 
   serverurl: "http://localhost:4000/graphql"
 
