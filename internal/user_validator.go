@@ -81,8 +81,10 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 	if secret == nil {
 		return fmt.Errorf("Github Secret \"%s\" not found", tokenPath)
 	}
-	i.AuthenticatedGithubClient = NewAuthenticatedGithubClient(ctx, secret.Data[tokenField].(string))
-
+	i.AuthenticatedGithubClient, err = NewAuthenticatedGithubClient(ctx, secret.Data[tokenField].(string))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

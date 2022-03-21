@@ -9,7 +9,6 @@ import (
 
 // RunnerConfig is used to unmarshal yaml configuration Runners
 type runnerConfig struct {
-	DryRun  bool
 	Timeout int
 }
 
@@ -17,8 +16,9 @@ type runnerConfig struct {
 func newRunnerConfig() *runnerConfig {
 	v := viper.GetViper()
 	var ic runnerConfig
-	v.SetDefault("dry_run", false)
 	v.SetDefault("timeout", 0)
+
+	v.BindEnv("timeout", "RUNNER_TIMEOUT")
 
 	if err := v.Unmarshal(&ic); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())

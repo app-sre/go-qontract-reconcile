@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/google/go-github/v42/github"
 	"github.com/spf13/viper"
@@ -11,6 +13,7 @@ import (
 // AuthenticatedGithubClient is an oauth2 using Github API client
 type AuthenticatedGithubClient struct {
 	GithubClient *github.Client
+	config       *GithubClientConfig
 }
 
 // GithubClientConfig holds configuration GithubClient
@@ -19,10 +22,9 @@ type GithubClientConfig struct {
 	BaseURL string
 }
 
-// NewGithubClientConfig creates a new GithubClientConfig from viper
-func NewGithubClientConfig(v *viper.Viper) *GithubClientConfig {
+func newGithubClientConfig() *GithubClientConfig {
 	var qc GithubClientConfig
-	sub := EnsureViperSub(v, "github")
+	sub := EnsureViperSub(viper.GetViper(), "github")
 	sub.SetDefault("timeout", 60)
 	sub.BindEnv("baseurl", "GITHUB_API")
 	sub.BindEnv("timeout", "GITHUB_API_TIMEOUT")
@@ -33,15 +35,29 @@ func NewGithubClientConfig(v *viper.Viper) *GithubClientConfig {
 }
 
 // NewAuthenticatedGithubClient creates a Github client with custom oauth2 client
-func NewAuthenticatedGithubClient(ctx context.Context, token string) *AuthenticatedGithubClient {
+func NewAuthenticatedGithubClient(ctx context.Context, token string) (*AuthenticatedGithubClient, error) {
+	config := newGithubClientConfig()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
+	tc.Timeout = time.Duration(config.Timeout) * time.Second
+
+	var client *github.Client
+	var err error
+	if strings.Compare(config.BaseURL, "") == 0 {
+		client = github.NewClient(tc)
+	} else {
+		client, err = github.NewEnterpriseClient(config.BaseURL, config.BaseURL, tc)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	return &AuthenticatedGithubClient{
-		GithubClient: github.NewClient(tc),
-	}
+		GithubClient: client,
+		config:       config,
+	}, nil
 }
 
 func (c *AuthenticatedGithubClient) GetUsers(ctx context.Context, user string) (*github.User, error) {
