@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/janboll/user-validator/internal"
-	. "github.com/janboll/user-validator/pkg"
+	"github.com/app-sre/user-validator/internal"
+	. "github.com/app-sre/user-validator/pkg"
 )
 
 func userValidator() {
