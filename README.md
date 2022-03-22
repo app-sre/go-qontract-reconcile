@@ -21,7 +21,8 @@ vault:
   authtype: Authentication type either token or approle REQUIRED
   token: Token to access Vault, requires setting authtype to token
   roleid: Role ID to use for authentication, requires setting authtype to approle 
-  secretid: Secret ID to use for authentication, requires setting authtype to approle 
+  secretid: Secret ID to use for authentication, requires setting authtype to approle
+  timeout: Timeout for vault requests. (default: 60s) 
 
 user_validator:
   concurrency: Number of coroutines to use to query Github (default: 10)
@@ -40,6 +41,7 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * VAULT_TOKEN
  * VAULT_ROLE_ID
  * VAULT_SECRET_ID
+ * VAULT_TIMEOUT
  * USER_VALIDATOR_CONCURRENCY
  * GITHUB_API_TIMEOUT
 
