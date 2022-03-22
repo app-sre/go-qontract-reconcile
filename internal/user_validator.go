@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/janboll/user-validator/internal/queries"
-	. "github.com/janboll/user-validator/pkg"
+	"github.com/app-sre/user-validator/internal/queries"
+	. "github.com/app-sre/user-validator/pkg"
 	"github.com/keybase/go-crypto/openpgp"
 	"github.com/keybase/go-crypto/openpgp/packet"
 	"github.com/spf13/viper"
@@ -17,7 +17,7 @@ import (
 
 type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError
 
-// ValidateUser is a Validationa s described in github.com/janboll/user-validator/pkg/integration.go
+// ValidateUser is a Validationa s described in github.com/app-sre/user-validator/pkg/integration.go
 type ValidateUser struct {
 	QClient                   *QontractClient
 	AuthenticatedGithubClient *AuthenticatedGithubClient

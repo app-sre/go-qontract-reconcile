@@ -5,7 +5,7 @@ import (
 
 	defaultlog "log"
 
-	integration "github.com/janboll/user-validator/pkg"
+	. "github.com/app-sre/user-validator/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -51,7 +51,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		integration.Log().Infow("Using configuration", "config", cfgFile)
+		Log().Infow("Using configuration", "config", cfgFile)
 	}
 }
 

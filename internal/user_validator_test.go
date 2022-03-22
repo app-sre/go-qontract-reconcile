@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/app-sre/user-validator/internal/queries"
+	. "github.com/app-sre/user-validator/pkg"
 	"github.com/google/go-github/v42/github"
-	"github.com/janboll/user-validator/internal/queries"
-	. "github.com/janboll/user-validator/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
