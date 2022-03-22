@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -106,4 +107,22 @@ func TestNewVaultClientUnsuportedAuthType(t *testing.T) {
 	_, err := NewVaultClient()
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "unsupported auth type \"jkjisdf\"")
+}
+
+func TestVaultClientTimeout(t *testing.T) {
+	vaultMock := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			time.Sleep(2 * time.Second)
+		}))
+	setupViperToken()
+	os.Setenv("VAULT_ADDR", vaultMock.URL)
+	os.Setenv("VAULT_TIMEOUT", "1")
+
+	client, err := NewVaultClient()
+	assert.NotNil(t, client)
+	assert.Nil(t, err)
+	secret, err := client.ReadSecret("foo")
+	assert.NotNil(t, err)
+	assert.Nil(t, secret)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
 }
