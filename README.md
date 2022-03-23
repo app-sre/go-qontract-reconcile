@@ -14,10 +14,12 @@ You can either specify a configuration via _--config_ or set configuration via E
 timeout: Timeout in seconds for the run, defines maximum runtime. (default: 0)
 
 qontract: 
-  serverurl: URL to the GraphQL API. REQUIRED
+  serverurl: URL to the GraphQL API REQUIRED
+  token: Value of Authorization header
+  timeout: Timeout for qontract requests (default: 60s) 
 
 vault:
-  addr: Address to access Vault. REQUIRED
+  addr: Address to access Vault REQUIRED
   authtype: Authentication type either token or approle REQUIRED
   token: Token to access Vault, requires setting authtype to token
   roleid: Role ID to use for authentication, requires setting authtype to approle 
@@ -36,6 +38,8 @@ github:
 Instead of using a yaml file, all parameters can be set via environment variables:
  * RUNNER_TIMEOUT
  * QONTRACT_SERVER_URL
+ * QONTRACT_TIMEOUT
+ * QONTRACT_TOKEN
  * VAULT_ADDR
  * VAULT_AUTHTYPE
  * VAULT_TOKEN
