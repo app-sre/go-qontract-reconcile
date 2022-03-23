@@ -54,3 +54,19 @@ func TestNewQontractClientTimeout(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "Client.Timeout exceeded while awaiting headers")
 }
+
+func TestNewQontractClientAuth(t *testing.T) {
+	var in, out interface{}
+	timeoutMock := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, "basic foobar", r.Header.Get("Authorization"))
+		}))
+	qontractSetupViper()
+	os.Setenv("QONTRACT_SERVER_URL", timeoutMock.URL)
+	os.Setenv("QONTRACT_TOKEN", "basic foobar")
+
+	client := NewQontractClient()
+	assert.NotNil(t, client)
+	err := client.Client.MakeRequest(context.Background(), "query", "foo", &in, &out)
+	assert.NotNil(t, err)
+}
