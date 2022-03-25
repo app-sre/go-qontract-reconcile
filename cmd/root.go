@@ -57,7 +57,6 @@ func initConfig() {
 
 func configureLogging() {
 	loggerConfig := zap.NewProductionConfig()
-	loggerConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
 
 	logger, err := loggerConfig.Build()

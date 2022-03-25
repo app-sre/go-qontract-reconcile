@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -57,24 +58,32 @@ type ValidationError struct {
 	Error      error
 }
 
+type exitFunc func(int)
+
 // Runner can be used to actually run Validations or Integrations
 type Runner interface {
 	Run() error
+	Exiter(int)
 }
 
 // ValidationRunner is an implementation of Runner
 type ValidationRunner struct {
 	Target  Validation
 	Timeout int
+	Exiter  exitFunc
 }
 
 // NewValidationRunner creates a ValidationRunner for a given Validation
 func NewValidationRunner(target Validation) *ValidationRunner {
 	c := newRunnerConfig()
-	return &ValidationRunner{
+	v := &ValidationRunner{
 		Target:  target,
 		Timeout: c.Timeout,
 	}
+	v.Exiter = func(exitCode int) {
+		os.Exit(exitCode)
+	}
+	return v
 }
 
 // Run executes the validation configured as target
@@ -98,6 +107,7 @@ func (v *ValidationRunner) Run() error {
 		for _, e := range validationErrors {
 			Log().Infow("Validation error", "path", e.Path, "validation", e.Validation, "error", e.Error.Error())
 		}
+		v.Exiter(1)
 	}
 	return nil
 }
