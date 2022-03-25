@@ -15,11 +15,12 @@ import (
 )
 
 type TestValidation struct {
-	SetupRun      bool
-	SetupError    bool
-	ValidateRun   bool
-	ValidateError bool
-	SleepDuration int
+	SetupRun          bool
+	SetupError        bool
+	ValidateRun       bool
+	ValidateError     bool
+	ReturnValidations bool
+	SleepDuration     int
 }
 
 func (t *TestValidation) Setup(ctx context.Context) error {
@@ -51,12 +52,15 @@ func (t *TestValidation) Validate(ctx context.Context) ([]ValidationError, error
 		return nil, fmt.Errorf("Setup not run")
 	}
 	t.ValidateRun = true
-	return []ValidationError{{
-		Path:       "/foo/bar",
-		Validation: "test",
-		Error:      fmt.Errorf("test"),
-	},
-	}, nil
+	if t.ReturnValidations {
+		return []ValidationError{{
+			Path:       "/foo/bar",
+			Validation: "test",
+			Error:      fmt.Errorf("test"),
+		},
+		}, nil
+	}
+	return []ValidationError{}, nil
 }
 
 func TestValidationRunner(t *testing.T) {
@@ -103,7 +107,7 @@ type MemorySink struct {
 func (s *MemorySink) Close() error { return nil }
 func (s *MemorySink) Sync() error  { return nil }
 
-func TestValidationRunnerLogs(t *testing.T) {
+func TestValidationRunnerWithValidationErrors(t *testing.T) {
 	sink := &MemorySink{new(bytes.Buffer)}
 	zap.RegisterSink("memory", func(*url.URL) (zap.Sink, error) {
 		return sink, nil
@@ -116,9 +120,16 @@ func TestValidationRunnerLogs(t *testing.T) {
 
 	zap.ReplaceGlobals(logger)
 
-	tv := TestValidation{}
+	tv := TestValidation{
+		ReturnValidations: true,
+	}
 	vr := NewValidationRunner(&tv)
+	var exitCode int
+	vr.Exiter = func(i int) {
+		exitCode = i
+	}
 	vr.Run()
+	assert.Equal(t, 1, exitCode)
 
 	var structuredOutput map[string]interface{}
 	err = json.Unmarshal(sink.Bytes(), &structuredOutput)
@@ -155,10 +166,10 @@ func TestValidationTimeoutOK(t *testing.T) {
 	tv := TestValidation{
 		ValidateRun:   false,
 		SetupRun:      false,
-		SleepDuration: 2,
+		SleepDuration: 1,
 	}
 
-	os.Setenv("RUNNER_TIMEOUT", "4")
+	os.Setenv("RUNNER_TIMEOUT", "2")
 
 	vr := NewValidationRunner(&tv)
 	err := vr.Run()
