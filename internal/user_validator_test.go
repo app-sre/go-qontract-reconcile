@@ -289,5 +289,4 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 			Github_username: "bar",
 		}},
 	})
-	fmt.Println("mnpsdf")
 }
