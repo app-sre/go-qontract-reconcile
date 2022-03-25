@@ -3,4 +3,4 @@ qontract:
 
 vault:
   addr: "http://localhost:8200"
-  authtype: "token"
+  authtype: "approle"
