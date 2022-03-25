@@ -1,10 +1,13 @@
 package pkg
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/hashicorp/vault/api"
+	"github.com/hashicorp/vault/api/auth/approle"
+
 	"github.com/spf13/viper"
 )
 
@@ -57,17 +60,17 @@ func NewVaultClient() (*VaultClient, error) {
 
 	switch vc.AuthType {
 	case "approle":
-		roleID := vc.RoleID
-		secretID := vc.SecretID
+		appRoleAuth, err := approle.NewAppRoleAuth(
+			vc.RoleID,
+			&approle.SecretID{FromString: vc.SecretID})
 
-		secret, err := vaultClient.client.Logical().Write("auth/approle/login", map[string]interface{}{
-			"role_id":   roleID,
-			"secret_id": secretID,
-		})
 		if err != nil {
 			return nil, err
 		}
-		vaultClient.client.SetToken(secret.Auth.ClientToken)
+		_, err = vaultClient.client.Auth().Login(context.Background(), appRoleAuth)
+		if err != nil {
+			return nil, err
+		}
 
 	case "token":
 		vaultClient.client.SetToken(vc.Token)
