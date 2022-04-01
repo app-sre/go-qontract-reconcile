@@ -19,7 +19,6 @@ type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User
 
 // ValidateUser is a Validationa s described in github.com/app-sre/user-validator/pkg/integration.go
 type ValidateUser struct {
-	QClient                   *QontractClient
 	AuthenticatedGithubClient *AuthenticatedGithubClient
 	Vc                        *VaultClient
 	ValidateUserConfig        *ValidateUserConfig
@@ -55,12 +54,11 @@ func NewValidateUser() *ValidateUser {
 
 // Setup runs setup for user validator
 func (i *ValidateUser) Setup(ctx context.Context) error {
-	i.QClient = NewQontractClient()
-	orgs, err := queries.GithubOrgs(ctx, i.QClient.Client)
+	var err error
+	orgs, err := queries.GithubOrgs(ctx)
 	if err != nil {
 		return err
 	}
-
 	i.Vc, err = NewVaultClient()
 	if err != nil {
 		return err
@@ -253,7 +251,7 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.Us
 // Validate run user validation
 func (i *ValidateUser) Validate(ctx context.Context) ([]ValidationError, error) {
 	allValidationErrors := make([]ValidationError, 0)
-	users, err := queries.Users(ctx, i.QClient.Client)
+	users, err := queries.Users(ctx)
 	if err != nil {
 		return nil, err
 	}

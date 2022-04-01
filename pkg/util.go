@@ -30,3 +30,12 @@ func EnsureViperSub(viper *viper.Viper, key string) *viper.Viper {
 	viper.Set(key, fakeSub)
 	return viper.Sub(key)
 }
+
+func Contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
