@@ -24,7 +24,11 @@ gobuild: govet
 	CGO_ENABLED=0 GOOS=$(GOOS) go build -o user-validator -a ./main.go
 
 build:
+ifeq ($(CONTAINER_ENGINE), podman)
 	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build --no-cache -t $(IMAGE_NAME):latest . --progress=plain
+else
+	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) --config=$(DOCKER_CONF) build --no-cache -t $(IMAGE_NAME):latest . --progress=plain
+endif
 	@$(CONTAINER_ENGINE) tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
 
 push:
