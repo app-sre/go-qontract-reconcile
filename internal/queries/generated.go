@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/Khan/genqlient/graphql"
+	"github.com/app-sre/user-validator/pkg/gql"
 )
 
 // GithubOrgsGithuborg_v1GithubOrg_v1 includes the requested fields of the GraphQL type GithubOrg_v1.
@@ -102,15 +103,10 @@ func (v *UsersUsers_v1User_v1) GetPublic_gpg_key() string { return v.Public_gpg_
 
 func GithubOrgs(
 	ctx context.Context,
-	client graphql.Client,
 ) (*GithubOrgsResponse, error) {
-	var err error
-
-	var retval GithubOrgsResponse
-	err = client.MakeRequest(
-		ctx,
-		"GithubOrgs",
-		`
+	req := &graphql.Request{
+		OpName: "GithubOrgs",
+		Query: `
 query GithubOrgs {
 	githuborg_v1 {
 		name
@@ -125,23 +121,33 @@ query GithubOrgs {
 	}
 }
 `,
-		&retval,
-		nil,
+	}
+	var err error
+	var client graphql.Client
+
+	client, err = gql.NewQontractClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data GithubOrgsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }
 
 func Users(
 	ctx context.Context,
-	client graphql.Client,
 ) (*UsersResponse, error) {
-	var err error
-
-	var retval UsersResponse
-	err = client.MakeRequest(
-		ctx,
-		"Users",
-		`
+	req := &graphql.Request{
+		OpName: "Users",
+		Query: `
 query Users {
 	users_v1 {
 		path
@@ -154,8 +160,23 @@ query Users {
 	}
 }
 `,
-		&retval,
-		nil,
+	}
+	var err error
+	var client graphql.Client
+
+	client, err = gql.NewQontractClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data UsersResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
 	)
-	return &retval, err
+
+	return &data, err
 }

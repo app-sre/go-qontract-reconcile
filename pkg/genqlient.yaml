@@ -1,0 +1,8 @@
+schema: ../schema.graphql
+operations:
+- gql/qontract_client.go
+generated: gql/generated.go
+package: gql
+bindings:
+  JSON:
+    type: map[string]interface{}

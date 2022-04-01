@@ -8,9 +8,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+type IntegrationNameKey string
+
+var ContextIngetrationNameKey IntegrationNameKey = "integrationName"
+
 // RunnerConfig is used to unmarshal yaml configuration Runners
 type runnerConfig struct {
-	Timeout int
+	Timeout         int
+	IntegrationName string
 }
 
 // NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
@@ -20,6 +25,7 @@ func newRunnerConfig() *runnerConfig {
 	v.SetDefault("timeout", 0)
 
 	v.BindEnv("timeout", "RUNNER_TIMEOUT")
+	v.BindEnv("integrationname", "RUNNER_INTEGRATION_NAME")
 
 	if err := v.Unmarshal(&ic); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -68,17 +74,17 @@ type Runner interface {
 
 // ValidationRunner is an implementation of Runner
 type ValidationRunner struct {
-	Target  Validation
-	Timeout int
-	Exiter  exitFunc
+	Target Validation
+	Exiter exitFunc
+	config *runnerConfig
 }
 
 // NewValidationRunner creates a ValidationRunner for a given Validation
 func NewValidationRunner(target Validation) *ValidationRunner {
 	c := newRunnerConfig()
 	v := &ValidationRunner{
-		Target:  target,
-		Timeout: c.Timeout,
+		Target: target,
+		config: c,
 	}
 	v.Exiter = func(exitCode int) {
 		os.Exit(exitCode)
@@ -88,12 +94,12 @@ func NewValidationRunner(target Validation) *ValidationRunner {
 
 // Run executes the validation configured as target
 func (v *ValidationRunner) Run() error {
-	var ctx context.Context
+	ctx := context.WithValue(context.Background(), ContextIngetrationNameKey, v.config.IntegrationName)
 	var cancel func()
-	if v.Timeout > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(v.Timeout)*time.Second)
+	if v.config.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(v.config.Timeout)*time.Second)
 	} else {
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(ctx)
 	}
 	defer cancel()
 	if err := v.Target.Setup(ctx); err != nil {
