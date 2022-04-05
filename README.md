@@ -11,7 +11,6 @@ You can either specify a configuration via _--config_ or set configuration via E
 ### Yaml configuration
 
 ```YAML
-integrationname: Name of the integration, as defined in app-interface REQUIRED
 timeout: Timeout in seconds for the run, defines maximum runtime. (default: 0)
 
 qontract: 
@@ -38,7 +37,6 @@ github:
 
 Instead of using a yaml file, all parameters can be set via environment variables:
  * RUNNER_TIMEOUT
- * RUNNER_INTEGRATION_NAME
  * QONTRACT_SERVER_URL
  * QONTRACT_TIMEOUT
  * QONTRACT_TOKEN

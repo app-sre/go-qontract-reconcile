@@ -68,7 +68,7 @@ func TestValidationRunner(t *testing.T) {
 		SetupRun:    false,
 		ValidateRun: false,
 	}
-	vr := NewValidationRunner(&tv)
+	vr := NewValidationRunner(&tv, "test")
 	err := vr.Run()
 	assert.Nil(t, err)
 	assert.True(t, tv.SetupRun)
@@ -81,7 +81,7 @@ func TestValidationRunnerSetupFailed(t *testing.T) {
 		SetupRun:    false,
 		ValidateRun: false,
 	}
-	vr := NewValidationRunner(&tv)
+	vr := NewValidationRunner(&tv, "test")
 	err := vr.Run()
 	assert.NotNil(t, err)
 	assert.False(t, tv.ValidateRun)
@@ -93,7 +93,7 @@ func TestValidationRunnerValidateFailed(t *testing.T) {
 		SetupRun:      false,
 		ValidateRun:   false,
 	}
-	vr := NewValidationRunner(&tv)
+	vr := NewValidationRunner(&tv, "test")
 	err := vr.Run()
 	assert.NotNil(t, err)
 	assert.True(t, tv.SetupRun)
@@ -123,7 +123,7 @@ func TestValidationRunnerWithValidationErrors(t *testing.T) {
 	tv := TestValidation{
 		ReturnValidations: true,
 	}
-	vr := NewValidationRunner(&tv)
+	vr := NewValidationRunner(&tv, "test")
 	var exitCode int
 	vr.Exiter = func(i int) {
 		exitCode = i
@@ -154,7 +154,7 @@ func TestValidationTimeoutFail(t *testing.T) {
 
 	os.Setenv("RUNNER_TIMEOUT", "1")
 
-	vr := NewValidationRunner(&tv)
+	vr := NewValidationRunner(&tv, "test")
 	err := vr.Run()
 	assert.NotNil(t, err)
 	assert.Error(t, err, "context.deadlineExceededError{}")
@@ -171,7 +171,7 @@ func TestValidationTimeoutOK(t *testing.T) {
 
 	os.Setenv("RUNNER_TIMEOUT", "2")
 
-	vr := NewValidationRunner(&tv)
+	vr := NewValidationRunner(&tv, "test")
 	err := vr.Run()
 	assert.Nil(t, err)
 	assert.True(t, tv.SetupRun)
