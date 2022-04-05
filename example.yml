@@ -1,5 +1,3 @@
-integrationname: user-validator
-
 qontract: 
   serverurl: "http://localhost:4000/graphql"
 
