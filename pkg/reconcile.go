@@ -66,7 +66,7 @@ type exitFunc func(int)
 
 // Runner can be used to actually run Validations or Integrations
 type Runner interface {
-	Run() error
+	Run()
 	Exiter(int)
 }
 
@@ -93,7 +93,7 @@ func NewValidationRunner(runnable Validation, name string) *ValidationRunner {
 }
 
 // Run executes the validation configured as target
-func (v *ValidationRunner) Run() error {
+func (v *ValidationRunner) Run() {
 	ctx := context.WithValue(context.Background(), ContextIngetrationNameKey, v.Name)
 	var cancel func()
 	if v.config.Timeout > 0 {
@@ -103,11 +103,13 @@ func (v *ValidationRunner) Run() error {
 	}
 	defer cancel()
 	if err := v.Runnable.Setup(ctx); err != nil {
-		return err
+		Log().Errorw("Error during integration", "error", err.Error())
+		v.Exiter(1)
 	}
 	validationErrors, err := v.Runnable.Validate(ctx)
 	if err != nil {
-		return err
+		Log().Errorw("Error during integration", "error", err.Error())
+		v.Exiter(1)
 	}
 	if len(validationErrors) > 0 {
 		for _, e := range validationErrors {
@@ -115,5 +117,4 @@ func (v *ValidationRunner) Run() error {
 		}
 		v.Exiter(1)
 	}
-	return nil
 }
