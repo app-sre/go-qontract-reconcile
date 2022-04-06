@@ -76,6 +76,7 @@ func TestDecodePgpKeyInvalidEqualSigns(t *testing.T) {
 
 func TestValidatePgpKeysValid(t *testing.T) {
 	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{}
 	userResponse := queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Public_gpg_key: string(readKeyFile(t, okayFile)),
@@ -88,6 +89,7 @@ func TestValidatePgpKeysValid(t *testing.T) {
 func TestValidatePgpKeysInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{}
 	userResponse := queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Path:           "/foo/bar",
@@ -104,6 +106,7 @@ func TestValidatePgpKeysInValid(t *testing.T) {
 func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{}
 	userResponse := queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Path:         "/foo/bar",
@@ -124,6 +127,7 @@ func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
 func TestValidateValidateUsersSinglePathValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{}
 	userResponse := queries.UsersResponse{
 		Users_v1: []queries.UsersUsers_v1User_v1{{
 			Path:         "/foo/bar",
@@ -289,4 +293,25 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 			Github_username: "bar",
 		}},
 	})
+}
+
+func TestRemoveInvalidUsers(t *testing.T) {
+	v := ValidateUser{}
+	v.ValidateUserConfig = &ValidateUserConfig{
+		Concurrency:  1,
+		InvalidUsers: "/foo/bar",
+	}
+
+	users := queries.UsersResponse{
+		Users_v1: []queries.UsersUsers_v1User_v1{{
+			Path: "/foo/bar",
+		}, {
+			Path: "/bar/foo",
+		},
+		},
+	}
+
+	validUser := v.removeInvalidUsers(&users)
+	assert.Len(t, validUser.GetUsers_v1(), 1)
+	assert.Equal(t, validUser.GetUsers_v1()[0].Path, "/bar/foo")
 }

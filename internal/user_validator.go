@@ -29,7 +29,8 @@ type ValidateUser struct {
 
 // ValidateUserConfig is used to unmarshal yaml configuration for the user validator
 type ValidateUserConfig struct {
-	Concurrency int
+	Concurrency  int
+	InvalidUsers string
 }
 
 func newValidateUserConfig() *ValidateUserConfig {
@@ -37,6 +38,7 @@ func newValidateUserConfig() *ValidateUserConfig {
 	sub := EnsureViperSub(viper.GetViper(), "user_validator")
 	sub.SetDefault("concurrency", 10)
 	sub.BindEnv("concurrency", "USER_VALIDATOR_CONCURRENCY")
+	sub.BindEnv("invalidusers", "USER_VALIDATOR_INVALID_USERS")
 	if err := sub.Unmarshal(&vuc); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
@@ -131,8 +133,10 @@ func testEncrypt(entity *openpgp.Entity) error {
 }
 
 func (i *ValidateUser) validatePgpKeys(users queries.UsersResponse) []ValidationError {
+	validUsers := i.removeInvalidUsers(&users)
+
 	validationErrors := make([]ValidationError, 0)
-	for _, user := range users.GetUsers_v1() {
+	for _, user := range validUsers.GetUsers_v1() {
 		pgpKey := user.GetPublic_gpg_key()
 		if len(pgpKey) > 0 {
 			entity, err := decodePgpKey(pgpKey)
@@ -246,6 +250,28 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.Us
 	gatherWg.Wait()
 
 	return validationErrors
+}
+
+// TODO: This is just a hack, really we should remove the invalid keys from app-interface
+//		 and mange invalid keys stateful
+func (i *ValidateUser) removeInvalidUsers(users *queries.UsersResponse) *queries.UsersResponse {
+	returnUsers := &queries.UsersResponse{
+		Users_v1: make([]queries.UsersUsers_v1User_v1, 0),
+	}
+
+	invalidPaths := make(map[string]bool)
+	for _, user := range strings.Split(i.ValidateUserConfig.InvalidUsers, ",") {
+		invalidPaths[user] = true
+	}
+
+	for _, user := range users.GetUsers_v1() {
+		if _, ok := invalidPaths[user.GetPath()]; !ok {
+			returnUsers.Users_v1 = append(returnUsers.GetUsers_v1(), user)
+		} else {
+			Log().Infow("Skipping invalid user key", "path", user.GetPath())
+		}
+	}
+	return returnUsers
 }
 
 // Validate run user validation

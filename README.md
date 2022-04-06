@@ -28,6 +28,7 @@ vault:
 
 user_validator:
   concurrency: Number of coroutines to use to query Github (default: 10)
+  invalidusers: Comma seperated list of keys know to be invalid and skipd for pgp key validation
 
 github:
   timeout: Timeout in seconds for Github request (default: 60s)
@@ -47,6 +48,7 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * VAULT_SECRET_ID
  * VAULT_TIMEOUT
  * USER_VALIDATOR_CONCURRENCY
+ * USER_VALIDATOR_INVALID_USERS
  * GITHUB_API_TIMEOUT
 
 ## Licence
