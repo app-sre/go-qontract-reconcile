@@ -268,7 +268,7 @@ func (i *ValidateUser) removeInvalidUsers(users *queries.UsersResponse) *queries
 		if _, ok := invalidPaths[user.GetPath()]; !ok {
 			returnUsers.Users_v1 = append(returnUsers.GetUsers_v1(), user)
 		} else {
-			Log().Infow("Skipping invalid user key", "path", user.GetPath())
+			Log().Debugw("Skipping invalid user key", "path", user.GetPath())
 		}
 	}
 	return returnUsers
