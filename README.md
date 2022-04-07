@@ -17,6 +17,7 @@ qontract:
   serverurl: URL to the GraphQL API REQUIRED
   token: Value of Authorization header
   timeout: Timeout for qontract requests (default: 60s) 
+  retries: Number of times to retry requests (default: 5)
 
 vault:
   addr: Address to access Vault REQUIRED
@@ -41,6 +42,7 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * QONTRACT_SERVER_URL
  * QONTRACT_TIMEOUT
  * QONTRACT_TOKEN
+ * QONTRACT_RETRIES
  * VAULT_ADDR
  * VAULT_AUTHTYPE
  * VAULT_TOKEN
