@@ -8,6 +8,12 @@ User-validator can be used to validate user data stored inside app-interface.
 
 You can either specify a configuration via _--config_ or set configuration via Environment variables.
 
+## Logging
+
+You can change the log level by adding `-l` to the command. Like:
+
+`user-validator validate -l debug --config config.yaml`
+
 ### Yaml configuration
 
 ```YAML
