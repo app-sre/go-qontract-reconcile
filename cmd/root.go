@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	cfgFile string
+	cfgFile  string
+	logLevel string
 
 	rootCmd = &cobra.Command{
 		Use:   "user-validator",
@@ -37,13 +38,12 @@ func Execute() {
 }
 
 func init() {
-	configureLogging()
 	rootCmd.AddCommand(userValidatorCmd)
+	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info", "Log level")
+	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 
 	cobra.OnInitialize(initConfig)
-	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
-	userValidatorCmd.PersistentFlags().Bool("dry_run", false, "Dry run, skip actuall changes")
-	viper.BindPFlag("dry_run", userValidatorCmd.PersistentFlags().Lookup("dry_run"))
+	cobra.OnInitialize(configureLogging)
 }
 
 func initConfig() {
@@ -51,12 +51,30 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		Log().Infow("Using configuration", "config", cfgFile)
+		Log().Debugw("Using configuration", "config", cfgFile)
 	}
 }
 
 func configureLogging() {
 	loggerConfig := zap.NewProductionConfig()
+
+	switch logLevel {
+	case "info":
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	case "debug":
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	case "error":
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
+	case "warn":
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.WarnLevel)
+	case "fatal":
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.FatalLevel)
+	case "panic":
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.PanicLevel)
+	default:
+		loggerConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	}
+
 	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
 
 	logger, err := loggerConfig.Build()
