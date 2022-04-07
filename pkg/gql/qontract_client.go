@@ -9,7 +9,9 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/app-sre/user-validator/pkg"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 var _ graphql.Client = &QontractClient{}
@@ -33,15 +35,18 @@ type qontractConfig struct {
 	ServerURL string
 	Timeout   int
 	Token     string
+	Retries   int
 }
 
 func newQontractConfig() *qontractConfig {
 	var qc qontractConfig
 	sub := pkg.EnsureViperSub(viper.GetViper(), "qontract")
 	sub.SetDefault("timeout", 60)
+	sub.SetDefault("retries", 5)
 	sub.BindEnv("serverurl", "QONTRACT_SERVER_URL")
 	sub.BindEnv("timeout", "QONTRACT_TIMEOUT")
 	sub.BindEnv("token", "QONTRACT_TOKEN")
+	sub.BindEnv("retries", "QONTRACT_RETRIES")
 	if err := sub.Unmarshal(&qc); err != nil {
 		pkg.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
@@ -61,17 +66,19 @@ func (t *authedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 // NewQontractClient creates a new QontractClient
 func NewQontractClient(ctx context.Context) (*QontractClient, error) {
 	config := newQontractConfig()
-	httpClient := &http.Client{
-		Timeout: time.Duration(config.Timeout) * time.Second,
-	}
+	retryClient := NewRetryableHttpWrapper()
+
+	retryClient.SetTimeout(config.Timeout)
+	retryClient.SetRetries(config.Retries)
+
 	if strings.Compare(config.Token, "") != 0 {
-		httpClient.Transport = &authedTransport{
+		retryClient.SetAuthTransport(&authedTransport{
 			key:     config.Token,
 			wrapped: http.DefaultTransport,
-		}
+		})
 	}
 	client := &QontractClient{
-		Client: graphql.NewClient(config.ServerURL, httpClient),
+		Client: graphql.NewClient(config.ServerURL, retryClient),
 		config: config,
 	}
 	return client, nil
@@ -112,4 +119,58 @@ func (c *QontractClient) MakeRequest(ctx context.Context, req *graphql.Request, 
 		return err
 	}
 	return nil
+}
+
+type zapLog struct {
+	z *zap.SugaredLogger
+}
+
+func (z zapLog) Error(msg string, param ...interface{}) {
+	z.z.Errorw(msg, param...)
+}
+func (z zapLog) Info(msg string, param ...interface{}) {
+	z.z.Infow(msg, param...)
+}
+func (z zapLog) Debug(msg string, param ...interface{}) {
+	z.z.Debugw(msg, param...)
+}
+func (z zapLog) Warn(msg string, param ...interface{}) {
+	z.z.Warnw(msg, param...)
+}
+
+type retryableHttpWrapper struct {
+	Client *retryablehttp.Client
+}
+
+func NewRetryableHttpWrapper() *retryableHttpWrapper {
+	r := &retryableHttpWrapper{
+		Client: retryablehttp.NewClient(),
+	}
+	var zapLog retryablehttp.LeveledLogger = zapLog{
+		z: pkg.Log(),
+	}
+	r.Client.Logger = zapLog
+	return r
+
+}
+
+func (r *retryableHttpWrapper) Do(req *http.Request) (*http.Response, error) {
+	reqRetryable, err := retryablehttp.NewRequest(req.Method, req.URL.String(), req.Body)
+	reqRetryable.Header.Set("Content-Type", "application/json")
+	if err != nil {
+		return nil, err
+	}
+	return r.Client.Do(reqRetryable)
+}
+
+func (r *retryableHttpWrapper) SetAuthTransport(transport *authedTransport) {
+	r.Client.HTTPClient.Transport = transport
+}
+
+func (r *retryableHttpWrapper) SetTimeout(timeout int) {
+	r.Client.HTTPClient.Timeout = time.Duration(timeout) * time.Second
+}
+
+func (r *retryableHttpWrapper) SetRetries(retries int) {
+	r.Client.RetryMax = retries
 }
