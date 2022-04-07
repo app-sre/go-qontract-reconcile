@@ -53,20 +53,45 @@ func TestClientTimeout(t *testing.T) {
 	qontractSetupViper()
 	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
 	os.Setenv("QONTRACT_TIMEOUT", "1")
+	os.Setenv("QONTRACT_RETRIES", "0")
 
 	client, err := NewQontractClient(testContext)
 	assert.Nil(t, err)
 	assert.NotNil(t, client)
 	err = client.MakeRequest(testContext, &graphql.Request{}, &graphql.Response{})
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "Client.Timeout exceeded while awaiting headers")
+	assert.Contains(t, err.Error(), "giving up after 1 attempts")
+}
+
+func TestClientRetry(t *testing.T) {
+	reqCount := 0
+	mock := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			reqCount++
+			if reqCount == 1 {
+				w.WriteHeader(500)
+			} else {
+				w.Write([]byte(`{"data":{}, "extensions": {"schemas":[]}}`))
+			}
+		}))
+	qontractSetupViper()
+	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
+	os.Setenv("QONTRACT_RETRIES", "1")
+
+	client, err := NewQontractClient(testContext)
+	assert.Nil(t, err)
+	assert.NotNil(t, client)
+	err = client.MakeRequest(testContext, &graphql.Request{}, &graphql.Response{})
+	assert.Nil(t, err)
+	// first request fails, then schema + query
+	assert.Equal(t, reqCount, 3)
 }
 
 func TestClientAuth(t *testing.T) {
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, "basic foobar", r.Header.Get("Authorization"))
-			w.Write([]byte(`{"date":{}, "extensions": {"schemas":[]}}`))
+			w.Write([]byte(`{"data":{}, "extensions": {"schemas":[]}}`))
 		}))
 	qontractSetupViper()
 	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
@@ -82,7 +107,7 @@ func TestClientAuth(t *testing.T) {
 func TestBrokenExtensions(t *testing.T) {
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`{"date":{}, "extensions": {}}`))
+			w.Write([]byte(`{"data":{}, "extensions": {}}`))
 		}))
 	qontractSetupViper()
 	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
@@ -106,7 +131,7 @@ func TestIntegrationsCalled(t *testing.T) {
 			if pkg.Contains(expected_queries, string(b)) {
 				extensionsQueried = true
 			}
-			w.Write([]byte(`{"date":{}, "extensions": {"schemas": []}}`))
+			w.Write([]byte(`{"data":{}, "extensions": {"schemas": []}}`))
 		}))
 	qontractSetupViper()
 	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
