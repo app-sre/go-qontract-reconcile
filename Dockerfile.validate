@@ -1,0 +1,5 @@
+FROM quay.io/app-sre/golang:1.17.8 as validator
+WORKDIR /build
+COPY . .
+RUN make test-schema
+
