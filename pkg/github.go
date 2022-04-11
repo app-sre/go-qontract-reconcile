@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"net/url"
 	"strings"
 	"time"
 
@@ -43,15 +44,18 @@ func NewAuthenticatedGithubClient(ctx context.Context, token string) (*Authentic
 	tc := oauth2.NewClient(ctx, ts)
 	tc.Timeout = time.Duration(config.Timeout) * time.Second
 
-	var client *github.Client
-	var err error
-	if strings.Compare(config.BaseURL, "") == 0 {
-		client = github.NewClient(tc)
-	} else {
-		client, err = github.NewEnterpriseClient(config.BaseURL, config.BaseURL, tc)
+	client := github.NewClient(tc)
+	if strings.Compare(config.BaseURL, "") != 0 {
+		actualBaseUrl := config.BaseURL
+		if !strings.HasSuffix(config.BaseURL, "/") {
+			Log().Debugw("Github Base Url has no / suffix, addding it", "url", config.BaseURL)
+			actualBaseUrl = config.BaseURL + "/"
+		}
+		baseUrl, err := url.Parse(actualBaseUrl)
 		if err != nil {
 			return nil, err
 		}
+		client.BaseURL = baseUrl
 	}
 
 	return &AuthenticatedGithubClient{
