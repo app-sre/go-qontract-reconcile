@@ -14,7 +14,8 @@ var ContextIngetrationNameKey IntegrationNameKey = "integrationName"
 
 // RunnerConfig is used to unmarshal yaml configuration Runners
 type runnerConfig struct {
-	Timeout int
+	Timeout          int
+	UseFeatureToggle bool
 }
 
 // NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
@@ -22,8 +23,10 @@ func newRunnerConfig() *runnerConfig {
 	v := viper.GetViper()
 	var ic runnerConfig
 	v.SetDefault("timeout", 0)
+	v.SetDefault("usefeaturetoggle", false)
 
 	v.BindEnv("timeout", "RUNNER_TIMEOUT")
+	v.BindEnv("usefeaturetoggle", "RUNNER_USE_FEATURE_TOGGLE")
 
 	if err := v.Unmarshal(&ic); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -70,6 +73,18 @@ type Runner interface {
 	Exiter(int)
 }
 
+func isFeatureEnabled(ctx context.Context, runnable string) (bool, error) {
+	client, err := NewUnleashClient()
+	if err != nil {
+		return false, err
+	}
+	f, err := client.GetFeature(ctx, runnable)
+	if err != nil {
+		return false, err
+	}
+	return f.Enabled, nil
+}
+
 // ValidationRunner is an implementation of Runner
 type ValidationRunner struct {
 	Runnable Validation
@@ -106,6 +121,19 @@ func (v *ValidationRunner) Run() {
 		Log().Errorw("Error during integration", "error", err.Error())
 		v.Exiter(1)
 	}
+
+	if v.config.UseFeatureToggle {
+		enabled, err := isFeatureEnabled(ctx, v.Name)
+		if err != nil {
+			Log().Errorw("Error during integration", "error", err.Error())
+			v.Exiter(1)
+		}
+		if !enabled {
+			Log().Warnw("Integration not enabled")
+			v.Exiter(0)
+		}
+	}
+
 	validationErrors, err := v.Runnable.Validate(ctx)
 	if err != nil {
 		Log().Errorw("Error during integration", "error", err.Error())

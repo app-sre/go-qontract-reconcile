@@ -18,6 +18,7 @@ You can change the log level by adding `-l` to the command. Like:
 
 ```YAML
 timeout: Timeout in seconds for the run, defines maximum runtime. (default: 0)
+usefeaturetoggle: Weither to check for feature toggles
 
 qontract: 
   serverurl: URL to the GraphQL API REQUIRED
@@ -39,12 +40,18 @@ user_validator:
 
 github:
   timeout: Timeout in seconds for Github request (default: 60s)
+
+unleash:
+  timeout: Timeout in seconds for Github request (default: 60s)
+  apiurl: Address to access Unleash REQUIRED
+  clientaccesstoken: Bearer token to use for authentication
 ```
 
 ### Environment variables
 
 Instead of using a yaml file, all parameters can be set via environment variables:
  * RUNNER_TIMEOUT
+ * RUNNER_USE_FEATURE_TOGGLE
  * QONTRACT_SERVER_URL
  * QONTRACT_TIMEOUT
  * QONTRACT_TOKEN
@@ -57,6 +64,9 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * VAULT_TIMEOUT
  * USER_VALIDATOR_CONCURRENCY
  * USER_VALIDATOR_INVALID_USERS
+ * UNLEASH_TIMEOUT
+ * UNLEASH_API_URL
+ * UNLEASH_CLIENT_ACCESS_TOKEN
  * GITHUB_API_TIMEOUT
 
 ## Licence
