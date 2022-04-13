@@ -37,7 +37,7 @@ func TestGetFeature(t *testing.T) {
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, fmt.Sprintf("Bearer %s", token), r.Header.Get("Authorization"))
-			assert.Equal(t, r.URL.Path, "/api/client/features/test")
+			assert.Equal(t, r.URL.Path, "/client/features/test")
 			w.Write([]byte(`{"enabled":true,"name":"test","project":"default","type":"release"}`))
 		}))
 
