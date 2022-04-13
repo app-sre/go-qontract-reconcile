@@ -71,7 +71,7 @@ func NewUnleashClient() (*UnleashClient, error) {
 // Dept: split up this method if you add new URLs, do not just copy and paste it!
 func (c *UnleashClient) GetFeature(ctx context.Context, name string) (*Feature, error) {
 	Log().Debugw("Checking if feature is enabled", "feature", name)
-	path := fmt.Sprintf("%s/api/client/features/%s", c.unleashConfig.ApiUrl, name)
+	path := fmt.Sprintf("%s/client/features/%s", c.unleashConfig.ApiUrl, name)
 	req, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err

@@ -117,10 +117,6 @@ func (v *ValidationRunner) Run() {
 		ctx, cancel = context.WithCancel(ctx)
 	}
 	defer cancel()
-	if err := v.Runnable.Setup(ctx); err != nil {
-		Log().Errorw("Error during integration", "error", err.Error())
-		v.Exiter(1)
-	}
 
 	if v.config.UseFeatureToggle {
 		enabled, err := isFeatureEnabled(ctx, v.Name)
@@ -132,6 +128,11 @@ func (v *ValidationRunner) Run() {
 			Log().Warnw("Integration not enabled")
 			v.Exiter(0)
 		}
+	}
+
+	if err := v.Runnable.Setup(ctx); err != nil {
+		Log().Errorw("Error during integration", "error", err.Error())
+		v.Exiter(1)
 	}
 
 	validationErrors, err := v.Runnable.Validate(ctx)
