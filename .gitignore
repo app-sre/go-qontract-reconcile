@@ -17,3 +17,10 @@ user-validator
 # vendor/
 
 coverage.html
+
+# Folders for schema creation
+bundle/
+fake_data/
+fake_resources/
+schemas/
+graphql-schemas/

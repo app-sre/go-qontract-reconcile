@@ -5,6 +5,7 @@ CONTAINER_ENGINE ?= $(shell which podman >/dev/null 2>&1 && echo podman || echo 
 IMAGE_NAME := quay.io/app-sre/user-validator
 IMAGE_TAG := $(shell git rev-parse --short=7 HEAD)
 
+
 ifneq (,$(wildcard $(CURDIR)/.docker))
 	DOCKER_CONF := $(CURDIR)/.docker
 else
@@ -31,6 +32,18 @@ else
 endif
 	@$(CONTAINER_ENGINE) tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
 
+validate-schema:
+ifeq ($(CONTAINER_ENGINE), podman)
+	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile.validate . --progress=plain
+else
+	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) --config=$(DOCKER_CONF) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile.validate . --progress=plain
+endif
+
+test-schema:
+	go run github.com/Khan/genqlient
+	cd pkg && go run github.com/Khan/genqlient && cd ..
+	CGO_ENABLED=0 GOOS=$(GOOS) go test ./...
+
 push:
 	@$(CONTAINER_ENGINE) --config=$(DOCKER_CONF) push $(IMAGE_NAME):latest
 	@$(CONTAINER_ENGINE) --config=$(DOCKER_CONF) push $(IMAGE_NAME):$(IMAGE_TAG)
@@ -38,3 +51,6 @@ push:
 coveragereport:
 	go test -coverprofile=$(TMP_COVERAGE) ./...
 	go tool cover -html=$(TMP_COVERAGE) -o coverage.html
+
+update-schema:
+	./hack/update_schema.sh
