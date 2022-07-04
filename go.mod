@@ -6,6 +6,7 @@ require (
 	github.com/Khan/genqlient v0.4.1-0.20220330204801-b2422452a143
 	github.com/google/go-github/v42 v42.0.0
 	github.com/hashicorp/vault/api v1.4.1
+	// go-crypto pinned to match terraform provider version
 	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
