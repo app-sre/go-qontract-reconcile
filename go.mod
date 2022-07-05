@@ -6,7 +6,8 @@ require (
 	github.com/Khan/genqlient v0.4.1-0.20220330204801-b2422452a143
 	github.com/google/go-github/v42 v42.0.0
 	github.com/hashicorp/vault/api v1.4.1
-	github.com/keybase/go-crypto v0.0.0-20200123153347-de78d2cb44f4
+	// go-crypto pinned to match terraform provider version
+	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
@@ -16,6 +17,7 @@ require (
 )
 
 require (
+	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alexflint/go-arg v1.4.2 // indirect
 	github.com/alexflint/go-scalar v1.0.0 // indirect

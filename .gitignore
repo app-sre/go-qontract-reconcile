@@ -24,3 +24,5 @@ fake_data/
 fake_resources/
 schemas/
 graphql-schemas/
+
+.vscode

@@ -17,12 +17,13 @@ import (
 var (
 	okayFile    = "../test/data/valid_key.pub.b64"
 	expiredFile = "../test/data/expired_key.pub.b64"
+	eccFile     = "../test/data/ecc_key.pub.b64"
 )
 
 func readKeyFile(t *testing.T, fileName string) []byte {
-	key, err := ioutil.ReadFile(okayFile)
+	key, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		t.Fatalf("Could not read public key test data %s, error: %s", okayFile, err.Error())
+		t.Fatalf("Could not read public key test data %s, error: %s", fileName, err.Error())
 	}
 	return key
 }
@@ -46,20 +47,10 @@ func TestDecodePgpKeyOkay(t *testing.T) {
 	assert.NotNil(t, entity)
 }
 
-func TestTestEncryptOkay(t *testing.T) {
-	key := readKeyFile(t, okayFile)
-	entity, err := decodePgpKey(string(key))
-	assert.Nil(t, err)
-	err = testEncrypt(entity)
-	assert.Nil(t, err)
-}
-
-func TestTestEncryptFailExpired(t *testing.T) {
-	key := readKeyFile(t, expiredFile)
-	entity, err := decodePgpKey(string(key))
-	assert.Nil(t, err)
-	err = testEncrypt(entity)
-	// assert.NotNil(t, err)
+func TestTestDecodeEccFailed(t *testing.T) {
+	key := readKeyFile(t, eccFile)
+	_, err := decodePgpKey(string(key))
+	assert.NotNil(t, err)
 }
 
 func TestDecodePgpKeyInvalidSpaces(t *testing.T) {
@@ -72,6 +63,23 @@ func TestDecodePgpKeyInvalidEqualSigns(t *testing.T) {
 	_, err := decodePgpKey("keywith=equalsign=")
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "Equals signs are not add the end")
+}
+
+func TestTestEncryptOkay(t *testing.T) {
+	key := readKeyFile(t, okayFile)
+	entity, err := decodePgpKey(string(key))
+	assert.Nil(t, err)
+	err = testEncrypt(entity)
+	assert.Nil(t, err)
+}
+
+func TestTestEncryptFailExpired(t *testing.T) {
+	key := readKeyFile(t, expiredFile)
+	entity, err := decodePgpKey(string(key))
+	assert.NotNil(t, entity)
+	assert.Nil(t, err)
+	err = testEncrypt(entity)
+	assert.NotNil(t, err)
 }
 
 func TestValidatePgpKeysValid(t *testing.T) {
