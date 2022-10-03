@@ -6,18 +6,24 @@ require (
 	github.com/Khan/genqlient v0.4.1-0.20220330204801-b2422452a143
 	github.com/google/go-github/v42 v42.0.0
 	github.com/hashicorp/vault/api v1.4.1
-	// go-crypto pinned to match terraform provider version
-	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.7.1
-	go.uber.org/zap v1.21.0
+	github.com/stretchr/testify v1.8.0
+	go.uber.org/zap v1.23.0
 	golang.org/x/oauth2 v0.0.0-20220309155454-6242fa91716a
 	gopkg.in/square/go-jose.v2 v2.6.0
 )
 
 require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
+	github.com/hashicorp/go-retryablehttp v0.6.6
+	github.com/hashicorp/vault/api/auth/approle v0.1.1
+	// go-crypto pinned to match terraform provider version.
+	github.com/keybase/go-crypto v0.0.0-20161004153544-93f5b35093ba
+	gopkg.in/yaml.v3 v3.0.1
+)
+
+require (
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/alexflint/go-arg v1.4.2 // indirect
 	github.com/alexflint/go-scalar v1.0.0 // indirect
@@ -36,7 +42,6 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.4.3 // indirect
-	github.com/hashicorp/go-retryablehttp v0.6.6 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-secure-stdlib/mlock v0.1.1 // indirect
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.1 // indirect
@@ -46,7 +51,6 @@ require (
 	github.com/hashicorp/go-version v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/vault/api/auth/approle v0.1.1 // indirect
 	github.com/hashicorp/vault/sdk v0.4.1 // indirect
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -85,5 +89,4 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
