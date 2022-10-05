@@ -3,7 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -81,7 +81,7 @@ func (c *UnleashClient) GetFeature(ctx context.Context, name string) (*Feature, 
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
