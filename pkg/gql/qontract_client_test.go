@@ -2,7 +2,7 @@ package gql
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -127,7 +127,7 @@ func TestIntegrationsCalled(t *testing.T) {
 	var extensionsQueried bool
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			b, _ := ioutil.ReadAll(r.Body)
+			b, _ := io.ReadAll(r.Body)
 			if pkg.Contains(expected_queries, string(b)) {
 				extensionsQueried = true
 			}

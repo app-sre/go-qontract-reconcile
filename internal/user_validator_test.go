@@ -3,9 +3,10 @@ package internal
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/app-sre/user-validator/internal/queries"
@@ -21,7 +22,7 @@ var (
 )
 
 func readKeyFile(t *testing.T, fileName string) []byte {
-	key, err := ioutil.ReadFile(fileName)
+	key, err := os.ReadFile(fileName)
 	if err != nil {
 		t.Fatalf("Could not read public key test data %s, error: %s", fileName, err.Error())
 	}
@@ -152,7 +153,7 @@ func TestValidateValidateUsersSinglePathValid(t *testing.T) {
 func createGithubUsersMock(t *testing.T, retBody string, retCode int) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "/api/v3/users")
-		_, err := ioutil.ReadAll(r.Body)
+		_, err := io.ReadAll(r.Body)
 		assert.Nil(t, err)
 
 		fmt.Fprint(w, retBody)
