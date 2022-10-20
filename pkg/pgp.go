@@ -12,6 +12,8 @@ import (
 	"github.com/keybase/go-crypto/openpgp/armor"
 	pgperr "github.com/keybase/go-crypto/openpgp/errors"
 	"github.com/keybase/go-crypto/openpgp/packet"
+
+	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
 )
 
 func TestEncrypt(entity *openpgp.Entity) error {
@@ -129,4 +131,12 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 	}
 
 	return entity, nil
+}
+
+func DecodeAndArmorBase64Entity(encodedEntity string, armorType string) (string, error) {
+	decodedEntity, err := base64.StdEncoding.DecodeString(encodedEntity)
+	if err != nil {
+		return "", err
+	}
+	return parmor.ArmorWithType([]byte(decodedEntity), armorType)
 }

@@ -37,17 +37,93 @@ func newRunnerConfig() *runnerConfig {
 
 // Integration describes the set of methods Integrations must implement
 type Integration interface {
-	Diff() ([]Diff, error)
-	Reconcile() error
-	Setup() error
+	CurrentState(context.Context, *ResourceInventory) error
+	DesiredState(context.Context, *ResourceInventory) error
+	Reconcile(context.Context, *ResourceInventory) error
+	Setup(context.Context) error
 }
 
-// Diff must be used to describe the diff an integration found
-type Diff struct {
-	Action  string
-	Target  string
-	Current string
-	Desired string
+type Action string
+
+// ResourceInventory must be used to describe the diff an integration found
+type ResourceInventory struct {
+	State map[string]*ResourceState
+}
+
+func NewResourceInventory() *ResourceInventory {
+	return &ResourceInventory{
+		State: map[string]*ResourceState{},
+	}
+}
+
+func (ri *ResourceInventory) AddResourceState(target string, rs *ResourceState) {
+	ri.State[target] = rs
+}
+
+func (ri *ResourceInventory) GetResourceState(target string) *ResourceState {
+	return ri.State[target]
+}
+
+type ResourceState struct {
+	Current interface{}
+	Desired interface{}
+}
+
+// IntegrationRunner is an implementation of Runner
+type IntegrationRunner struct {
+	Runnable Integration
+	Name     string
+	config   *runnerConfig
+}
+
+// NewIntegrationRunner creates a IntegrationRunner for a given Integration
+func NewIntegrationRunner(runnable Integration, name string) *IntegrationRunner {
+	c := newRunnerConfig()
+	v := &IntegrationRunner{
+		Runnable: runnable,
+		Name:     name,
+		config:   c,
+	}
+	return v
+}
+
+func (i *IntegrationRunner) Run() {
+	ri := NewResourceInventory()
+
+	ctx := context.WithValue(context.Background(), ContextIngetrationNameKey, i.Name)
+	var cancel func()
+	if i.config.Timeout > 0 {
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(i.config.Timeout)*time.Second)
+	} else {
+		ctx, cancel = context.WithCancel(ctx)
+	}
+	defer cancel()
+
+	err := i.Runnable.Setup(ctx)
+	if err != nil {
+		Log().Errorw("Error during setup", "error", err.Error())
+		i.Exiter(1)
+	}
+
+	err = i.Runnable.CurrentState(ctx, ri)
+	if err != nil {
+		Log().Errorw("Error during CurrentState", "error", err.Error())
+		i.Exiter(1)
+	}
+	err = i.Runnable.DesiredState(ctx, ri)
+	if err != nil {
+		Log().Errorw("Error during DesiredState", "error", err.Error())
+		i.Exiter(1)
+	}
+	err = i.Runnable.Reconcile(ctx, ri)
+	if err != nil {
+		Log().Errorw("Error during Reconcile", "error", err.Error())
+		i.Exiter(1)
+	}
+}
+
+func (i *IntegrationRunner) Exiter(exitCode int) {
+	os.Exit(exitCode)
 }
 
 // Validation describes the methods an Validation must implement
