@@ -53,12 +53,16 @@ const (
 
 // ResourceInventory must be used to describe the diff an integration found
 type ResourceInventory struct {
-	State []ResourceState
+	State []*ResourceState
+}
+
+func (ri *ResourceInventory) AddResourceState(rs *ResourceState) {
+	ri.State = append(ri.State, rs)
 }
 
 type ResourceState struct {
 	Action  Action
-	Target  string
+	Target  interface{}
 	Current interface{}
 	Desired interface{}
 }
@@ -70,9 +74,20 @@ type IntegrationRunner struct {
 	config   *runnerConfig
 }
 
+// NewIntegrationRunner creates a IntegrationRunner for a given Integration
+func NewIntegrationRunner(runnable Integration, name string) *IntegrationRunner {
+	c := newRunnerConfig()
+	v := &IntegrationRunner{
+		Runnable: runnable,
+		Name:     name,
+		config:   c,
+	}
+	return v
+}
+
 func (i *IntegrationRunner) Run() {
 	ri := &ResourceInventory{
-		State: make([]ResourceState, 0),
+		State: make([]*ResourceState, 0),
 	}
 
 	ctx := context.WithValue(context.Background(), ContextIngetrationNameKey, i.Name)
@@ -86,19 +101,23 @@ func (i *IntegrationRunner) Run() {
 
 	err := i.Runnable.Setup()
 	if err != nil {
+		Log().Errorw("Error during setup", "error", err.Error())
 		i.Exiter(1)
 	}
 
 	err = i.Runnable.CurrentState(ctx, ri)
 	if err != nil {
+		Log().Errorw("Error during CurrentState", "error", err.Error())
 		i.Exiter(1)
 	}
 	err = i.Runnable.DesiredState(ctx, ri)
 	if err != nil {
+		Log().Errorw("Error during DesiredState", "error", err.Error())
 		i.Exiter(1)
 	}
 	err = i.Runnable.Reconcile(ctx, ri)
 	if err != nil {
+		Log().Errorw("Error during Reconcile", "error", err.Error())
 		i.Exiter(1)
 	}
 }

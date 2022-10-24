@@ -30,6 +30,15 @@ var (
 			userValidator()
 		},
 	}
+
+	keyExpirationNotifierCmd = &cobra.Command{
+		Use:   "key-expiration-notifier",
+		Short: "Notify on expired keys",
+		Long:  "Check the expiration date of pgp keys, sends notification for expired keys",
+		Run: func(cmd *cobra.Command, args []string) {
+			keyExpirationNotifier()
+		},
+	}
 )
 
 // Execute executes the rootCmd
@@ -39,8 +48,10 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(userValidatorCmd)
+	rootCmd.AddCommand(keyExpirationNotifierCmd)
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info", "Log level")
 	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
+	keyExpirationNotifierCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 
 	cobra.OnInitialize(initConfig)
 	cobra.OnInitialize(configureLogging)
