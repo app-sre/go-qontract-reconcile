@@ -7,6 +7,6 @@ import (
 
 func keyExpirationNotifier() {
 	notifier := internal.NewKeyExpirationNotifier()
-	runner := NewIntegrationRunner(notifier, "key-expiration-notifier")
+	runner := NewIntegrationRunner(notifier, internal.KEY_EXPIRATION_NOTIFIER_NAME)
 	runner.Run()
 }

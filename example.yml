@@ -4,3 +4,6 @@ qontract:
 vault:
   addr: "http://localhost:8200"
   authtype: "approle"
+
+state_s3:
+  bucket: foobar123foo

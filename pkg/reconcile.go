@@ -40,29 +40,25 @@ type Integration interface {
 	CurrentState(context.Context, *ResourceInventory) error
 	DesiredState(context.Context, *ResourceInventory) error
 	Reconcile(context.Context, *ResourceInventory) error
-	Setup() error
+	Setup(context.Context) error
 }
 
 type Action string
 
-const (
-	Create Action = "create"
-	Delete Action = "delete"
-	Update Action = "update"
-)
-
 // ResourceInventory must be used to describe the diff an integration found
 type ResourceInventory struct {
-	State []*ResourceState
+	State map[string]*ResourceState
 }
 
-func (ri *ResourceInventory) AddResourceState(rs *ResourceState) {
-	ri.State = append(ri.State, rs)
+func (ri *ResourceInventory) AddResourceState(target string, rs *ResourceState) {
+	ri.State[target] = rs
+}
+
+func (ri *ResourceInventory) GetResourceState(target string) *ResourceState {
+	return ri.State[target]
 }
 
 type ResourceState struct {
-	Action  Action
-	Target  interface{}
 	Current interface{}
 	Desired interface{}
 }
@@ -87,7 +83,7 @@ func NewIntegrationRunner(runnable Integration, name string) *IntegrationRunner 
 
 func (i *IntegrationRunner) Run() {
 	ri := &ResourceInventory{
-		State: make([]*ResourceState, 0),
+		State: map[string]*ResourceState{},
 	}
 
 	ctx := context.WithValue(context.Background(), ContextIngetrationNameKey, i.Name)
@@ -99,7 +95,7 @@ func (i *IntegrationRunner) Run() {
 	}
 	defer cancel()
 
-	err := i.Runnable.Setup()
+	err := i.Runnable.Setup(ctx)
 	if err != nil {
 		Log().Errorw("Error during setup", "error", err.Error())
 		i.Exiter(1)
