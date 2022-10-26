@@ -1,6 +1,6 @@
 module github.com/app-sre/user-validator
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Khan/genqlient v0.4.1-0.20220330204801-b2422452a143
