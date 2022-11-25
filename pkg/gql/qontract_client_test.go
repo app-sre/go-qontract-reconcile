@@ -60,7 +60,7 @@ func TestClientTimeout(t *testing.T) {
 	assert.NotNil(t, client)
 	err = client.MakeRequest(testContext, &graphql.Request{}, &graphql.Response{})
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "giving up after 1 attempts")
+	assert.Contains(t, err.Error(), "giving up after 1 attempt(s)")
 }
 
 func TestClientRetry(t *testing.T) {
