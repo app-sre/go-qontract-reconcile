@@ -30,6 +30,7 @@ const (
 type GetUsers func(context.Context) (*queries.UsersResponse, error)
 type SendEmail func(context.Context, *notify.Notify, string) error
 type SetFailedState func(context.Context, Persistence, string, notification) error
+type RmFailedState func(context.Context, Persistence, string) error
 
 type AccountNotifier struct {
 	state            Persistence
@@ -42,6 +43,7 @@ type AccountNotifier struct {
 	getuserFunc        GetUsers
 	sendEmailFunc      SendEmail
 	setFailedStateFunc SetFailedState
+	rmFailedStateFunc  RmFailedState
 }
 
 type smtpAuth struct {
@@ -90,6 +92,10 @@ func NewAccountNotifier() *AccountNotifier {
 		},
 		setFailedStateFunc: func(ctx context.Context, state Persistence, path string, desiredState notification) error {
 			return state.Add(ctx, path, desiredState)
+		},
+		rmFailedStateFunc: func(ctx context.Context, state Persistence, path string) error {
+			return state.Rm(ctx, path)
+
 		},
 	}
 	return &notifier
@@ -326,7 +332,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 				return errors.Wrap(err, "Error while checking state for stale PGP Key existence")
 			}
 			if exists {
-				n.state.Rm(ctx, desired.Secret.UserPath)
+				err = n.rmFailedStateFunc(ctx, n.state, desired.Secret.UserPath)
 				if err != nil {
 					return errors.Wrap(err, "Error while deleting statel PGP Key reference from state")
 				}

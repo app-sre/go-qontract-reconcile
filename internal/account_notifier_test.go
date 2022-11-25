@@ -124,7 +124,24 @@ func createTestNotifier(t *testing.T, vaultMock *pkg.VaultClient, awsClientMock 
 	}
 }
 
-func TestNotifyNewAccount(t *testing.T) {
+/*
+
+This table should help understanding the need for the various tests. There
+are a couple of states the code could be in.
+
+Status        Vault   State   PGP     Notification    Test name
+------------- ------- ------- ------- --------------- --------------------
+Reencrypt     Import  None    Valid   Yes             TestReencryptOkay
+              Export
+Reencrypt     Import  Update  Invalid No              TestReencryptInvalid
+Reencrypt     Import  Delete  Updated Yes             TestReencryptUpdated
+              Export
+NotifyExpired Import  Updated Invalid Yes             TestNotifyExpired
+Skip          Import  Read    Invalid No              TestSKip
+
+*/
+
+func TestReencryptOkay(t *testing.T) {
 	users := createUserMock(string(pkg.ReadKeyFile(t, publicKey)))
 
 	vaultMock := setupVaultMock(t)
@@ -163,7 +180,7 @@ func TestNotifyNewAccount(t *testing.T) {
 	assert.True(t, mailSent)
 }
 
-func TestNotifyNewAccountBrokenKey(t *testing.T) {
+func TestReencryptInvalid(t *testing.T) {
 	users := createUserMock("Invalid key")
 
 	vaultMock := setupVaultMock(t)
@@ -198,6 +215,60 @@ func TestNotifyNewAccountBrokenKey(t *testing.T) {
 
 	err = a.Reconcile(ctx, ri)
 	assert.ErrorContains(t, err, "Error while decoding and armoring User Public PGP Key, setting state entry")
+}
+
+func TestReencryptUpdated(t *testing.T) {
+	users := createUserMock(string(pkg.ReadKeyFile(t, publicKey)))
+
+	vaultMock := setupVaultMock(t)
+	defer vaultMock.Close()
+	SetupVaultEnv(vaultMock.URL)
+
+	v, err := pkg.NewVaultClient()
+
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	ctx := context.WithValue(context.Background(), pkg.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+
+	mockClient := mock.NewMockClient(ctrl)
+
+	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, nil).MaxTimes(2)
+	mockClient.EXPECT().GetObject(ctx, gomock.Any()).Return(&s3.GetObjectOutput{
+		Body: io.NopCloser(bytes.NewReader([]byte(`
+publicpgpkey: oldone
+`))),
+	}, nil)
+
+	a := createTestNotifier(t, v, mockClient, users)
+	stateRemoved := false
+	mailSent := false
+	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
+		assert.Contains(t, body, "You have been invited to join an AWS account")
+		assert.NotNil(t, n)
+		mailSent = true
+		return nil
+	}
+	a.rmFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string) error {
+		assert.Equal(t, "testing.yml", s)
+		stateRemoved = true
+		return nil
+	}
+
+	ri := pkg.NewResourceInventory()
+
+	err = a.CurrentState(ctx, ri)
+	assert.NoError(t, err)
+
+	err = a.DesiredState(ctx, ri)
+	assert.NoError(t, err)
+
+	err = a.Reconcile(ctx, ri)
+	assert.NoError(t, err)
+
+	assert.True(t, stateRemoved)
+	assert.True(t, mailSent)
 }
 
 func TestNotifySkip(t *testing.T) {
