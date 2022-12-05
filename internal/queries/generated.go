@@ -61,6 +61,38 @@ func (v *GithubOrgsResponse) GetGithuborg_v1() []GithubOrgsGithuborg_v1GithubOrg
 	return v.Githuborg_v1
 }
 
+// PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 includes the requested fields of the GraphQL type PgpReencryptSettings_v1.
+type PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 struct {
+	Aws_account_output_vault_path string `json:"aws_account_output_vault_path"`
+	Reencrypt_vault_path          string `json:"reencrypt_vault_path"`
+	Private_pgp_key_vault_path    string `json:"private_pgp_key_vault_path"`
+}
+
+// GetAws_account_output_vault_path returns PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1.Aws_account_output_vault_path, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1) GetAws_account_output_vault_path() string {
+	return v.Aws_account_output_vault_path
+}
+
+// GetReencrypt_vault_path returns PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1.Reencrypt_vault_path, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1) GetReencrypt_vault_path() string {
+	return v.Reencrypt_vault_path
+}
+
+// GetPrivate_pgp_key_vault_path returns PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1.Private_pgp_key_vault_path, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1) GetPrivate_pgp_key_vault_path() string {
+	return v.Private_pgp_key_vault_path
+}
+
+// PgpReencryptSettingsResponse is returned by PgpReencryptSettings on success.
+type PgpReencryptSettingsResponse struct {
+	Pgp_reencrypt_settings_v1 []PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 `json:"pgp_reencrypt_settings_v1"`
+}
+
+// GetPgp_reencrypt_settings_v1 returns PgpReencryptSettingsResponse.Pgp_reencrypt_settings_v1, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsResponse) GetPgp_reencrypt_settings_v1() []PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 {
+	return v.Pgp_reencrypt_settings_v1
+}
+
 // UsersResponse is returned by Users on success.
 type UsersResponse struct {
 	Users_v1 []UsersUsers_v1User_v1 `json:"users_v1"`
@@ -131,6 +163,41 @@ query GithubOrgs {
 	}
 
 	var data GithubOrgsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func PgpReencryptSettings(
+	ctx context.Context,
+) (*PgpReencryptSettingsResponse, error) {
+	req := &graphql.Request{
+		OpName: "PgpReencryptSettings",
+		Query: `
+query PgpReencryptSettings {
+	pgp_reencrypt_settings_v1 {
+		aws_account_output_vault_path
+		reencrypt_vault_path
+		private_pgp_key_vault_path
+	}
+}
+`,
+	}
+	var err error
+	var client graphql.Client
+
+	client, err = gql.NewQontractClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data PgpReencryptSettingsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

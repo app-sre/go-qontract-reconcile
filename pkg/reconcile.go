@@ -115,6 +115,7 @@ func (i *IntegrationRunner) Run() {
 		Log().Errorw("Error during DesiredState", "error", err.Error())
 		i.Exiter(1)
 	}
+	Log().Infow("Current state", "state", ri)
 	err = i.Runnable.Reconcile(ctx, ri)
 	if err != nil {
 		Log().Errorw("Error during Reconcile", "error", err.Error())

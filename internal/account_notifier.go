@@ -28,6 +28,7 @@ const (
 )
 
 type GetUsers func(context.Context) (*queries.UsersResponse, error)
+type GetPgpReencryptSettings func(context.Context) (*queries.PgpReencryptSettingsResponse, error)
 type SendEmail func(context.Context, *notify.Notify, string) error
 type SetFailedState func(context.Context, Persistence, string, notification) error
 type RmFailedState func(context.Context, Persistence, string) error
@@ -41,6 +42,7 @@ type AccountNotifier struct {
 
 	smtpauth           smtpAuth
 	getuserFunc        GetUsers
+	getReencryptFunc   GetPgpReencryptSettings
 	sendEmailFunc      SendEmail
 	setFailedStateFunc SetFailedState
 	rmFailedStateFunc  RmFailedState
@@ -86,7 +88,9 @@ func NewAccountNotifier() *AccountNotifier {
 		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
 			return queries.Users(ctx)
 		},
-
+		getReencryptFunc: func(ctx context.Context) (*queries.PgpReencryptSettingsResponse, error) {
+			return queries.PgpReencryptSettings(ctx)
+		},
 		sendEmailFunc: func(ctx context.Context, notifier *notify.Notify, body string) error {
 			return notifier.Send(ctx, "AWS Access provisioned", body)
 		},
@@ -128,7 +132,6 @@ type userSecret struct {
 	EncyptedPassword string
 	ConsoleURL       string
 	Username         string
-	UserPath         string
 }
 
 type Secret struct {
@@ -150,13 +153,12 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventor
 		if err != nil {
 			return err
 		}
-		ri.AddResourceState(secret.Data["user_path"].(string), &ResourceState{
+		ri.AddResourceState(secret.Data["user_name"].(string), &ResourceState{
 			Current: notification{
 				Status:     REENCRYPT,
 				SecretPath: secretPath,
 				Secret: userSecret{
-					UserPath:         secret.Data["user_path"].(string),
-					Username:         secret.Data["username"].(string),
+					Username:         secret.Data["user_name"].(string),
 					ConsoleURL:       secret.Data["console_url"].(string),
 					EncyptedPassword: secret.Data["encrypted_password"].(string),
 				},
@@ -178,7 +180,7 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *ResourceInventor
 
 	userMap := make(map[string]queries.UsersUsers_v1User_v1)
 	for _, user := range users.GetUsers_v1() {
-		userMap[user.Path] = user
+		userMap[user.Org_username] = user
 	}
 
 	for target, state := range ri.State {
@@ -225,6 +227,7 @@ func (n *AccountNotifier) newNotifier(receipt string) *notify.Notify {
 	// Todo: replace jboll@redhat.com with receipt
 	email.AddReceivers("jboll@redhat.com")
 	email.AuthenticateSMTP("", n.smtpauth.username, n.smtpauth.password, n.smtpauth.server)
+	email.UsePlainTextBody()
 	notifier.UseServices(email)
 	return notifier
 }
@@ -290,7 +293,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			armoredUserPublicPgpKey, err := DecodeAndArmorBase64Entity(desired.PublicPgpKey, "PGP PUBLIC KEY BLOCK")
 			if err != nil {
 				errorWrapped := errors.Wrap(err, "Error while decoding and armoring User Public PGP Key, setting state entry")
-				err = n.setFailedStateFunc(ctx, n.state, desired.Secret.UserPath, desired)
+				err = n.setFailedStateFunc(ctx, n.state, desired.Secret.Username, desired)
 				if err != nil {
 					return errors.Wrapf(errorWrapped, "Error while setting state entry for broken Public PGP Key")
 				}
@@ -299,7 +302,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			armoredReencryptedPassword, err := phelper.EncryptMessageArmored(armoredUserPublicPgpKey, theActualPassword)
 			if err != nil {
 				errorWrapped := errors.Wrap(err, "Error while encrypting password with User Public PGP Key")
-				err = n.setFailedStateFunc(ctx, n.state, desired.Secret.UserPath, desired)
+				err = n.setFailedStateFunc(ctx, n.state, desired.Secret.Username, desired)
 				if err != nil {
 					return errors.Wrapf(errorWrapped, "Error while setting state entry for broken Public PGP Key")
 				}
@@ -315,7 +318,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			secretMap := make(map[string]interface{})
 			secretMap["console_url"] = desired.Secret.ConsoleURL
 			secretMap["encrypted_password"] = encodedReencryptedPassword
-			secretMap["username"] = desired.Secret.Username
+			secretMap["user_name"] = desired.Secret.Username
 
 			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/foo", n.vaultExportPath), secretMap)
 			if err != nil {
@@ -327,12 +330,12 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 				return errors.Wrap(err, "Error while deleting initial password from vault")
 			}
 
-			err, exists := n.state.Exists(ctx, desired.Secret.UserPath)
+			err, exists := n.state.Exists(ctx, desired.Secret.Username)
 			if err != nil {
 				return errors.Wrap(err, "Error while checking state for stale PGP Key existence")
 			}
 			if exists {
-				err = n.rmFailedStateFunc(ctx, n.state, desired.Secret.UserPath)
+				err = n.rmFailedStateFunc(ctx, n.state, desired.Secret.Username)
 				if err != nil {
 					return errors.Wrap(err, "Error while deleting statel PGP Key reference from state")
 				}
@@ -346,12 +349,12 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 		}
 		if desired.Status == NOTIFY_EXPIRED {
 			Log().Info("Notification of expired keys to be done")
-			err := n.sendEmailFunc(ctx, n.newNotifier(desired.Email), generateEmailExpired(desired.Secret.UserPath))
+			err := n.sendEmailFunc(ctx, n.newNotifier(desired.Email), generateEmailExpired(desired.Secret.Username))
 			if err != nil {
 				return err
 			}
 			desired.LastNotifiedAt = time.Now()
-			err = n.setFailedStateFunc(ctx, n.state, desired.Secret.UserPath, desired)
+			err = n.setFailedStateFunc(ctx, n.state, desired.Secret.Username, desired)
 			if err != nil {
 				return errors.Wrapf(err, "Error while setting state entry for broken Public PGP Key")
 			}
@@ -368,6 +371,15 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	settings, err := n.getReencryptFunc(ctx)
+	if err != nil {
+		return err
+	}
+
+	n.appSrePGPKeyPath = settings.GetPgp_reencrypt_settings_v1()[0].GetPrivate_pgp_key_vault_path()
+	n.vaultImportPath = settings.GetPgp_reencrypt_settings_v1()[0].GetReencrypt_vault_path()
+	n.vaultExportPath = settings.GetPgp_reencrypt_settings_v1()[0].GetAws_account_output_vault_path()
 
 	return nil
 }

@@ -48,10 +48,9 @@ func TestANCurrentState(t *testing.T) {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
 		}
 		if r.URL.String() == "/v1/pgpKey" {
-			fmt.Fprintf(w, `{"data": {"user_path":"%s", "username":"foobar","console_url": "http://a", "encrypted_password": "a" }}`, "pgpKey")
+			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "a" }}`)
 		}
 	})
-
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
@@ -66,9 +65,9 @@ func TestANCurrentState(t *testing.T) {
 	ri := pkg.NewResourceInventory()
 	a.CurrentState(context.TODO(), ri)
 
-	assert.NotNil(t, ri.State["pgpKey"])
+	assert.NotNil(t, ri.State["foobar"])
 
-	cs := ri.State["pgpKey"].Current.(notification)
+	cs := ri.State["foobar"].Current.(notification)
 
 	assert.Equal(t, "foobar", cs.Secret.Username)
 	assert.Equal(t, "http://a", cs.Secret.ConsoleURL)
@@ -86,11 +85,11 @@ func jsonEscape(i string) string {
 
 func setupVaultMock(t *testing.T) *httptest.Server {
 	return NewHttpTestServer(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.String() == "/v1?list=true" {
+		if r.URL.String() == "/v1/import?list=true" {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
-		} else if r.URL.String() == "/v1/pgpKey" {
-			fmt.Fprintf(w, `{"data": {"user_path":"%s", "username":"foobar","console_url": "http://a", "encrypted_password": "%s" }}`,
-				"testing.yml", jsonEscape(string(pkg.ReadKeyFile(t, testData))))
+		} else if r.URL.String() == "/v1/import/pgpKey" {
+			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "%s" }}`,
+				jsonEscape(string(pkg.ReadKeyFile(t, testData))))
 		}
 		if r.URL.String() == "/v1/privatekey" {
 			fmt.Fprintf(w, `{"data": {"private_key": "%s", "passphrase": "abc123" }}`, jsonEscape(string(pkg.ReadKeyFile(t, privateKey))))
@@ -121,6 +120,7 @@ func createTestNotifier(t *testing.T, vaultMock *pkg.VaultClient, awsClientMock 
 			return users, nil
 		},
 		appSrePGPKeyPath: "privatekey",
+		vaultImportPath:  "/import",
 	}
 }
 
@@ -201,7 +201,7 @@ func TestReencryptInvalid(t *testing.T) {
 
 	a := createTestNotifier(t, v, mockClient, users)
 	a.setFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string, n notification) error {
-		assert.Equal(t, "testing.yml", s)
+		assert.Equal(t, "foobar", s)
 		assert.Equal(t, "Invalid key", n.PublicPgpKey)
 		return nil
 	}
@@ -251,7 +251,7 @@ publicpgpkey: oldone
 		return nil
 	}
 	a.rmFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string) error {
-		assert.Equal(t, "testing.yml", s)
+		assert.Equal(t, "foobar", s)
 		stateRemoved = true
 		return nil
 	}
@@ -308,7 +308,7 @@ lastnotifiedat: %s
 	err = a.DesiredState(ctx, ri)
 	assert.NoError(t, err)
 
-	desiredState := ri.GetResourceState("testing.yml").Desired.(notification)
+	desiredState := ri.GetResourceState("foobar").Desired.(notification)
 	assert.Equal(t, SKIP, desiredState.Status)
 }
 
@@ -350,7 +350,7 @@ lastnotifiedat: %s
 		return nil
 	}
 	a.setFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string, n notification) error {
-		assert.Equal(t, "testing.yml", s)
+		assert.Equal(t, "foobar", s)
 		assert.Equal(t, "Invalid key", n.PublicPgpKey)
 		statePersisted = true
 		return nil
@@ -363,7 +363,7 @@ lastnotifiedat: %s
 	err = a.DesiredState(ctx, ri)
 	assert.NoError(t, err)
 
-	desiredState := ri.GetResourceState("testing.yml").Desired.(notification)
+	desiredState := ri.GetResourceState("foobar").Desired.(notification)
 	assert.Equal(t, NOTIFY_EXPIRED, desiredState.Status)
 
 	err = a.Reconcile(ctx, ri)
