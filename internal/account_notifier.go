@@ -131,6 +131,7 @@ type userSecret struct {
 	// Fetched from Vault
 	EncyptedPassword string
 	ConsoleURL       string
+	Account          string
 	Username         string
 }
 
@@ -161,6 +162,7 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventor
 					Username:         secret.Data["user_name"].(string),
 					ConsoleURL:       secret.Data["console_url"].(string),
 					EncyptedPassword: secret.Data["encrypted_password"].(string),
+					Account:          secret.Data["account"].(string),
 				},
 			},
 		})
@@ -227,7 +229,7 @@ func (n *AccountNotifier) newNotifier(receipt string) *notify.Notify {
 	// Todo: replace jboll@redhat.com with receipt
 	email.AddReceivers("jboll@redhat.com")
 	email.AuthenticateSMTP("", n.smtpauth.username, n.smtpauth.password, n.smtpauth.server)
-	email.UsePlainTextBody()
+	email.BodyFormat(mail.PlainText)
 	notifier.UseServices(email)
 	return notifier
 }
@@ -320,7 +322,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			secretMap["encrypted_password"] = encodedReencryptedPassword
 			secretMap["user_name"] = desired.Secret.Username
 
-			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/foo", n.vaultExportPath), secretMap)
+			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/%s_%s", n.vaultExportPath, desired.Secret.Account, desired.Secret.Username), secretMap)
 			if err != nil {
 				return errors.Wrap(err, "Error while writing encrypted password to vault")
 			}
