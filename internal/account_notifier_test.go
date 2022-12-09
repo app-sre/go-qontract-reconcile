@@ -48,7 +48,7 @@ func TestANCurrentState(t *testing.T) {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
 		}
 		if r.URL.String() == "/v1/pgpKey" {
-			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "a" }}`)
+			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "a", "account": "foobar" }}`)
 		}
 	})
 	defer vaultMock.Close()
@@ -88,7 +88,7 @@ func setupVaultMock(t *testing.T) *httptest.Server {
 		if r.URL.String() == "/v1/import?list=true" {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
 		} else if r.URL.String() == "/v1/import/pgpKey" {
-			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "%s" }}`,
+			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "%s", "account": "foobar" }}`,
 				jsonEscape(string(pkg.ReadKeyFile(t, testData))))
 		}
 		if r.URL.String() == "/v1/privatekey" {
