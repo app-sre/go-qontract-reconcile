@@ -16,6 +16,7 @@ var ContextIngetrationNameKey IntegrationNameKey = "integrationName"
 type runnerConfig struct {
 	Timeout          int
 	UseFeatureToggle bool
+	DryRun           bool
 }
 
 // NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
@@ -24,9 +25,11 @@ func newRunnerConfig() *runnerConfig {
 	var ic runnerConfig
 	v.SetDefault("timeout", 0)
 	v.SetDefault("usefeaturetoggle", false)
+	v.SetDefault("dryrun", true)
 
 	v.BindEnv("timeout", "RUNNER_TIMEOUT")
 	v.BindEnv("usefeaturetoggle", "RUNNER_USE_FEATURE_TOGGLE")
+	v.BindEnv("dryrun", "RUNNER_DRY_RUN")
 
 	if err := v.Unmarshal(&ic); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -40,10 +43,9 @@ type Integration interface {
 	CurrentState(context.Context, *ResourceInventory) error
 	DesiredState(context.Context, *ResourceInventory) error
 	Reconcile(context.Context, *ResourceInventory) error
+	LogDiff(*ResourceInventory)
 	Setup(context.Context) error
 }
-
-type Action string
 
 // ResourceInventory must be used to describe the diff an integration found
 type ResourceInventory struct {
@@ -115,11 +117,15 @@ func (i *IntegrationRunner) Run() {
 		Log().Errorw("Error during DesiredState", "error", err.Error())
 		i.Exiter(1)
 	}
-	Log().Infow("Current state", "state", ri)
-	err = i.Runnable.Reconcile(ctx, ri)
-	if err != nil {
-		Log().Errorw("Error during Reconcile", "error", err.Error())
-		i.Exiter(1)
+	i.Runnable.LogDiff(ri)
+	if !i.config.DryRun {
+		err = i.Runnable.Reconcile(ctx, ri)
+		if err != nil {
+			Log().Errorw("Error during Reconcile", "error", err.Error())
+			i.Exiter(1)
+		}
+	} else {
+		Log().Infow("DryRun is enabled, not running Reconcile")
 	}
 }
 

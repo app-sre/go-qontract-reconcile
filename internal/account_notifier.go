@@ -141,6 +141,19 @@ type Secret struct {
 	Username         string
 }
 
+func (n *AccountNotifier) LogDiff(ri *ResourceInventory) {
+	for target := range ri.State {
+		current := ri.State[target].Current.(notification)
+		if current.Status == SKIP {
+			Log().Debugw("Skipping notification for", "account", current.Secret.Account, "username", current.Secret.Username)
+		} else if current.Status == REENCRYPT {
+			Log().Debugw("Reencrypting", "account", current.Secret.Account, "username", current.Secret.Username)
+		} else if current.Status == NOTIFY_EXPIRED {
+			Log().Debugw("PGP Key expired, notifying", "account", current.Secret.Account, "username", current.Secret.Username)
+		}
+	}
+}
+
 func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventory) error {
 	s, err := n.vault.ListSecrets(n.vaultImportPath)
 	if err != nil {
@@ -226,8 +239,8 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *ResourceInventor
 func (n *AccountNotifier) newNotifier(receipt string) *notify.Notify {
 	notifier := notify.New()
 	email := mail.New(n.smtpauth.sender, fmt.Sprintf("%s:%s", n.smtpauth.server, n.smtpauth.port))
-	// Todo: replace jboll@redhat.com with receipt
-	email.AddReceivers("jboll@redhat.com")
+	Log().Debugw("Sending email to", "address", receipt)
+	email.AddReceivers(receipt)
 	email.AuthenticateSMTP("", n.smtpauth.username, n.smtpauth.password, n.smtpauth.server)
 	email.BodyFormat(mail.PlainText)
 	notifier.UseServices(email)
