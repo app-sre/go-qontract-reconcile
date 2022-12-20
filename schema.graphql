@@ -1,117 +1,73 @@
-type Access_v1 {
-  namespace: Namespace_v1
-  role: String
-  cluster: Cluster_v1
-  group: String
-  clusterRole: String
-}
-
-type ACMDomain_v1 {
-  domain_name: String!
-  alternate_names: [String]
-}
-
-type App_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  onboardingStatus: String!
-  grafanaUrls: [GrafanaDashboardUrls_v1!]
-  sopsUrl: String!
-  architectureDocument: String!
-  parentApp: App_v1
-  serviceDocs: [String]
-  serviceOwners: [Owner_v1!]
-  serviceNotifications: [Owner_v1]
-  dependencies: [Dependency_v1]
-  gcrRepos: [AppGcrRepos_v1]
-  quayRepos: [AppQuayRepos_v1]
-  escalationPolicy: AppEscalationPolicy_v1!
-  endPoints: [AppEndPoints_v1]
-  codeComponents: [AppCodeComponents_v1]
-  sentryProjects: [AppSentryProjects_v1]
-  statusPageComponents: [StatusPageComponent_v1]
-  namespaces: [Namespace_v1]
-  childrenApps: [App_v1]
-  jenkinsConfigs: [JenkinsConfig_v1]
-  saasFiles: [SaasFile_v1]
-  saasFilesV2: [SaasFile_v2]
-  sreCheckpoints: [SRECheckpoint_v1]
-}
-
-type AppCodeComponents_v1 {
-  name: String!
-  resource: String!
-  url: String!
-  gitlabRepoOwners: CodeComponentGitlabOwners_v1
-  gitlabHousekeeping: CodeComponentGitlabHousekeeping_v1
-  jira: JiraServer_v1
-}
-
-type AppEndPointMonitoring_v1 {
-  provider: EndpointMonitoringProvider_v1
-}
-
-type AppEndPoints_v1 {
-  name: String!
-  description: String!
-  url: String!
-  monitoring: [AppEndPointMonitoring_v1]
-}
-
-type AppEscalationPolicy_v1 {
-  path: String!
-  name: String!
-  labels: JSON
-  description: String!
-  channels: AppEscalationPolicyChannels_v1!
-}
-
-type AppEscalationPolicyChannels_v1 {
-  slackUserGroup: [PermissionSlackUsergroup_v1!]
-  email: [String!]
-  pagerduty: PagerDutyTarget_v1
-  jiraBoard: [JiraBoard_v1]
-  nextEscalationPolicy: AppEscalationPolicy_v1
-}
-
-type AppGcrRepos_v1 {
-  project: GcpProject_v1!
-  items: [AppGcrReposItems_v1!]
-}
-
-type AppGcrReposItems_v1 {
-  name: String!
-  description: String!
-  public: Boolean!
-  mirror: ContainerImageMirror_v1
-}
-
-type AppInterfaceDependencyMapping_v1 {
-  type: String!
-  services: [Dependency_v1!]
-}
-
-type AppInterfaceEmail_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  subject: String!
-  to: AppInterfaceEmailAudience_v1!
-  body: String!
-}
-
-type AppInterfaceEmailAudience_v1 {
-  aliases: [String]
-  services: [App_v1]
-  clusters: [Cluster_v1]
-  namespaces: [Namespace_v1]
-  aws_accounts: [AWSAccount_v1]
-  roles: [Role_v1]
-  users: [User_v1]
+type Query {
+  app_interface_settings_v1(path: String): [AppInterfaceSettings_v1!]
+  app_interface_emails_v1(path: String): [AppInterfaceEmail_v1!]
+  app_interface_slack_notifications_v1(path: String): [AppInterfaceSlackNotification_v1!]
+  credentials_requests_v1(path: String): [CredentialsRequest_v1!]
+  users_v1(path: String, org_username: String): [User_v1!]
+  external_users_v1(path: String): [ExternalUser_v1!]
+  bots_v1(path: String): [Bot_v1!]
+  roles_v1(path: String, name: String): [Role_v1!]
+  permissions_v1(path: String): [Permission_v1!]!
+  awsgroups_v1(path: String): [AWSGroup_v1!]
+  awsaccounts_v1(path: String, name: String, uid: String): [AWSAccount_v1!]
+  cloudflare_accounts_v1(path: String, name: String): [CloudflareAccount_v1!]
+  cna_experimental_provisioners_v1(path: String, name: String): [CNAExperimentalProvisioner_v1!]
+  clusters_v1(path: String, name: String): [Cluster_v1!]
+  jumphosts_v1(path: String, hostname: String): [ClusterJumpHost_v1!]
+  kafka_clusters_v1(path: String): [KafkaCluster_v1!]
+  namespaces_v1(path: String): [Namespace_v1!]
+  gcp_projects_v1(path: String): [GcpProject_v1!]
+  quay_orgs_v1(path: String): [QuayOrg_v1!]
+  quay_instances_v1(path: String): [QuayInstance_v1!]
+  jenkins_instances_v1(path: String): [JenkinsInstance_v1!]
+  jenkins_configs_v1(path: String): [JenkinsConfig_v1!]
+  jira_servers_v1(path: String): [JiraServer_v1!]
+  jira_boards_v1(path: String, name: String): [JiraBoard_v1!]
+  sendgrid_accounts_v1(path: String): [SendGridAccount_v1!]
+  products_v1(path: String): [Product_v1!]
+  environments_v1(path: String): [Environment_v1!]
+  apps_v1(path: String, name: String): [App_v1!]
+  escalation_policies_1(path: String): [AppEscalationPolicy_v1!]
+  resources_v1(path: String, schema: String): [Resource_v1!]!
+  vault_instances_v1(path: String): [VaultInstance_v1!]
+  vault_audit_backends_v1(path: String): [VaultAudit_v1!]
+  vault_auth_backends_v1(path: String): [VaultAuth_v1!]
+  vault_secret_engines_v1(path: String): [VaultSecretEngine_v1!]
+  vault_roles_v1(path: String): [VaultRole_v1!]
+  vault_policies_v1(path: String): [VaultPolicy_v1!]
+  dependencies_v1(path: String): [Dependency_v1!]
+  githuborg_v1(path: String): [GithubOrg_v1!]
+  gitlabinstance_v1(path: String): [GitlabInstance_v1!]
+  integrations_v1(path: String): [Integration_v1!]
+  reports_v1(path: String): [Report_v1!]
+  sre_checkpoints_v1(path: String): [SRECheckpoint_v1!]
+  sentry_teams_v1(path: String): [SentryTeam_v1!]
+  sentry_instances_v1(path: String): [SentryInstance_v1!]
+  glitchtip_instances_v1(path: String): [GlitchtipInstance_v1!]!
+  glitchtip_organizations_v1(path: String): [GlitchtipOrganization_v1!]!
+  glitchtip_teams_v1(path: String): [GlitchtipTeam_v1!]!
+  glitchtip_projects_v1(path: String): [GlitchtipProjects_v1!]
+  app_interface_sql_queries_v1(path: String): [AppInterfaceSqlQuery_v1!]
+  query_validations_v1(path: String, name: String): [QueryValidation_v1!]
+  saas_files_v2(path: String, name: String): [SaasFile_v2!]
+  pipelines_providers_v1(path: String): [PipelinesProvider_v1!]
+  unleash_instances_v1(path: String): [UnleashInstance_v1!]
+  gabi_instances_v1(path: String): [GabiInstance_v1!]
+  template_tests_v1(path: String): [TemplateTest_v1!]
+  dns_zone_v1(path: String): [DnsZone_v1!]
+  slack_workspaces_v1(path: String): [SlackWorkspace_v1!]
+  ocp_release_mirror_v1(path: String): [OcpReleaseMirror_v1!]
+  slo_document_v1(path: String): [SLODocument_v1!]
+  shared_resources_v1(path: String, name: String): [SharedResources_v1!]
+  pagerduty_instances_v1(path: String): [PagerDutyInstance_v1!]
+  ocm_instances_v1(path: String, name: String): [OpenShiftClusterManager_v1!]
+  dyn_traffic_directors_v1(path: String): [DynTrafficDirector_v1!]
+  status_page_v1(path: String): [StatusPage_v1!]
+  status_page_component_v1(path: String): [StatusPageComponent_v1!]
+  endpoint_monitoring_provider_v1(path: String): [EndpointMonitoringProvider_v1!]
+  change_types_v1(path: String, name: String): [ChangeType_v1!]
+  scorecards_v2(path: String): [Scorecard_v2!]
+  pgp_reencrypt_settings_v1(path: String): [PgpReencryptSettings_v1!]
 }
 
 type AppInterfaceSettings_v1 {
@@ -120,445 +76,53 @@ type AppInterfaceSettings_v1 {
   labels: JSON
   name: String!
   description: String!
+  repoUrl: String!
   vault: Boolean!
   kubeBinary: String!
-  pullRequestGateway: String
   mergeRequestGateway: String
   saasDeployJobTemplate: String!
   hashLength: Int!
   smtp: SmtpSettings_v1
-  dependencies: [AppInterfaceDependencyMapping_v1]
-  credentials: [CredentialsRequestMap_v1]
+  imap: ImapSettings_v1
+  githubRepoInvites: GithubRepoInvites_v1
+  dependencies: [AppInterfaceDependencyMapping_v1!]
+  credentials: [CredentialsRequestMap_v1!]
   sqlQuery: SqlQuerySettings_v1
   pushGatewayCluster: Cluster_v1
-  alertingServices: [String]
-  endpointMonitoringBlackboxExporterModules: [String]
+  alertingServices: [String!]
+  endpointMonitoringBlackboxExporterModules: [String!]
+  ldap: LdapSettings_v1
+  jiraWatcher: JiraWatcherSettings_v1
+  glitchtip: GlitchtipSettings_v1
 }
 
-type AppInterfaceSlackNotification_v1 {
-  schema: String!
+scalar JSON
+
+type SmtpSettings_v1 {
+  mailAddress: String!
+  timeout: Int
+  credentials: VaultSecret_v1!
+}
+
+type VaultSecret_v1 {
   path: String!
-  labels: JSON
-  name: String!
-  subject: String!
-  channel: String
-  to: AppInterfaceSlackNotificationAudience_v1!
-  body: String!
+  field: String!
+  format: String
+  version: Int
 }
 
-type AppInterfaceSlackNotificationAudience_v1 {
-  users: [String]
+type ImapSettings_v1 {
+  timeout: Int
+  credentials: VaultSecret_v1!
 }
 
-type AppInterfaceSqlQuery_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  namespace: Namespace_v1!
-  identifier: String!
-  requestor: User_v1
-  overrides: SqlEmailOverrides_v1
-  output: String!
-  schedule: String
-  query: String
-  queries: [String]
+type GithubRepoInvites_v1 {
+  credentials: VaultSecret_v1!
 }
 
-type AppQuayRepos_v1 {
-  org: QuayOrg_v1!
-  teams: [AppQuayReposTeams_v1]
-  notifications: [AppQuayReposNotifications_v1]
-  items: [AppQuayReposItems_v1!]
-}
-
-type AppQuayReposItems_v1 {
-  name: String!
-  description: String!
-  public: Boolean!
-  mirror: ContainerImageMirror_v1
-}
-
-type AppQuayReposNotifications_v1 {
-  event: String!
-  severity: String
-  method: String!
-  escalationPolicy: AppEscalationPolicy_v1!
-  verificationMethod: AppQuayReposNotificationVerificationMethod_v1
-}
-
-type AppQuayReposNotificationVerificationMethod_v1 {
-  jiraBoard: JiraBoard_v1
-}
-
-type AppQuayReposTeams_v1 {
-  permissions: [PermissionQuayOrgTeam_v1!]
-  role: String!
-}
-
-type AppSentryProjects_v1 {
-  team: SentryTeam_v1!
-  projects: [SentryProjectItems_v1!]
-}
-
-type ASGImage_v1 {
-  id: String!
-}
-
-type AssumeRole_v1 {
-  AWS: [String]
-  Service: [String]
-}
-
-type AWSAccount_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  consoleUrl: String!
-  uid: String!
-  resourcesDefaultRegion: String!
-  supportedDeploymentRegions: [String]
-  providerVersion: String!
-  terraformUsername: String
-  accountOwners: [Owner_v1!]
-  automationToken: VaultSecret_v1!
-  garbageCollection: Boolean
-  enableDeletion: Boolean
-  deletionApprovals: [AWSAccountDeletionApproval_v1]
-  disable: DisableClusterAutomations_v1
-  deleteKeys: [String]
-  resetPasswords: [AWSAccountResetPassword_v1]
-  premiumSupport: Boolean!
-  partition: String
-  ecrs: [AWSECR_v1]
-  policies: [AWSUserPolicy_v1]
-}
-
-type AWSAccountDeletionApproval_v1 {
+type AppInterfaceDependencyMapping_v1 {
   type: String!
-  name: String!
-  expiration: String!
-}
-
-type AWSAccountResetPassword_v1 {
-  user: User_v1!
-  requestId: String!
-}
-
-type AWSECR_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  account: AWSAccount_v1!
-  name: String!
-  description: String
-  region: String!
-}
-
-type AWSGroup_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  account: AWSAccount_v1!
-  name: String!
-  description: String
-  policies: [String]
-  roles: [Role_v1]
-}
-
-type AWSInfrastructureAccess_v1 {
-  awsGroup: AWSGroup_v1!
-  accessLevel: String!
-}
-
-type AWSInfrastructureManagementAccount_v1 {
-  account: AWSAccount_v1!
-  accessLevel: String!
-  default: Boolean
-}
-
-type AWSS3EventNotification_v1 {
-  event_type: [String!]
-  destination: String!
-  destination_type: String!
-  filter_prefix: String
-  filter_suffix: String
-}
-
-type AWSSubnet_v1 {
-  id: String!
-}
-
-type AWSUserPolicy_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  account: AWSAccount_v1!
-  name: String!
-  description: String
-  mandatory: Boolean
-  policy: JSON!
-}
-
-type AWSVPC_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  account: AWSAccount_v1!
-  name: String!
-  description: String
-  vpc_id: String!
-  cidr_block: String!
-  region: String!
-  subnets: [AWSSubnet_v1]
-}
-
-type Bot_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  org_username: String
-  github_username: String
-  gitlab_username: String
-  openshift_serviceaccount: String
-  quay_username: String
-  owner: User_v1
-  roles: [Role_v1]
-}
-
-type CloudinitConfig_v1 {
-  filename: String
-  content_type: String
-  content: String!
-}
-
-type Cluster_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  auth: GithubClusterAuth_v1
-  observabilityNamespace: Namespace_v1
-  grafanaUrl: String
-  consoleUrl: String!
-  kibanaUrl: String!
-  prometheusUrl: String!
-  alertmanagerUrl: String!
-  serverUrl: String!
-  elbFQDN: String!
-  managedGroups: [String]
-  managedClusterRoles: Boolean
-  ocm: OpenShiftClusterManager_v1
-  spec: ClusterSpec_v1
-  externalConfiguration: ClusterExternalConfiguration_v1
-  upgradePolicy: ClusterUpgradePolicy_v1
-  additionalRouters: [ClusterAdditionalRouter_v1]
-  network: ClusterNetwork_v1
-  machinePools: [ClusterMachinePool_v1]
-  peering: ClusterPeering_v1
-  addons: [ClusterAddon_v1]
-  insecureSkipTLSVerify: Boolean
-  jumpHost: ClusterJumpHost_v1
-  automationToken: VaultSecret_v1
-  clusterAdminAutomationToken: VaultSecret_v1
-  internal: Boolean
-  disable: DisableClusterAutomations_v1
-  awsInfrastructureAccess: [AWSInfrastructureAccess_v1]
-  awsInfrastructureManagementAccounts: [AWSInfrastructureManagementAccount_v1]
-  prometheus: ClusterPrometheus_v1
-  namespaces: [Namespace_v1]
-}
-
-type ClusterAdditionalRouter_v1 {
-  private: Boolean!
-  route_selectors: JSON
-}
-
-type ClusterAddon_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  parameters: [ClusterAddonParameters_v1]
-}
-
-type ClusterAddonParameters_v1 {
-  id: String!
-  value: String!
-}
-
-type ClusterExternalConfiguration_v1 {
-  labels: JSON!
-}
-
-type ClusterJumpHost_v1 {
-  hostname: String!
-  knownHosts: String!
-  user: String!
-  port: Int
-  identity: VaultSecret_v1!
-}
-
-type ClusterMachinePool_v1 {
-  id: String!
-  instance_type: String!
-  replicas: Int!
-  labels: JSON
-  taints: [Taint_v1]
-}
-
-type ClusterNetwork_v1 {
-  type: String
-  vpc: String!
-  service: String!
-  pod: String!
-}
-
-type ClusterPeering_v1 {
-  connections: [ClusterPeeringConnection_v1!]
-}
-
-interface ClusterPeeringConnection_v1 {
-  provider: String!
-  name: String!
-  description: String
-  manageRoutes: Boolean
-  delete: Boolean
-}
-
-type ClusterPeeringConnectionAccount_v1 implements ClusterPeeringConnection_v1 {
-  provider: String!
-  name: String!
-  vpc: AWSVPC_v1!
-  description: String
-  manageRoutes: Boolean
-  delete: Boolean
-  assumeRole: String
-}
-
-type ClusterPeeringConnectionAccountTGW_v1 implements ClusterPeeringConnection_v1 {
-  provider: String!
-  name: String!
-  account: AWSAccount_v1!
-  description: String
-  tags: JSON
-  manageRoutes: Boolean
-  manageSecurityGroups: Boolean
-  cidrBlock: String
-  delete: Boolean
-  assumeRole: String
-}
-
-type ClusterPeeringConnectionAccountVPCMesh_v1 implements ClusterPeeringConnection_v1 {
-  provider: String!
-  name: String!
-  account: AWSAccount_v1!
-  description: String
-  tags: JSON
-  manageRoutes: Boolean
-  delete: Boolean
-}
-
-type ClusterPeeringConnectionClusterAccepter_v1 implements ClusterPeeringConnection_v1 {
-  provider: String!
-  name: String!
-  cluster: Cluster_v1!
-  awsInfrastructureManagementAccount: AWSAccount_v1
-  description: String
-  manageRoutes: Boolean
-  delete: Boolean
-  assumeRole: String
-}
-
-type ClusterPeeringConnectionClusterRequester_v1 implements ClusterPeeringConnection_v1 {
-  provider: String!
-  name: String!
-  cluster: Cluster_v1!
-  description: String
-  manageRoutes: Boolean
-  delete: Boolean
-  assumeRole: String
-}
-
-type ClusterPrometheus_v1 {
-  url: String!
-  auth: VaultSecret_v1!
-}
-
-type ClusterSpec_v1 {
-  id: String
-  external_id: String
-  provider: String!
-  region: String!
-  channel: String!
-  version: String!
-  initial_version: String!
-  multi_az: Boolean!
-  nodes: Int
-  instance_type: String!
-  storage: Int!
-  load_balancers: Int!
-  private: Boolean!
-  provision_shard_id: String
-  autoscale: ClusterSpecAutoScale_v1
-  disable_user_workload_monitoring: Boolean
-}
-
-type ClusterSpecAutoScale_v1 {
-  min_replicas: Int!
-  max_replicas: Int!
-}
-
-type ClusterUpgradePolicy_v1 {
-  schedule_type: String
-  schedule: String!
-  workloads: [String!]
-  conditions: ClusterUpgradePolicyConditions_v1!
-}
-
-type ClusterUpgradePolicyConditions_v1 {
-  soakDays: Int
-}
-
-type CodeComponentGitlabHousekeeping_v1 {
-  enabled: Boolean!
-  rebase: Boolean!
-  days_interval: Int
-  limit: Int
-  enable_closing: Boolean
-  pipeline_timeout: Int
-}
-
-type CodeComponentGitlabOwners_v1 {
-  enabled: Boolean!
-}
-
-type ContainerImageMirror_v1 {
-  url: String!
-  pullCredentials: VaultSecret_v1
-  tags: [String]
-  tagsExclude: [String]
-}
-
-type CredentialsRequest_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  user: User_v1!
-  credentials: String!
-}
-
-type CredentialsRequestMap_v1 {
-  name: String!
-  secret: VaultSecret_v1!
+  services: [Dependency_v1!]!
 }
 
 type Dependency_v1 {
@@ -574,85 +138,840 @@ type Dependency_v1 {
   dependencyFailureImpact: String!
 }
 
-type DeployResources_v1 {
-  requests: ResourceRequirements_v1!
-  limits: ResourceRequirements_v1!
+type CredentialsRequestMap_v1 {
+  name: String!
+  secret: VaultSecret_v1!
+}
+
+type SqlQuerySettings_v1 {
+  imageRepository: String!
+  pullSecret: NamespaceOpenshiftResourceVaultSecret_v1!
+}
+
+type NamespaceOpenshiftResourceVaultSecret_v1 implements NamespaceOpenshiftResource_v1 {
+  provider: String!
+  path: String!
+  version: Int!
+  name: String
+  labels: JSON
+  annotations: JSON
+  type: String
+  validate_alertmanager_config: Boolean
+  alertmanager_config_key: String
+}
+
+interface NamespaceOpenshiftResource_v1 {
+  provider: String!
+}
+
+type Cluster_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  auth: [ClusterAuth_v1!]!
+  observabilityNamespace: Namespace_v1
+  grafanaUrl: String
+  consoleUrl: String!
+  kibanaUrl: String!
+  prometheusUrl: String!
+  alertmanagerUrl: String!
+  serverUrl: String!
+  elbFQDN: String!
+  managedGroups: [String!]
+  managedClusterRoles: Boolean
+  ocm: OpenShiftClusterManager_v1
+  spec: ClusterSpec_v1
+  externalConfiguration: ClusterExternalConfiguration_v1
+  upgradePolicy: ClusterUpgradePolicy_v1
+  additionalRouters: [ClusterAdditionalRouter_v1!]
+  network: ClusterNetwork_v1
+  machinePools: [ClusterMachinePool_v1!]
+  peering: ClusterPeering_v1
+  addons: [ClusterAddon_v1!]
+  insecureSkipTLSVerify: Boolean
+  jumpHost: ClusterJumpHost_v1
+  automationToken: VaultSecret_v1
+  clusterAdminAutomationToken: VaultSecret_v1
+  internal: Boolean
+  disable: DisableClusterAutomations_v1
+  awsInfrastructureAccess: [AWSInfrastructureAccess_v1!]
+  awsInfrastructureManagementAccounts: [AWSInfrastructureManagementAccount_v1!]
+  prometheus: ClusterPrometheus_v1
+  namespaces: [Namespace_v1!]
+}
+
+interface DatafileObject_v1 {
+  path: String!
+  schema: String!
+}
+
+interface ClusterAuth_v1 {
+  service: String!
+}
+
+type Namespace_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  delete: Boolean
+  description: String!
+  grafanaUrl: String
+  cluster: Cluster_v1!
+  app: App_v1!
+  environment: Environment_v1!
+  limitRanges: LimitRange_v1
+  quota: ResourceQuota_v1
+  networkPoliciesAllow: [Namespace_v1!]
+  clusterAdmin: Boolean
+  managedRoles: Boolean
+  managedResourceTypes: [String!]
+  managedResourceTypeOverrides: [NamespaceManagedResourceTypeOverrides_v1!]
+  managedResourceNames: [NamespaceManagedResourceNames_v1!]
+  sharedResources: [SharedResources_v1!]
+  openshiftResources: [NamespaceOpenshiftResource_v1!]
+  managedExternalResources: Boolean
+  externalResources: [NamespaceExternalResource_v1!]
+  openshiftServiceAccountTokens: [ServiceAccountTokenSpec_v1!]
+  glitchtipProjects: [GlitchtipProjects_v1!]
+  kafkaCluster: KafkaCluster_v1
+}
+
+type App_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  onboardingStatus: String!
+  grafanaUrls: [GrafanaDashboardUrls_v1!]!
+  sopsUrl: String!
+  architectureDocument: String!
+  parentApp: App_v1
+  serviceDocs: [String!]
+  serviceOwners: [Owner_v1!]!
+  serviceNotifications: [Owner_v1!]
+  dependencies: [Dependency_v1!]
+  gcrRepos: [AppGcrRepos_v1!]
+  quayRepos: [AppQuayRepos_v1!]
+  escalationPolicy: AppEscalationPolicy_v1!
+  endPoints: [AppEndPoints_v1!]
+  codeComponents: [AppCodeComponents_v1!]
+  sentryProjects: [AppSentryProjects_v1!]
+  statusPageComponents: [StatusPageComponent_v1!]
+  namespaces: [Namespace_v1!]
+  childrenApps: [App_v1!]
+  jenkinsConfigs: [JenkinsConfig_v1!]
+  saasFiles: [SaasFile_v2!]
+  sreCheckpoints: [SRECheckpoint_v1!]
+  sloDocuments: [SLODocument_v1!]
+  glitchtipProjects: [GlitchtipProjects_v1!]
+}
+
+type GrafanaDashboardUrls_v1 {
+  title: String!
+  url: String!
+}
+
+type Owner_v1 {
+  name: String!
+  email: String!
+}
+
+type AppGcrRepos_v1 {
+  project: GcpProject_v1!
+  items: [AppGcrReposItems_v1!]!
+}
+
+type GcpProject_v1 implements ExternalResourcesProvisioner_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  managedTeams: [String!]!
+  automationToken: VaultSecret_v1
+  pushCredentials: VaultSecret_v1
+}
+
+interface ExternalResourcesProvisioner_v1 {
+  name: String!
+}
+
+type AppGcrReposItems_v1 {
+  name: String!
+  description: String!
+  public: Boolean!
+  mirror: ContainerImageMirror_v1
+}
+
+type ContainerImageMirror_v1 {
+  url: String!
+  pullCredentials: VaultSecret_v1
+  tags: [String!]
+  tagsExclude: [String!]
+}
+
+type AppQuayRepos_v1 {
+  org: QuayOrg_v1!
+  teams: [AppQuayReposTeams_v1!]
+  notifications: [AppQuayReposNotifications_v1!]
+  items: [AppQuayReposItems_v1!]!
+}
+
+type QuayOrg_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  mirror: QuayOrg_v1
+  managedRepos: Boolean!
+  instance: QuayInstance_v1!
+  serverUrl: String
+  managedTeams: [String!]!
+  automationToken: VaultSecret_v1
+  pushCredentials: VaultSecret_v1
+}
+
+type QuayInstance_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  url: String!
+}
+
+type AppQuayReposTeams_v1 {
+  permissions: [PermissionQuayOrgTeam_v1!]!
+  role: String!
+}
+
+type PermissionQuayOrgTeam_v1 implements Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+  quayOrg: QuayOrg_v1!
+  team: String!
+  roles: [Role_v1!]!
+}
+
+interface Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+}
+
+type Role_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  expirationDate: String
+  permissions: [Permission_v1!]
+  oidc_permissions: [OidcPermission_v1!]
+  tag_on_cluster_updates: Boolean
+  access: [Access_v1!]
+  aws_groups: [AWSGroup_v1!]
+  user_policies: [AWSUserPolicy_v1!]
+  sentry_teams: [SentryTeam_v1!]
+  sentry_roles: [SentryRole_v1!]
+  glitchtip_teams: [GlitchtipTeam_v1!]
+  glitchtip_roles: [GlitchtipRole_v1!]
+  sendgrid_accounts: [SendGridAccount_v1!]
+  self_service: [SelfServiceConfig_v1!]
+  users: [User_v1!]!
+  bots: [Bot_v1!]!
+}
+
+interface OidcPermission_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  service: String!
+  description: String!
+}
+
+type Access_v1 {
+  namespace: Namespace_v1
+  role: String
+  cluster: Cluster_v1
+  group: String
+  clusterRole: String
+}
+
+type AWSGroup_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  account: AWSAccount_v1!
+  name: String!
+  description: String
+  policies: [String!]
+  roles: [Role_v1!]
+}
+
+type AWSAccount_v1 implements ExternalResourcesProvisioner_v1 & DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  consoleUrl: String!
+  uid: String!
+  resourcesDefaultRegion: String!
+  supportedDeploymentRegions: [String!]
+  providerVersion: String!
+  qontractReconcileVersion: String
+  terraformUsername: String
+  accountOwners: [Owner_v1!]!
+  automationToken: VaultSecret_v1!
+  garbageCollection: Boolean
+  enableDeletion: Boolean
+  deletionApprovals: [DeletionApproval_v1!]
+  disable: DisableClusterAutomations_v1
+  deleteKeys: [String!]
+  resetPasswords: [AWSAccountResetPassword_v1!]
+  premiumSupport: Boolean!
+  partition: String
+  sharing: [AWSAccountSharingOption_v1!]
+  terraformState: TerraformStateAWS_v1
+  rosa: RosaOcmSpec_v1
+  ecrs: [AWSECR_v1!]
+  policies: [AWSUserPolicy_v1!]
+}
+
+type DeletionApproval_v1 {
+  type: String!
+  name: String!
+  expiration: String!
 }
 
 type DisableClusterAutomations_v1 {
-  integrations: [String]
-  e2eTests: [String]
+  integrations: [String!]
+  e2eTests: [String!]
 }
 
-type DnsRecord_v1 {
+type AWSAccountResetPassword_v1 {
+  user: User_v1!
+  requestId: String!
+}
+
+type User_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
   name: String!
-  type: String!
-  ttl: Int
-  alias: DnsRecordAlias_v1
-  weighted_routing_policy: DnsRecordWeightedRoutingPolicy_v1
-  set_identifier: String
-  records: [String]
-  _healthcheck: DnsRecordHealthcheck_v1
-  _target_cluster: Cluster_v1
+  org_username: String!
+  github_username: String!
+  quay_username: String
+  slack_username: String
+  pagerduty_username: String
+  aws_username: String
+  public_gpg_key: String
+  tag_on_merge_requests: Boolean
+  tag_on_cluster_updates: Boolean
+  roles: [Role_v1!]
+  requests: [CredentialsRequest_v1!]
+  queries: [AppInterfaceSqlQuery_v1!]
+  gabi_instances: [GabiInstance_v1!]
 }
 
-type DnsRecordAlias_v1 {
+type CredentialsRequest_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
   name: String!
-  zone_id: String!
-  evaluate_target_health: Boolean!
+  description: String!
+  user: User_v1!
+  credentials: String!
 }
 
-type DnsRecordHealthcheck_v1 {
-  fqdn: String
-  port: Int
+type AppInterfaceSqlQuery_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  namespace: Namespace_v1!
+  identifier: String!
+  requestor: User_v1
+  overrides: SqlEmailOverrides_v1
+  output: String!
+  schedule: String
+  delete: Boolean
+  query: String
+  queries: [String!]
+}
+
+type SqlEmailOverrides_v1 {
+  db_host: String
+  db_port: String
+  db_name: String
+  db_user: String
+  db_password: String
+}
+
+type GabiInstance_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  signoffManagers: [User_v1!]!
+  users: [User_v1!]!
+  instances: [GabiNamespace_v1!]!
+  expirationDate: String!
+}
+
+type GabiNamespace_v1 {
+  account: String!
+  identifier: String!
+  namespace: Namespace_v1!
+}
+
+interface AWSAccountSharingOption_v1 {
+  provider: String!
+  account: AWSAccount_v1!
+}
+
+type TerraformStateAWS_v1 implements TerraformState_v1 {
+  provider: String!
+  bucket: String!
+  region: String!
+  integrations: [AWSTerraformStateIntegrations_v1!]!
+}
+
+interface TerraformState_v1 {
+  provider: String
+}
+
+type AWSTerraformStateIntegrations_v1 {
+  integration: String!
+  key: String!
+}
+
+type RosaOcmSpec_v1 {
+  ocm_environments: [RosaOcmAwsSpec_v1!]
+}
+
+type RosaOcmAwsSpec_v1 {
+  ocm: OpenShiftClusterManager_v1!
+  creator_role_arn: String!
+  installer_role_arn: String!
+  support_role_arn: String!
+  controlplane_role_arn: String!
+  worker_role_arn: String!
+}
+
+type OpenShiftClusterManager_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  url: String!
+  accessTokenClientId: String!
+  accessTokenUrl: String!
+  accessTokenClientSecret: VaultSecret_v1
+  recommendedVersions: [OpenShiftClusterManagerRecommendedVersions_v1!]
+  recommendedVersionWeight: OpenShiftClusterManagerRecommendedVersionsWeight_v1
+  blockedVersions: [String!]
+  upgradePolicyAllowedWorkloads: [String!]
+  upgradePolicyAllowedMutexes: [String!]
+  sectors: [OpenShiftClusterManagerSector_v1!]
+  upgradePolicyDefaults: [OpenShiftClusterManagerUpgradePolicyDefault_v1!]
+  upgradePolicyClusters: [OpenShiftClusterManagerUpgradePolicyCluster_v1!]
+  clusters: [Cluster_v1!]
+}
+
+type OpenShiftClusterManagerRecommendedVersions_v1 {
+  recommendedVersion: String!
+  workload: String!
+}
+
+type OpenShiftClusterManagerRecommendedVersionsWeight_v1 {
+  majority: Int
+  highest: Int
+}
+
+type OpenShiftClusterManagerSector_v1 {
+  name: String!
+  dependencies: [OpenShiftClusterManagerSectorDependencies_v1!]
+}
+
+type OpenShiftClusterManagerSectorDependencies_v1 {
+  name: String!
+  ocm: OpenShiftClusterManager_v1
+}
+
+type OpenShiftClusterManagerUpgradePolicyDefault_v1 {
+  name: String!
+  matchLabels: JSON!
+  upgradePolicy: ClusterUpgradePolicy_v1
+  upgradePolicyTemplate: OpenShiftClusterManagerUpgradePolicyTemplate_v1
+}
+
+type ClusterUpgradePolicy_v1 {
+  schedule_type: String
+  schedule: String!
+  workloads: [String!]!
+  conditions: ClusterUpgradePolicyConditions_v1!
+}
+
+type ClusterUpgradePolicyConditions_v1 {
+  soakDays: Int
+  mutexes: [String!]
+  sector: String
+}
+
+type OpenShiftClusterManagerUpgradePolicyTemplate_v1 {
+  path: Resource_v1
   type: String
-  resource_path: String
-  failure_threshold: Int
-  request_interval: Int
-  search_string: String
+  variables: JSON
 }
 
-type DnsRecordWeightedRoutingPolicy_v1 {
-  weight: Int
+type Resource_v1 {
+  path: String!
+  content: String!
+  sha256sum: String!
+  schema: String
+  backrefs: [ResourceBackref_v1!]
 }
 
-type DnsZone_v1 {
+type ResourceBackref_v1 {
+  path: String!
+  datafileSchema: String!
+  type: String!
+  jsonpath: String!
+}
+
+type OpenShiftClusterManagerUpgradePolicyCluster_v1 {
+  name: String!
+  upgradePolicy: ClusterUpgradePolicy_v1!
+}
+
+type AWSECR_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  account: AWSAccount_v1!
+  name: String!
+  description: String
+  region: String!
+}
+
+type AWSUserPolicy_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  account: AWSAccount_v1!
+  name: String!
+  description: String
+  mandatory: Boolean
+  policy: JSON!
+}
+
+type SentryTeam_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  instance: SentryInstance_v1!
+}
+
+type SentryInstance_v1 {
   schema: String!
   labels: JSON
   name: String!
   description: String!
-  provider: String!
-  account: AWSAccount_v1!
-  vpc: AWSVPC_v1
-  origin: String!
-  unmanaged_record_names: [String]
-  records: [DnsRecord_v1]
+  consoleUrl: String!
+  automationToken: VaultSecret_v1!
+  adminUser: VaultSecret_v1!
 }
 
-type Document_v1 {
+type SentryRole_v1 {
+  role: String!
+  instance: SentryInstance_v1!
+}
+
+type GlitchtipTeam_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  description: String!
+  roles: [Role_v1!]!
+}
+
+type GlitchtipRole_v1 {
+  role: String!
+  organization: GlitchtipOrganization_v1!
+}
+
+type GlitchtipOrganization_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  description: String!
+  instance: GlitchtipInstance_v1!
+  roles: [Role_v1!]!
+}
+
+type GlitchtipInstance_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  description: String!
+  consoleUrl: String!
+  automationUserEmail: String!
+  automationToken: VaultSecret_v1!
+  organizations: [GlitchtipOrganization_v1!]!
+}
+
+type SendGridAccount_v1 {
   schema: String!
   path: String!
   labels: JSON
-  app: App_v1!
   name: String!
-  content_path: String!
+  description: String!
+  token: VaultSecret_v1!
 }
 
-type DynamoDBTableSpecs_v1 {
-  defaults: String!
-  tables: [KeyValue_v1!]
+type SelfServiceConfig_v1 {
+  datafiles: [DatafileObject_v1!]
+  resources: [String!]
+  change_type: ChangeType_v1!
+  description: String
 }
 
-type DynTrafficDirector_v1 {
+type ChangeType_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
   name: String!
-  ttl: Int
-  records: [DynTrafficDirectorRecord_v1!]
+  description: String!
+  priority: String!
+  contextType: String!
+  contextSchema: String
+  disabled: Boolean
+  inherit: [ChangeType_v1!]
+  changes: [ChangeTypeChangeDetector_v1!]!
 }
 
-type DynTrafficDirectorRecord_v1 {
-  hostname: String
-  cluster: Cluster_v1
-  weight: Int!
+interface ChangeTypeChangeDetector_v1 {
+  provider: String!
+  changeSchema: String
+  context: ChangeTypeChangeDetectorContextSelector_v1
+}
+
+type ChangeTypeChangeDetectorContextSelector_v1 {
+  selector: String!
+  when: String
+}
+
+type Bot_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  org_username: String
+  github_username: String
+  gitlab_username: String
+  openshift_serviceaccount: String
+  quay_username: String
+  owner: User_v1
+  roles: [Role_v1!]
+}
+
+type AppQuayReposNotifications_v1 {
+  event: String!
+  severity: String
+  method: String!
+  escalationPolicy: AppEscalationPolicy_v1!
+  verificationMethod: AppQuayReposNotificationVerificationMethod_v1
+}
+
+type AppEscalationPolicy_v1 {
+  path: String!
+  name: String!
+  labels: JSON
+  description: String!
+  channels: AppEscalationPolicyChannels_v1!
+}
+
+type AppEscalationPolicyChannels_v1 {
+  slackUserGroup: [PermissionSlackUsergroup_v1!]!
+  email: [String!]!
+  pagerduty: PagerDutyTarget_v1
+  jiraBoard: [JiraBoard_v1!]!
+  nextEscalationPolicy: AppEscalationPolicy_v1
+}
+
+type PermissionSlackUsergroup_v1 implements Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+  handle: String!
+  workspace: SlackWorkspace_v1!
+  pagerduty: [PagerDutyTarget_v1!]
+  channels: [String!]
+  ownersFromRepos: [String!]
+  schedule: Schedule_v1
+  skip: Boolean
+  roles: [Role_v1!]
+}
+
+type SlackWorkspace_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  token: VaultSecret_v1!
+  api_client: SlackWorkspaceApiClient_v1
+  integrations: [SlackWorkspaceIntegration_v1!]
+  managedUsergroups: [String!]!
+}
+
+type SlackWorkspaceApiClient_v1 {
+  global: SlackWorkspaceApiClientGlobalConfig_v1
+  methods: [SlackWorkspaceApiClientMethodConfig_v1!]
+}
+
+type SlackWorkspaceApiClientGlobalConfig_v1 {
+  max_retries: Int
+  timeout: Int
+}
+
+type SlackWorkspaceApiClientMethodConfig_v1 {
+  name: String!
+  args: JSON!
+}
+
+type SlackWorkspaceIntegration_v1 {
+  name: String!
+  token: VaultSecret_v1!
+  channel: String!
+  icon_emoji: String!
+  username: String!
+}
+
+type PagerDutyTarget_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  instance: PagerDutyInstance_v1!
+  scheduleID: String
+  escalationPolicyID: String
+}
+
+type PagerDutyInstance_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  token: VaultSecret_v1!
+}
+
+type Schedule_v1 {
+  name: String!
+  description: String
+  schedule: [ScheduleEntry_v1!]!
+}
+
+type ScheduleEntry_v1 {
+  start: String!
+  end: String!
+  users: [User_v1!]!
+}
+
+type JiraBoard_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  server: JiraServer_v1!
+  severityPriorityMappings: JiraSeverityPriorityMappings_v1!
+  slack: SlackOutput_v1
+  issueResolveState: String
+  issueReopenState: String
+}
+
+type JiraServer_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  serverUrl: String!
+  token: VaultSecret_v1!
+}
+
+type JiraSeverityPriorityMappings_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  mappings: [SeverityPriorityMapping_v1!]!
+}
+
+type SeverityPriorityMapping_v1 {
+  severity: String!
+  priority: String!
+}
+
+type SlackOutput_v1 {
+  workspace: SlackWorkspace_v1!
+  channel: String
+  icon_emoji: String
+  username: String
+  output: String
+  notifications: SlackOutputNotifications_v1
+}
+
+type SlackOutputNotifications_v1 {
+  start: Boolean
+}
+
+type AppQuayReposNotificationVerificationMethod_v1 {
+  jiraBoard: JiraBoard_v1
+}
+
+type AppQuayReposItems_v1 {
+  name: String!
+  description: String!
+  public: Boolean!
+  mirror: ContainerImageMirror_v1
+}
+
+type AppEndPoints_v1 {
+  name: String!
+  description: String!
+  url: String!
+  monitoring: [AppEndPointMonitoring_v1!]
+}
+
+type AppEndPointMonitoring_v1 {
+  provider: EndpointMonitoringProvider_v1
 }
 
 interface EndpointMonitoringProvider_v1 {
@@ -665,6 +984,1829 @@ interface EndpointMonitoringProvider_v1 {
   metricLabels: JSON
   timeout: String
   checkInterval: String
+}
+
+type AppCodeComponents_v1 {
+  name: String!
+  resource: String!
+  url: String!
+  gitlabSync: CodeComponentGitlabSync_v1
+  showInReviewQueue: Boolean
+  gitlabRepoOwners: CodeComponentGitlabOwners_v1
+  gitlabHousekeeping: CodeComponentGitlabHousekeeping_v1
+  jira: JiraServer_v1
+  mirror: String
+}
+
+type CodeComponentGitlabSync_v1 {
+  sourceProject: CodeComponentGitlabSyncProject_v1!
+  destinationProject: CodeComponentGitlabSyncProject_v1!
+}
+
+type CodeComponentGitlabSyncProject_v1 {
+  name: String!
+  group: String!
+  branch: String!
+}
+
+type CodeComponentGitlabOwners_v1 {
+  enabled: Boolean!
+}
+
+type CodeComponentGitlabHousekeeping_v1 {
+  enabled: Boolean!
+  rebase: Boolean!
+  days_interval: Int
+  limit: Int
+  enable_closing: Boolean
+  pipeline_timeout: Int
+  labels_allowed: [CodeComponentGitlabHousekeepingLabelsAllowed_v1!]
+}
+
+type CodeComponentGitlabHousekeepingLabelsAllowed_v1 {
+  role: Role_v1!
+}
+
+type AppSentryProjects_v1 {
+  team: SentryTeam_v1!
+  projects: [SentryProjectItems_v1!]!
+}
+
+type SentryProjectItems_v1 {
+  name: String!
+  description: String!
+  email_prefix: String!
+  platform: String!
+  sensitive_fields: [String!]
+  safe_fields: [String!]
+  auto_resolve_age: Int
+  allowed_domains: [String!]
+}
+
+type StatusPageComponent_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  app: App_v1!
+  displayName: String!
+  description: String
+  instructions: String!
+  page: StatusPage_v1!
+  groupName: String
+  status: [StatusProvider_v1!]
+}
+
+type StatusPage_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  url: String
+  provider: String!
+  apiUrl: String!
+  credentials: VaultSecret_v1!
+  pageId: String!
+  components: [StatusPageComponent_v1!]
+}
+
+interface StatusProvider_v1 {
+  provider: String!
+}
+
+type JenkinsConfig_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  app: App_v1!
+  instance: JenkinsInstance_v1!
+  type: String!
+  config: JSON
+  config_path: Resource_v1
+}
+
+type JenkinsInstance_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  serverUrl: String!
+  token: VaultSecret_v1!
+  previousUrls: [String!]
+  plugins: [String!]
+  deleteMethod: String
+  managedProjects: [String!]
+  buildsCleanupRules: [JenkinsInstanceBuildsCleanupRules_v1!]
+}
+
+type JenkinsInstanceBuildsCleanupRules_v1 {
+  name: String!
+  keep_hours: Int!
+}
+
+type SaasFile_v2 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  app: App_v1!
+  pipelinesProvider: PipelinesProvider_v1!
+  slack: SlackOutput_v1
+  managedResourceTypes: [String!]!
+  authentication: SaasFileAuthentication_v1
+  parameters: JSON
+  allowedSecretParameterPaths: [String!]
+  secretParameters: [SaasSecretParameters_v1!]
+  resourceTemplates: [SaasResourceTemplate_v2!]!
+  imagePatterns: [String!]!
+  takeover: Boolean
+  deprecated: Boolean
+  compare: Boolean
+  timeout: String
+  publishJobLogs: Boolean
+  clusterAdmin: Boolean
+  use_channel_in_image_tag: Boolean
+  deployResources: DeployResources_v1
+  selfServiceRoles: [Role_v1!]
+}
+
+interface PipelinesProvider_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  provider: String!
+}
+
+type SaasFileAuthentication_v1 {
+  code: VaultSecret_v1
+  image: VaultSecret_v1
+}
+
+type SaasSecretParameters_v1 {
+  name: String!
+  secret: VaultSecret_v1!
+}
+
+type SaasResourceTemplate_v2 {
+  name: String!
+  url: String!
+  path: String!
+  provider: String
+  hash_length: Int
+  parameters: JSON
+  secretParameters: [SaasSecretParameters_v1!]
+  targets: [SaasResourceTemplateTarget_v2!]!
+}
+
+type SaasResourceTemplateTarget_v2 {
+  path: String
+  name: String
+  namespace: Namespace_v1!
+  ref: String!
+  promotion: SaasResourceTemplateTargetPromotion_v1
+  parameters: JSON
+  secretParameters: [SaasSecretParameters_v1!]
+  upstream: SaasResourceTemplateTargetUpstream_v1
+  image: SaasResourceTemplateTargetImage_v1
+  disable: Boolean
+  delete: Boolean
+}
+
+type SaasResourceTemplateTargetPromotion_v1 {
+  auto: Boolean
+  publish: [String!]
+  subscribe: [String!]
+  promotion_data: [PromotionData_v1!]
+}
+
+type PromotionData_v1 {
+  channel: String
+  data: [PromotionChannelData_v1!]
+}
+
+interface PromotionChannelData_v1 {
+  type: String!
+}
+
+type SaasResourceTemplateTargetUpstream_v1 {
+  instance: JenkinsInstance_v1!
+  name: String!
+}
+
+type SaasResourceTemplateTargetImage_v1 {
+  org: QuayOrg_v1!
+  name: String!
+}
+
+type DeployResources_v1 {
+  requests: ResourceRequirements_v1!
+  limits: ResourceRequirements_v1!
+}
+
+type ResourceRequirements_v1 {
+  cpu: String!
+  memory: String!
+}
+
+type SRECheckpoint_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  app: App_v1!
+  date: String!
+  issue: String!
+}
+
+type SLODocument_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  app: App_v1!
+  namespaces: [Namespace_v1!]!
+  slos: [SLODocumentSLO_v1!]
+}
+
+type SLODocumentSLO_v1 {
+  name: String!
+  SLIType: String!
+  SLISpecification: String!
+  SLODetails: String!
+  SLOTarget: Float!
+  SLOParameters: SLODocumentSLOSLOParameters_v1!
+  expr: String!
+  SLOTargetUnit: String!
+  prometheusRules: String!
+  prometheusRulesTests: String
+  dashboard: String!
+}
+
+type SLODocumentSLOSLOParameters_v1 {
+  window: String!
+}
+
+type GlitchtipProjects_v1 implements DatafileObject_v1 {
+  path: String!
+  schema: String!
+  name: String!
+  description: String!
+  app: App_v1!
+  platform: String!
+  teams: [GlitchtipTeam_v1!]!
+  organization: GlitchtipOrganization_v1!
+  namespaces: [Namespace_v1!]!
+  sharedResources: [SharedResources_v1!]!
+}
+
+type SharedResources_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  openshiftResources: [NamespaceOpenshiftResource_v1!]!
+  openshiftServiceAccountTokens: [ServiceAccountTokenSpec_v1!]
+  glitchtipProjects: [GlitchtipProjects_v1!]
+  namespaces: [Namespace_v1!]!
+}
+
+type ServiceAccountTokenSpec_v1 {
+  name: String
+  namespace: Namespace_v1!
+  serviceAccountName: String!
+}
+
+type Environment_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  product: Product_v1!
+  parameters: JSON
+  secretParameters: [SaasSecretParameters_v1!]
+  dependsOn: Environment_v1
+  namespaces: [Namespace_v1!]
+}
+
+type Product_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  productOwners: [Owner_v1!]!
+  environments: [Environment_v1!]
+}
+
+type LimitRange_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  description: String!
+  limits: [LimitRangeItem_v1!]!
+}
+
+type LimitRangeItem_v1 {
+  default: ResourceValues_v1
+  defaultRequest: ResourceValues_v1
+  max: ResourceValues_v1
+  maxLimitRequestRatio: ResourceValues_v1
+  min: ResourceValues_v1
+  type: String
+}
+
+type ResourceValues_v1 {
+  cpu: String
+  memory: String
+}
+
+type ResourceQuota_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  description: String!
+  quotas: [ResourceQuotaItem_v1!]!
+}
+
+type ResourceQuotaItem_v1 {
+  name: String!
+  resources: ResourceQuotaItemResources_v1!
+  scopes: [String!]
+}
+
+type ResourceQuotaItemResources_v1 {
+  limits: ResourceValues_v1
+  requests: ResourceValues_v1
+  pods: Int
+}
+
+type NamespaceManagedResourceTypeOverrides_v1 {
+  resource: String!
+  override: String!
+}
+
+type NamespaceManagedResourceNames_v1 {
+  resource: String!
+  resourceNames: [String!]!
+}
+
+interface NamespaceExternalResource_v1 {
+  provider: String!
+  provisioner: ExternalResourcesProvisioner_v1!
+}
+
+type KafkaCluster_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  ocm: OpenShiftClusterManager_v1
+  spec: KafkaClusterSpec_v1
+  namespaces: [Namespace_v1!]
+}
+
+type KafkaClusterSpec_v1 {
+  provider: String!
+  region: String!
+  multi_az: Boolean!
+}
+
+interface ClusterSpec_v1 {
+  product: String!
+  id: String
+  external_id: String
+  provider: String!
+  region: String!
+  channel: String!
+  version: String!
+  initial_version: String!
+  multi_az: Boolean!
+  nodes: Int
+  instance_type: String!
+  private: Boolean!
+  provision_shard_id: String
+  autoscale: ClusterSpecAutoScale_v1
+  disable_user_workload_monitoring: Boolean
+  hypershift: Boolean
+}
+
+type ClusterSpecAutoScale_v1 {
+  min_replicas: Int!
+  max_replicas: Int!
+}
+
+type ClusterExternalConfiguration_v1 {
+  labels: JSON!
+}
+
+type ClusterAdditionalRouter_v1 {
+  private: Boolean!
+  route_selectors: JSON
+}
+
+type ClusterNetwork_v1 {
+  type: String
+  vpc: String!
+  service: String!
+  pod: String!
+}
+
+type ClusterMachinePool_v1 {
+  id: String!
+  instance_type: String!
+  replicas: Int!
+  labels: JSON
+  taints: [Taint_v1!]
+}
+
+type Taint_v1 {
+  key: String!
+  value: String!
+  effect: String!
+}
+
+type ClusterPeering_v1 {
+  connections: [ClusterPeeringConnection_v1!]!
+}
+
+interface ClusterPeeringConnection_v1 {
+  provider: String!
+  name: String!
+  description: String
+  manageRoutes: Boolean
+  delete: Boolean
+}
+
+type ClusterAddon_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  parameters: [ClusterAddonParameters_v1!]
+}
+
+type ClusterAddonParameters_v1 {
+  id: String!
+  value: String!
+}
+
+type ClusterJumpHost_v1 {
+  hostname: String!
+  knownHosts: String!
+  user: String!
+  port: Int
+  identity: VaultSecret_v1!
+  clusters: [Cluster_v1!]
+}
+
+type AWSInfrastructureAccess_v1 {
+  awsGroup: AWSGroup_v1!
+  accessLevel: String!
+}
+
+type AWSInfrastructureManagementAccount_v1 {
+  account: AWSAccount_v1!
+  accessLevel: String!
+  default: Boolean
+}
+
+type ClusterPrometheus_v1 {
+  url: String!
+  auth: VaultSecret_v1!
+}
+
+type LdapSettings_v1 {
+  serverUrl: String!
+  baseDn: String!
+}
+
+type JiraWatcherSettings_v1 {
+  readTimeout: Int!
+  connectTimeout: Int!
+}
+
+type GlitchtipSettings_v1 {
+  readTimeout: Int
+  maxRetries: Int
+  mailDomain: String
+}
+
+type AppInterfaceEmail_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  subject: String!
+  to: AppInterfaceEmailAudience_v1!
+  body: String!
+}
+
+type AppInterfaceEmailAudience_v1 {
+  aliases: [String!]
+  services: [App_v1!]
+  clusters: [Cluster_v1!]
+  namespaces: [Namespace_v1!]
+  aws_accounts: [AWSAccount_v1!]
+  roles: [Role_v1!]
+  users: [User_v1!]
+}
+
+type AppInterfaceSlackNotification_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  subject: String!
+  channel: String
+  to: AppInterfaceSlackNotificationAudience_v1!
+  body: String!
+}
+
+type AppInterfaceSlackNotificationAudience_v1 {
+  users: [String!]
+}
+
+type ExternalUser_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  github_username: String!
+  sponsors: [User_v1!]!
+}
+
+type CloudflareAccount_v1 implements ExternalResourcesProvisioner_v1 {
+  schema: String!
+  path: String!
+  name: String!
+  description: String
+  providerVersion: String!
+  accountOwners: [Owner_v1!]!
+  enableDeletion: Boolean
+  apiCredentials: VaultSecret_v1!
+  terraformStateAccount: AWSAccount_v1!
+  deletionApprovals: [DeletionApproval_v1!]
+  enforceTwofactor: Boolean
+  type: String
+}
+
+type CNAExperimentalProvisioner_v1 implements ExternalResourcesProvisioner_v1 {
+  schema: String!
+  path: String!
+  name: String!
+  description: String
+  ocm: OpenShiftClusterManager_v1!
+}
+
+type VaultInstance_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  description: String!
+  address: String!
+  auth: VaultInstanceAuth_v1!
+}
+
+interface VaultInstanceAuth_v1 {
+  provider: String!
+  secretEngine: String!
+}
+
+type VaultAudit_v1 {
+  _path: String!
+  type: String!
+  instance: VaultInstance_v1!
+  description: String!
+  options: VaultAuditOptions_v1!
+}
+
+interface VaultAuditOptions_v1 {
+  _type: String!
+}
+
+type VaultAuth_v1 {
+  _path: String!
+  type: String!
+  description: String!
+  instance: VaultInstance_v1!
+  settings: VaultAuthSettings_v1
+  policy_mappings: [VaultPolicyMapping_v1!]
+}
+
+type VaultAuthSettings_v1 {
+  config: VaultAuthConfig_v1!
+}
+
+interface VaultAuthConfig_v1 {
+  _type: String!
+}
+
+type VaultPolicyMapping_v1 {
+  github_team: PermissionGithubOrgTeam_v1!
+  policies: [VaultPolicy_v1!]!
+}
+
+type PermissionGithubOrgTeam_v1 implements Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+  org: String!
+  team: String!
+  role: String
+}
+
+type VaultPolicy_v1 {
+  name: String!
+  instance: VaultInstance_v1!
+  rules: String!
+}
+
+type VaultSecretEngine_v1 {
+  _path: String!
+  type: String!
+  description: String!
+  instance: VaultInstance_v1!
+  options: VaultSecretEngineOptions_v1
+}
+
+interface VaultSecretEngineOptions_v1 {
+  _type: String!
+}
+
+type VaultRole_v1 {
+  name: String!
+  type: String!
+  mount: String!
+  instance: VaultInstance_v1!
+  output_path: String
+  options: VaultRoleOptions_v1!
+}
+
+interface VaultRoleOptions_v1 {
+  _type: String!
+}
+
+type GithubOrg_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  url: String!
+  two_factor_authentication: Boolean!
+  default: Boolean
+  token: VaultSecret_v1!
+  managedTeams: [String!]
+}
+
+type GitlabInstance_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  backupOrgs: [String!]
+  managedGroups: [String!]!
+  projectRequests: [GitlabProjects_v1!]
+  url: String!
+  token: VaultSecret_v1!
+  sslVerify: Boolean
+}
+
+type GitlabProjects_v1 {
+  group: String!
+  projects: [String!]!
+}
+
+type Integration_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  upstream: String
+  schemas: [String!]!
+  pr_check: IntegrationPrCheck_v1
+  managed: [IntegrationManaged_v1!]
+}
+
+type IntegrationPrCheck_v1 {
+  cmd: String!
+  state: Boolean
+  sqs: Boolean
+  disabled: Boolean
+  always_run: Boolean
+  no_validate_schemas: Boolean
+  run_for_valid_saas_file_changes: Boolean
+  early_exit: Boolean
+  shardSpecOverride: [IntegrationSpecShardSpecOverride_v1!]
+}
+
+interface IntegrationSpecShardSpecOverride_v1 {
+  shardingStrategy: String!
+  imageRef: String!
+}
+
+type IntegrationManaged_v1 {
+  namespace: Namespace_v1!
+  shardSpecOverride: [IntegrationSpecShardSpecOverride_v1!]
+  spec: IntegrationSpec_v1!
+}
+
+type IntegrationSpec_v1 {
+  cache: Boolean
+  command: String
+  disableUnleash: Boolean
+  environmentAware: Boolean
+  extraArgs: String
+  extraEnv: [IntegrationSpecExtraEnv_v1!]
+  internalCertificates: Boolean
+  logs: IntegrationSpecLogs_v1
+  resources: DeployResources_v1!
+  fluentdResources: DeployResources_v1
+  shards: Int
+  shardingStrategy: String
+  sleepDurationSecs: Int
+  state: Boolean
+  storage: String
+  trigger: Boolean
+  cron: String
+  dashdotdb: Boolean
+  concurrencyPolicy: String
+  restartPolicy: String
+  successfulJobHistoryLimit: Int
+  failedJobHistoryLimit: Int
+  imageRef: String
+}
+
+type IntegrationSpecExtraEnv_v1 {
+  secretName: String
+  secretKey: String
+  name: String
+  value: String
+}
+
+type IntegrationSpecLogs_v1 {
+  slack: Boolean
+  googleChat: Boolean
+}
+
+type Report_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  app: App_v1!
+  name: String!
+  date: String!
+  contentFormatVersion: String!
+  content: String!
+}
+
+type QueryValidation_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  escalationPolicy: AppEscalationPolicy_v1!
+  queries: [QontractQuery_v1!]!
+  resources: [NamespaceOpenshiftResource_v1!]
+}
+
+type QontractQuery_v1 {
+  path: String!
+}
+
+type UnleashInstance_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  url: String!
+  token: VaultSecret_v1!
+  notifications: UnleashNotifications_v1
+  featureToggles: [UnleashFeatureToggle_v1!]!
+}
+
+type UnleashNotifications_v1 {
+  slack: [SlackOutput_v1!]
+}
+
+type UnleashFeatureToggle_v1 {
+  name: String!
+  enabled: Boolean!
+  reason: String
+}
+
+type TemplateTest_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  resourcePath: String!
+  expectedResult: String!
+}
+
+type DnsZone_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  domain_name: String
+  description: String!
+  provider: String!
+  account: AWSAccount_v1!
+  vpc: AWSVPC_v1
+  origin: String!
+  records: [DnsRecord_v1!]
+}
+
+type AWSVPC_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  account: AWSAccount_v1!
+  name: String!
+  description: String
+  vpc_id: String!
+  cidr_block: String!
+  region: String!
+  subnets: [AWSSubnet_v1!]
+}
+
+type AWSSubnet_v1 {
+  id: String!
+}
+
+type DnsRecord_v1 {
+  name: String!
+  type: String!
+  ttl: Int
+  alias: DnsRecordAlias_v1
+  weighted_routing_policy: DnsRecordWeightedRoutingPolicy_v1
+  set_identifier: String
+  records: [String!]
+  _healthcheck: DnsRecordHealthcheck_v1
+  _target_cluster: Cluster_v1
+  _target_namespace_zone: DnsNamespaceZone_v1
+}
+
+type DnsRecordAlias_v1 {
+  name: String!
+  zone_id: String!
+  evaluate_target_health: Boolean!
+}
+
+type DnsRecordWeightedRoutingPolicy_v1 {
+  weight: Int
+}
+
+type DnsRecordHealthcheck_v1 {
+  fqdn: String
+  port: Int
+  type: String
+  resource_path: String
+  failure_threshold: Int
+  request_interval: Int
+  search_string: String
+}
+
+type DnsNamespaceZone_v1 {
+  namespace: Namespace_v1!
+  name: String!
+}
+
+type OcpReleaseMirror_v1 {
+  hiveCluster: Cluster_v1!
+  ecrResourcesNamespace: Namespace_v1!
+  ocpReleaseEcrIdentifier: String!
+  ocpArtDevEcrIdentifier: String!
+  quayTargetOrgs: [QuayOrg_v1!]!
+  mirrorChannels: [String!]!
+}
+
+type DynTrafficDirector_v1 {
+  name: String!
+  ttl: Int
+  records: [DynTrafficDirectorRecord_v1!]!
+}
+
+type DynTrafficDirectorRecord_v1 {
+  hostname: String
+  cluster: Cluster_v1
+  weight: Int!
+}
+
+type Scorecard_v2 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  labels: JSON!
+  app: App_v1!
+  date: String!
+  acceptanceCriteria: [AcceptanceCriteriaItem_v1!]!
+}
+
+type AcceptanceCriteriaItem_v1 {
+  name: String!
+  status: String!
+  comment: String
+}
+
+type PgpReencryptSettings_v1 {
+  public_gpg_key: String!
+  private_pgp_key_vault_path: String!
+  reencrypt_vault_path: String!
+  aws_account_output_vault_path: String!
+  skip_aws_accounts: [AWSAccount_v1!]
+}
+
+type VaultAuditOptionsFile_v1 implements VaultAuditOptions_v1 {
+  _type: String!
+  file_path: String!
+  log_raw: String!
+  hmac_accessor: String!
+  mode: String!
+  format: String!
+  prefix: String!
+}
+
+type VaultAuthConfigGithub_v1 implements VaultAuthConfig_v1 {
+  _type: String!
+  organization: String!
+  base_url: String!
+  max_ttl: String!
+  ttl: String!
+}
+
+type VaultAuthConfigOidc_v1 implements VaultAuthConfig_v1 {
+  _type: String!
+  oidc_discovery_url: String!
+  oidc_client_id: String!
+  oidc_client_secret: VaultSecret_v1!
+  oidc_client_secret_kv_version: String!
+  default_role: String!
+}
+
+type VaultSecretEngineOptionsKV_v1 implements VaultSecretEngineOptions_v1 {
+  _type: String!
+  version: String!
+}
+
+type VaultApproleOptions_v1 implements VaultRoleOptions_v1 {
+  _type: String!
+  bind_secret_id: String!
+  local_secret_ids: String!
+  token_period: String!
+  secret_id_num_uses: String!
+  secret_id_ttl: String!
+  token_explicit_max_ttl: String!
+  token_max_ttl: String!
+  token_no_default_policy: Boolean!
+  token_num_uses: String!
+  token_ttl: String!
+  token_type: String!
+  token_policies: [String!]!
+  policies: [String!]!
+  secret_id_bound_cidrs: [String!]!
+  token_bound_cidrs: [String!]!
+}
+
+type VaultRoleOidcOptions_v1 implements VaultRoleOptions_v1 {
+  _type: String!
+  allowed_redirect_uris: [String!]!
+  bound_audiences: [String!]
+  bound_claims: JSON
+  bound_claims_type: String
+  bound_subject: String
+  claim_mappings: JSON
+  clock_skew_leeway: String
+  expiration_leeway: String
+  groups_claim: String
+  max_age: String
+  not_before_leeway: String
+  oidc_scopes: [String!]
+  role_type: String!
+  token_ttl: String!
+  token_max_ttl: String!
+  token_explicit_max_ttl: String!
+  token_type: String!
+  token_period: String!
+  token_policies: [String!]!
+  token_bound_cidrs: [String!]!
+  token_no_default_policy: Boolean!
+  token_num_uses: String!
+  user_claim: String!
+  verbose_oidc_logging: Boolean
+}
+
+type KeyValue_v1 {
+  key: String!
+  value: String!
+}
+
+type ClusterAuthGithubOrg_v1 implements ClusterAuth_v1 {
+  service: String!
+  org: String!
+}
+
+type ClusterAuthGithubOrgTeam_v1 implements ClusterAuth_v1 {
+  service: String!
+  org: String!
+  team: String!
+}
+
+type ClusterAuthOIDC_v1 implements ClusterAuth_v1 {
+  service: String!
+}
+
+type ClusterSpecOSD_v1 implements ClusterSpec_v1 {
+  product: String!
+  id: String
+  external_id: String
+  provider: String!
+  region: String!
+  channel: String!
+  version: String!
+  initial_version: String!
+  multi_az: Boolean!
+  nodes: Int
+  instance_type: String!
+  private: Boolean!
+  provision_shard_id: String
+  autoscale: ClusterSpecAutoScale_v1
+  disable_user_workload_monitoring: Boolean
+  hypershift: Boolean
+  storage: Int!
+  load_balancers: Int!
+}
+
+type ClusterSpecROSA_v1 implements ClusterSpec_v1 {
+  account: AWSAccount_v1
+  product: String!
+  id: String
+  external_id: String
+  provider: String!
+  region: String!
+  channel: String!
+  version: String!
+  initial_version: String!
+  multi_az: Boolean!
+  nodes: Int
+  instance_type: String!
+  private: Boolean!
+  provision_shard_id: String
+  autoscale: ClusterSpecAutoScale_v1
+  disable_user_workload_monitoring: Boolean
+  hypershift: Boolean
+  subnet_ids: [String!]
+  availability_zones: [String!]
+}
+
+type ClusterPeeringConnectionAccount_v1 implements ClusterPeeringConnection_v1 {
+  provider: String!
+  name: String!
+  vpc: AWSVPC_v1!
+  description: String
+  manageRoutes: Boolean
+  delete: Boolean
+  assumeRole: String
+}
+
+type ClusterPeeringConnectionAccountVPCMesh_v1 implements ClusterPeeringConnection_v1 {
+  provider: String!
+  name: String!
+  account: AWSAccount_v1!
+  description: String
+  tags: JSON
+  manageRoutes: Boolean
+  delete: Boolean
+}
+
+type ClusterPeeringConnectionAccountTGW_v1 implements ClusterPeeringConnection_v1 {
+  provider: String!
+  name: String!
+  account: AWSAccount_v1!
+  description: String
+  tags: JSON
+  manageRoutes: Boolean
+  manageSecurityGroups: Boolean
+  cidrBlock: String
+  delete: Boolean
+  assumeRole: String
+}
+
+type ClusterPeeringConnectionClusterRequester_v1 implements ClusterPeeringConnection_v1 {
+  provider: String!
+  name: String!
+  cluster: Cluster_v1!
+  description: String
+  manageRoutes: Boolean
+  delete: Boolean
+  assumeRole: String
+}
+
+type ClusterPeeringConnectionClusterAccepter_v1 implements ClusterPeeringConnection_v1 {
+  provider: String!
+  name: String!
+  cluster: Cluster_v1!
+  awsInfrastructureManagementAccount: AWSAccount_v1
+  description: String
+  manageRoutes: Boolean
+  delete: Boolean
+  assumeRole: String
+}
+
+type OpenShiftClusterManagerUpgradePolicyClusterSpec_v1 {
+  id: String!
+}
+
+type NamespaceCNAsset_v1 implements NamespaceExternalResource_v1 {
+  provider: String!
+  provisioner: CNAExperimentalProvisioner_v1!
+  resources: [CNAsset_v1!]!
+}
+
+interface CNAsset_v1 {
+  provider: String!
+}
+
+type CNANullAsset_v1 implements CNAsset_v1 {
+  provider: String!
+  identifier: String!
+  description: String
+  addr_block: String
+}
+
+type AWSAccountSharingOptionAMI_v1 implements AWSAccountSharingOption_v1 {
+  provider: String!
+  account: AWSAccount_v1!
+  regex: String!
+  region: String
+}
+
+type AWSS3EventNotification_v1 {
+  event_type: [String!]!
+  destination: String!
+  destination_type: String!
+  filter_prefix: String
+  filter_suffix: String
+}
+
+type AWSRDSEventNotification_v1 {
+  destination: String!
+  source_type: String
+  event_categories: [String!]
+}
+
+type ACMDomain_v1 {
+  domain_name: String!
+  alternate_names: [String!]
+}
+
+type NamespaceOpenshiftResourceResource_v1 implements NamespaceOpenshiftResource_v1 {
+  provider: String!
+  path: Resource_v1
+  validate_json: Boolean
+  validate_alertmanager_config: Boolean
+  alertmanager_config_key: String
+  enable_query_support: Boolean
+}
+
+type NamespaceOpenshiftResourceResourceTemplate_v1 implements NamespaceOpenshiftResource_v1 {
+  provider: String!
+  path: Resource_v1
+  type: String
+  variables: JSON
+  validate_alertmanager_config: Boolean
+  alertmanager_config_key: String
+  enable_query_support: Boolean
+}
+
+type NamespaceOpenshiftResourceRoute_v1 implements NamespaceOpenshiftResource_v1 {
+  provider: String!
+  path: Resource_v1
+  vault_tls_secret_path: String
+  vault_tls_secret_version: Int
+}
+
+type NamespaceTerraformProviderResourceAWS_v1 implements NamespaceExternalResource_v1 {
+  provider: String!
+  provisioner: AWSAccount_v1!
+  resources: [NamespaceTerraformResourceAWS_v1!]!
+}
+
+interface NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  identifier: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+interface NamespaceTerraformResourceOutputFormat_v1 {
+  provider: String!
+}
+
+type NamespaceTerraformProviderResourceCloudflare_v1 implements NamespaceExternalResource_v1 {
+  provider: String!
+  provisioner: CloudflareAccount_v1!
+  resources: [NamespaceTerraformResourceCloudflare_v1!]!
+}
+
+interface NamespaceTerraformResourceCloudflare_v1 {
+  provider: String!
+}
+
+type NamespaceTerraformResourceCloudflareZone_v1 implements NamespaceTerraformResourceCloudflare_v1 {
+  provider: String!
+  identifier: String!
+  zone: String!
+  plan: String
+  type: String
+  settings: JSON
+  argo: CloudflareZoneArgo_v1
+  records: [CloudflareZoneRecord_v1!]
+  workers: [CloudflareZoneWorker_v1!]
+  certificates: [CloudflareZoneCertificate_v1!]
+}
+
+type CloudflareZoneArgo_v1 {
+  tiered_caching: Boolean
+  smart_routing: Boolean
+}
+
+type CloudflareZoneRecord_v1 {
+  name: String!
+  type: String!
+  ttl: Int!
+  value: String!
+  proxied: Boolean
+}
+
+type CloudflareZoneWorker_v1 {
+  identifier: String!
+  pattern: String!
+  script_name: String!
+}
+
+type CloudflareZoneCertificate_v1 {
+  identifier: String!
+  type: String!
+  hosts: [String!]!
+  validation_method: String!
+  validity_days: Int!
+  certificate_authority: String!
+  cloudflare_branding: Boolean
+  wait_for_active_status: Boolean
+}
+
+type NamespaceTerraformResourceCloudflareWorkerScript_v1 implements NamespaceTerraformResourceCloudflare_v1 {
+  provider: String!
+  identifier: String!
+  name: String!
+  content_from_github: CloudflareZoneWorkerScriptContentFromGithub_v1
+  vars: [CloudflareZoneWorkerScriptVars_v1!]
+}
+
+type CloudflareZoneWorkerScriptContentFromGithub_v1 {
+  repo: String!
+  path: String!
+  ref: String!
+}
+
+type CloudflareZoneWorkerScriptVars_v1 {
+  name: String!
+  text: String!
+}
+
+type NamespaceTerraformProviderResourceGCPProject_v1 implements NamespaceExternalResource_v1 {
+  provider: String!
+  provisioner: GcpProject_v1!
+  resources: [NamespaceTerraformResourceGCP_v1!]!
+}
+
+interface NamespaceTerraformResourceGCP_v1 {
+  provider: String!
+  identifier: String!
+  output_resource_name: String
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceManagedZone_v1 implements NamespaceTerraformResourceGCP_v1 {
+  provider: String!
+  identifier: String!
+  name: String!
+  output_resource_name: String
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceGenericSecretOutputFormat_v1 implements NamespaceTerraformResourceOutputFormat_v1 {
+  provider: String!
+  data: JSON
+}
+
+type NamespaceTerraformResourceASG_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  cloudinit_configs: [CloudinitConfig_v1!]
+  variables: JSON
+  overrides: JSON
+  extra_tags: JSON
+  image: [ASGImage_v1!]!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type CloudinitConfig_v1 {
+  filename: String
+  content_type: String
+  content: String!
+}
+
+interface ASGImage_v1 {
+  provider: String!
+  tag_name: String!
+}
+
+type ASGImageGit_v1 implements ASGImage_v1 {
+  provider: String!
+  tag_name: String!
+  url: String!
+  ref: String!
+  upstream: SaasResourceTemplateTargetUpstream_v1
+}
+
+type ASGImageStatic_v1 implements ASGImage_v1 {
+  provider: String!
+  tag_name: String!
+  value: String!
+}
+
+type NamespaceTerraformResourceSecretsManager_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  secret: VaultSecret_v1
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceS3CloudFrontPublicKey_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  secret: VaultSecret_v1
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceACM_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  secret: VaultSecret_v1
+  domain: ACMDomain_v1
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceElasticSearch_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+  publish_log_types: [String!]
+}
+
+type NamespaceTerraformResourceRDS_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  availability_zone: String
+  parameter_group: String
+  old_parameter_group: String
+  overrides: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  output_resource_db_name: String
+  reset_password: String
+  enhanced_monitoring: Boolean
+  replica_source: String
+  ca_cert: VaultSecret_v1
+  annotations: JSON
+  event_notifications: [AWSRDSEventNotification_v1!]
+}
+
+type NamespaceTerraformResourceS3_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  overrides: JSON
+  event_notifications: [AWSS3EventNotification_v1!]
+  sqs_identifier: String
+  s3_events: [String!]
+  bucket_policy: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  storage_class: String
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceServiceAccountAWSInfrastructureAccess_v1 {
+  cluster: Cluster_v1
+  access_level: String
+  assume_role: String
+}
+
+type NamespaceTerraformResourceServiceAccount_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  identifier: String!
+  variables: JSON
+  policies: [String!]
+  user_policy: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  aws_infrastructure_access: NamespaceTerraformResourceServiceAccountAWSInfrastructureAccess_v1
+  annotations: JSON
+}
+
+type AssumeRole_v1 {
+  AWS: [String!]
+  Service: [String!]
+}
+
+type NamespaceTerraformResourceSecretsManagerServiceAccount_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  identifier: String!
+  secrets_prefix: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceRole_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  identifier: String!
+  assume_role: AssumeRole_v1!
+  assume_condition: JSON
+  inline_policy: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceElastiCache_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  identifier: String!
+  defaults: String!
+  parameter_group: String
+  region: String
+  overrides: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type SQSQueuesSpecs_v1 {
+  defaults: String!
+  queues: [KeyValue_v1!]!
+}
+
+type NamespaceTerraformResourceSQS_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  specs: [SQSQueuesSpecs_v1!]!
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceSNSSubscription_v1 {
+  protocol: String!
+  endpoint: String!
+}
+
+type NamespaceTerraformResourceSNSTopic_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  defaults: String!
+  region: String
+  identifier: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  fifo_topic: Boolean
+  inline_policy: JSON
+  annotations: JSON
+  subscriptions: [NamespaceTerraformResourceSNSSubscription_v1!]
+}
+
+type DynamoDBTableSpecs_v1 {
+  defaults: String!
+  tables: [KeyValue_v1!]!
+}
+
+type NamespaceTerraformResourceDynamoDB_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  specs: [DynamoDBTableSpecs_v1!]!
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceECR_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  mirror: ContainerImageMirror_v1
+  public: Boolean
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceS3CloudFront_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  storage_class: String
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceS3SQS_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  kms_encryption: Boolean
+  defaults: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  storage_class: String
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceCloudWatch_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  es_identifier: String
+  filter_pattern: String
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceKMS_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  overrides: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceKinesis_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  defaults: String!
+  es_identifier: String
+  overrides: JSON
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceALB_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  identifier: String!
+  region: String
+  vpc: AWSVPC_v1!
+  certificate_arn: String!
+  idle_timeout: Int
+  targets: [NamespaceTerraformResourceALBTargets_v1!]!
+  rules: [NamespaceTerraformResourceALBRules_v1!]!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceALBTargets_v1 {
+  name: String!
+  default: Boolean!
+  ips: [String!]
+  openshift_service: String
+}
+
+type NamespaceTerraformResourceALBRules_v1 {
+  condition: NamespaceTerraformResourceALBConditon_v1!
+  action: [NamespaceTerraformResourceALBAction_v1!]!
+}
+
+type NamespaceTerraformResourceALBConditon_v1 {
+  path: String!
+  methods: [String!]
+}
+
+type NamespaceTerraformResourceALBAction_v1 {
+  target: String!
+  weight: Int!
+}
+
+type NamespaceTerraformResourceRoute53Zone_v1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  name: String!
+  records: [DnsRecord_v1!]
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceRosaAuthenticator_V1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  region: String
+  identifier: String!
+  api_proxy_uri: String!
+  sms_role_ext_id: String
+  cognito_callback_bucket_name: String!
+  pre_signup_lambda_github_release_url: String
+  vpc_arn: String
+  vpc_id: String!
+  vpce_id: String
+  subnet_ids: [String!]!
+  network_interface_ids: [String!]
+  certificate_arn: String!
+  domain_name: String!
+  openshift_ingress_load_balancer_arn: String
+  defaults: String!
+  output_resource_name: String
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  annotations: JSON
+}
+
+type NamespaceTerraformResourceRosaAuthenticatorVPCE_V1 implements NamespaceTerraformResourceAWS_v1 {
+  provider: String!
+  annotations: JSON
+  defaults: String!
+  identifier: String!
+  output_format: NamespaceTerraformResourceOutputFormat_v1
+  output_resource_name: String
+  region: String
+  subnet_ids: [String!]!
+  vpc_id: String!
+}
+
+type SaasResourceTemplateTargetReference_v2 implements DatafileObject_v1 {
+  path: String!
+  schema: String!
+}
+
+type ParentSaasPromotion_v1 implements PromotionChannelData_v1 {
+  type: String!
+  parent_saas: String
+  target_config_hash: String
+}
+
+type PipelinesProviderTekton_v1 implements PipelinesProvider_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  provider: String!
+  defaults: PipelinesProviderTektonProviderDefaults_v1!
+  namespace: Namespace_v1!
+  retention: PipelinesProviderRetention_v1
+  taskTemplates: [PipelinesProviderTektonObjectTemplate_v1!]
+  pipelineTemplates: PipelinesProviderPipelineTemplates_v1
+  deployResources: DeployResources_v1
+}
+
+type PipelinesProviderTektonProviderDefaults_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  name: String!
+  labels: JSON!
+  description: String!
+  retention: PipelinesProviderRetention_v1!
+  taskTemplates: [PipelinesProviderTektonObjectTemplate_v1!]!
+  pipelineTemplates: PipelinesProviderPipelineTemplates_v1!
+  deployResources: DeployResources_v1
+}
+
+type PipelinesProviderRetention_v1 {
+  days: Int
+  minimum: Int
+}
+
+type PipelinesProviderTektonObjectTemplate_v1 {
+  name: String!
+  type: String!
+  path: String!
+  variables: JSON
+}
+
+type PipelinesProviderPipelineTemplates_v1 {
+  openshiftSaasDeploy: PipelinesProviderTektonObjectTemplate_v1!
+}
+
+type VaultInstanceAuthApprole_v1 implements VaultInstanceAuth_v1 {
+  provider: String!
+  secretEngine: String!
+  roleID: VaultSecret_v1!
+  secretID: VaultSecret_v1!
+}
+
+type VaultInstanceAuthToken_v1 implements VaultInstanceAuth_v1 {
+  provider: String!
+  secretEngine: String!
+  token: VaultSecret_v1!
+}
+
+type OidcPermissionVault_v1 implements OidcPermission_v1 {
+  schema: String!
+  labels: JSON
+  name: String!
+  service: String!
+  description: String!
+  instance: VaultInstance_v1!
+  vault_policies: [VaultPolicy_v1!]!
+}
+
+type PermissionGithubOrg_v1 implements Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+  org: String!
+  role: String
+}
+
+type PermissionJenkinsRole_v1 implements Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+  instance: JenkinsInstance_v1!
+  role: String!
+  token: VaultSecret_v1!
+}
+
+type PermissionGitlabGroupMembership_v1 implements Permission_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  service: String!
+  group: String!
+  access: String!
+  pagerduty: [PagerDutyTarget_v1!]
+  roles: [Role_v1!]
+}
+
+type AWSShardSpecOverride_v1 implements IntegrationSpecShardSpecOverride_v1 {
+  shardingStrategy: String!
+  awsAccount: AWSAccount_v1!
+  imageRef: String!
 }
 
 type EndpointMonitoringProviderBlackboxExporter_v1 implements EndpointMonitoringProvider_v1 {
@@ -686,1383 +2828,59 @@ type EndpointMonitoringProviderBlackboxExporterSettings_v1 {
   exporterUrl: String!
 }
 
-type Environment_v1 {
+type EndpointMonitoringProviderSignalFx_v1 implements EndpointMonitoringProvider_v1 {
   schema: String!
   path: String!
   labels: JSON
   name: String!
   description: String!
-  product: Product_v1!
-  parameters: JSON
-  dependsOn: Environment_v1
-  namespaces: [Namespace_v1]
+  provider: String!
+  metricLabels: JSON
+  timeout: String
+  checkInterval: String
+  signalFx: EndpointMonitoringProviderSignalFxSettings_v1!
 }
 
-type ExternalUser_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  github_username: String!
-  sponsors: [User_v1!]
-}
-
-type GabiInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  signoffManagers: [User_v1!]
-  users: [User_v1!]
-  instances: [GabiNamespace_v1!]
-  expirationDate: String!
-}
-
-type GabiNamespace_v1 {
-  account: String!
-  identifier: String!
+type EndpointMonitoringProviderSignalFxSettings_v1 {
   namespace: Namespace_v1!
+  exporterUrl: String!
+  targetFilterLabel: String!
 }
 
-type GcpProject_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  managedTeams: [String!]
-  automationToken: VaultSecret_v1
-  pushCredentials: VaultSecret_v1
-}
-
-type GithubClusterAuth_v1 {
-  service: String!
-  org: String!
-  team: String
-}
-
-type GithubOrg_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  url: String!
-  two_factor_authentication: Boolean!
-  default: Boolean
-  token: VaultSecret_v1!
-  managedTeams: [String]
-}
-
-type GitlabInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  backupOrgs: [String]
-  managedGroups: [String!]
-  projectRequests: [GitlabProjects_v1]
-  url: String!
-  token: VaultSecret_v1!
-  sslVerify: Boolean
-}
-
-type GitlabProjects_v1 {
-  group: String!
-  projects: [String!]
-}
-
-type GrafanaDashboardUrls_v1 {
-  title: String!
-  url: String!
-}
-
-type Integration_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  upstream: String
-  schemas: [String!]
-  pr_check: IntegrationPrCheck_v1
-}
-
-type IntegrationPrCheck_v1 {
-  cmd: String!
-  state: Boolean
-  sqs: Boolean
-  disabled: Boolean
-  always_run: Boolean
-  no_validate_schemas: Boolean
-  run_for_valid_saas_file_changes: Boolean
-}
-
-type JenkinsConfig_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  app: App_v1!
-  instance: JenkinsInstance_v1!
-  type: String!
-  config: JSON
-  config_path: String
-}
-
-type JenkinsInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  serverUrl: String!
-  token: VaultSecret_v1!
-  previousUrls: [String]
-  plugins: [String]
-  deleteMethod: String
-  managedProjects: [String]
-  buildsCleanupRules: [JenkinsInstanceBuildsCleanupRules_v1]
-}
-
-type JenkinsInstanceBuildsCleanupRules_v1 {
-  name: String!
-  keep_hours: Int!
-}
-
-type JiraBoard_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  server: JiraServer_v1!
-  slack: SlackOutput_v1
-}
-
-type JiraServer_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  serverUrl: String!
-  token: VaultSecret_v1!
-}
-
-scalar JSON
-
-type KafkaCluster_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  ocm: OpenShiftClusterManager_v1
-  spec: KafkaClusterSpec_v1
-  namespaces: [Namespace_v1]
-}
-
-type KafkaClusterSpec_v1 {
+type PrometheusAlertsStatusProvider_v1 implements StatusProvider_v1 {
   provider: String!
-  region: String!
-  multi_az: Boolean!
+  prometheusAlerts: PrometheusAlertsStatusProviderConfig_v1!
 }
 
-type KeyValue_v1 {
-  key: String!
-  value: String!
+type PrometheusAlertsStatusProviderConfig_v1 {
+  namespace: [Namespace_v1!]
+  matchers: [PrometheusAlertMatcher_v1!]
 }
 
-type LimitRange_v1 {
-  schema: String!
+type PrometheusAlertMatcher_v1 {
+  matchExpression: PrometheusAlertMatcherExpression_v1!
+  componentStatus: String!
+}
+
+type PrometheusAlertMatcherExpression_v1 {
+  alert: String
   labels: JSON
-  name: String!
-  description: String!
-  limits: [LimitRangeItem_v1!]
 }
 
-type LimitRangeItem_v1 {
-  default: ResourceValues_v1
-  defaultRequest: ResourceValues_v1
-  max: ResourceValues_v1
-  maxLimitRequestRatio: ResourceValues_v1
-  min: ResourceValues_v1
-  type: String
-}
-
-type Namespace_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  delete: Boolean
-  description: String!
-  grafanaUrl: String
-  cluster: Cluster_v1!
-  app: App_v1!
-  environment: Environment_v1!
-  limitRanges: LimitRange_v1
-  quota: ResourceQuota_v1
-  networkPoliciesAllow: [Namespace_v1]
-  clusterAdmin: Boolean
-  managedRoles: Boolean
-  managedResourceTypes: [String]
-  managedResourceTypeOverrides: [NamespaceManagedResourceTypeOverrides_v1]
-  managedResourceNames: [NamespaceManagedResourceNames_v1]
-  sharedResources: [SharedResources_v1]
-  openshiftResources: [NamespaceOpenshiftResource_v1]
-  managedTerraformResources: Boolean
-  terraformResources: [NamespaceTerraformResource_v1]
-  openshiftServiceAccountTokens: [ServiceAccountTokenSpec_v1]
-  kafkaCluster: KafkaCluster_v1
-}
-
-type NamespaceManagedResourceNames_v1 {
-  resource: String!
-  resourceNames: [String!]
-}
-
-type NamespaceManagedResourceTypeOverrides_v1 {
-  resource: String!
-  override: String!
-}
-
-interface NamespaceOpenshiftResource_v1 {
+type ManualStatusProvider_v1 implements StatusProvider_v1 {
   provider: String!
+  manual: ManualStatusProviderConfig_v1!
 }
 
-type NamespaceOpenshiftResourceResource_v1 implements NamespaceOpenshiftResource_v1 {
+type ManualStatusProviderConfig_v1 {
+  componentStatus: String!
+  from: String
+  until: String
+}
+
+type ChangeTypeChangeDetectorJsonPathProvider_v1 implements ChangeTypeChangeDetector_v1 {
   provider: String!
-  path: String!
-  validate_json: Boolean
-  validate_alertmanager_config: Boolean
-  alertmanager_config_key: String
+  changeSchema: String
+  jsonPathSelectors: [String!]!
+  context: ChangeTypeChangeDetectorContextSelector_v1
 }
-
-type NamespaceOpenshiftResourceResourceTemplate_v1 implements NamespaceOpenshiftResource_v1 {
-  provider: String!
-  path: String!
-  type: String
-  variables: JSON
-  validate_alertmanager_config: Boolean
-  alertmanager_config_key: String
-}
-
-type NamespaceOpenshiftResourceRoute_v1 implements NamespaceOpenshiftResource_v1 {
-  provider: String!
-  path: String!
-  vault_tls_secret_path: String
-  vault_tls_secret_version: Int
-}
-
-type NamespaceOpenshiftResourceVaultSecret_v1 implements NamespaceOpenshiftResource_v1 {
-  provider: String!
-  path: String!
-  version: Int!
-  name: String
-  labels: JSON
-  annotations: JSON
-  type: String
-  validate_alertmanager_config: Boolean
-  alertmanager_config_key: String
-}
-
-interface NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  identifier: String!
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceACM_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  secret: VaultSecret_v1
-  domain: ACMDomain_v1
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceALB_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  identifier: String!
-  region: String
-  vpc: AWSVPC_v1!
-  certificate_arn: String!
-  idle_timeout: Int
-  targets: [NamespaceTerraformResourceALBTargets_v1!]
-  rules: [NamespaceTerraformResourceALBRules_v1!]
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceALBAction_v1 {
-  target: String!
-  weight: Int!
-}
-
-type NamespaceTerraformResourceALBConditon_v1 {
-  path: String!
-  methods: [String]
-}
-
-type NamespaceTerraformResourceALBRules_v1 {
-  condition: NamespaceTerraformResourceALBConditon_v1!
-  action: [NamespaceTerraformResourceALBAction_v1!]
-}
-
-type NamespaceTerraformResourceALBTargets_v1 {
-  name: String!
-  default: Boolean!
-  ips: [String]
-  openshift_service: String
-}
-
-type NamespaceTerraformResourceASG_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  cloudinit_configs: [CloudinitConfig_v1]
-  variables: JSON
-  image: ASGImage_v1!
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceCloudWatch_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  es_identifier: String
-  filter_pattern: String
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceDynamoDB_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  output_resource_name: String
-  specs: [DynamoDBTableSpecs_v1!]
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceECR_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  output_resource_name: String
-  mirror: ContainerImageMirror_v1
-  public: Boolean
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceElastiCache_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  identifier: String!
-  defaults: String!
-  parameter_group: String
-  region: String
-  overrides: JSON
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceElasticSearch_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  output_resource_name: String
-  annotations: JSON
-  publish_log_types: [String]
-}
-
-type NamespaceTerraformResourceKinesis_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  overrides: JSON
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceKMS_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  overrides: JSON
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceRDS_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  identifier: String!
-  defaults: String!
-  availability_zone: String
-  parameter_group: String
-  overrides: JSON
-  output_resource_name: String
-  output_resource_db_name: String
-  reset_password: String
-  enhanced_monitoring: Boolean
-  replica_source: String
-  ca_cert: VaultSecret_v1
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceRole_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  identifier: String!
-  assume_role: AssumeRole_v1!
-  inline_policy: JSON
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceRoute53Zone_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  name: String!
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceS3_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  overrides: JSON
-  event_notifications: [AWSS3EventNotification_v1]
-  sqs_identifier: String
-  s3_events: [String]
-  bucket_policy: JSON
-  output_resource_name: String
-  storage_class: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceS3CloudFront_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  defaults: String!
-  output_resource_name: String
-  storage_class: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceS3CloudFrontPublicKey_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  secret: VaultSecret_v1
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceS3SQS_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  kms_encryption: Boolean
-  defaults: String!
-  output_resource_name: String
-  storage_class: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceSecretsManager_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  secret: VaultSecret_v1
-  output_resource_name: String
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceServiceAccount_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  identifier: String!
-  variables: JSON
-  policies: [String]
-  user_policy: JSON
-  output_resource_name: String
-  aws_infrastructure_access: NamespaceTerraformResourceServiceAccountAWSInfrastructureAccess_v1
-  annotations: JSON
-}
-
-type NamespaceTerraformResourceServiceAccountAWSInfrastructureAccess_v1 {
-  cluster: Cluster_v1
-  access_level: String
-  assume_role: String
-}
-
-type NamespaceTerraformResourceSQS_v1 implements NamespaceTerraformResource_v1 {
-  provider: String!
-  account: String!
-  region: String
-  identifier: String!
-  output_resource_name: String
-  specs: [SQSQueuesSpecs_v1!]
-  annotations: JSON
-}
-
-type OcpReleaseMirror_v1 {
-  hiveCluster: Cluster_v1!
-  ecrResourcesNamespace: Namespace_v1!
-  ocpReleaseEcrIdentifier: String!
-  ocpArtDevEcrIdentifier: String!
-  quayTargetOrgs: [QuayOrg_v1!]
-  mirrorChannels: [String!]
-}
-
-type OpenShiftClusterManager_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  url: String!
-  accessTokenClientId: String!
-  accessTokenUrl: String!
-  offlineToken: VaultSecret_v1
-  blockedVersions: [String]
-  clusters: [Cluster_v1]
-}
-
-type Owner_v1 {
-  name: String!
-  email: String!
-}
-
-type PagerDutyInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  token: VaultSecret_v1!
-}
-
-type PagerDutyTarget_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  instance: PagerDutyInstance_v1!
-  scheduleID: String
-  escalationPolicyID: String
-}
-
-type ParentSaasPromotion_v1 implements PromotionChannelData_v1 {
-  type: String!
-  parent_saas: String
-  target_config_hash: String
-}
-
-interface Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-}
-
-type PermissionGithubOrg_v1 implements Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-  org: String!
-  role: String
-}
-
-type PermissionGithubOrgTeam_v1 implements Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-  org: String!
-  team: String!
-  role: String
-}
-
-type PermissionGitlabGroupMembership_v1 implements Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-  group: String
-  access: String!
-}
-
-type PermissionJenkinsRole_v1 implements Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-  instance: JenkinsInstance_v1!
-  role: String!
-  token: VaultSecret_v1!
-}
-
-type PermissionQuayOrgTeam_v1 implements Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-  quayOrg: QuayOrg_v1!
-  team: String!
-}
-
-type PermissionSlackUsergroup_v1 implements Permission_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  service: String!
-  handle: String!
-  workspace: SlackWorkspace_v1!
-  pagerduty: [PagerDutyTarget_v1]
-  channels: [String]
-  ownersFromRepos: [String]
-  schedule: Schedule_v1
-  skip: Boolean
-  roles: [Role_v1]
-}
-
-interface PipelinesProvider_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  provider: String!
-}
-
-type PipelinesProviderPipelineTemplates_v1 {
-  openshiftSaasDeploy: PipelinesProviderTektonObjectTemplate_v1!
-}
-
-type PipelinesProviderRetention_v1 {
-  days: Int
-  minimum: Int
-}
-
-type PipelinesProviderTekton_v1 implements PipelinesProvider_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  provider: String!
-  defaults: PipelinesProviderTektonProviderDefaults_v1!
-  namespace: Namespace_v1!
-  retention: PipelinesProviderRetention_v1
-  taskTemplates: [PipelinesProviderTektonObjectTemplate_v1]
-  pipelineTemplates: PipelinesProviderPipelineTemplates_v1
-  deployResources: DeployResources_v1
-}
-
-type PipelinesProviderTektonObjectTemplate_v1 {
-  name: String!
-  type: String!
-  path: String!
-  variables: JSON
-}
-
-type PipelinesProviderTektonProviderDefaults_v1 {
-  name: String!
-  labels: JSON!
-  description: String!
-  retention: PipelinesProviderRetention_v1!
-  taskTemplates: [PipelinesProviderTektonObjectTemplate_v1!]
-  pipelineTemplates: PipelinesProviderPipelineTemplates_v1!
-  deployResources: DeployResources_v1
-}
-
-type Product_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  productOwners: [Owner_v1!]
-  environments: [Environment_v1]
-}
-
-interface PromotionChannelData_v1 {
-  type: String!
-}
-
-type PromotionData_v1 {
-  channel: String
-  data: [PromotionChannelData_v1]
-}
-
-type QuayInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  url: String!
-}
-
-type QuayOrg_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  mirror: QuayOrg_v1
-  managedRepos: Boolean!
-  instance: QuayInstance_v1!
-  serverUrl: String
-  managedTeams: [String!]
-  automationToken: VaultSecret_v1
-  pushCredentials: VaultSecret_v1
-}
-
-type Query {
-  app_interface_settings_v1(path: String): [AppInterfaceSettings_v1]
-  app_interface_emails_v1(path: String): [AppInterfaceEmail_v1]
-  app_interface_slack_notifications_v1(path: String): [AppInterfaceSlackNotification_v1]
-  credentials_requests_v1(path: String): [CredentialsRequest_v1]
-  users_v1(path: String): [User_v1]
-  external_users_v1(path: String): [ExternalUser_v1]
-  bots_v1(path: String): [Bot_v1]
-  roles_v1(path: String, name: String): [Role_v1]
-  permissions_v1(path: String): [Permission_v1]
-  awsgroups_v1(path: String): [AWSGroup_v1]
-  awsaccounts_v1(path: String, name: String, uid: String): [AWSAccount_v1]
-  clusters_v1(path: String): [Cluster_v1]
-  kafka_clusters_v1(path: String): [KafkaCluster_v1]
-  namespaces_v1(path: String): [Namespace_v1]
-  gcp_projects_v1(path: String): [GcpProject_v1]
-  quay_orgs_v1(path: String): [QuayOrg_v1]
-  quay_instances_v1(path: String): [QuayInstance_v1]
-  jenkins_instances_v1(path: String): [JenkinsInstance_v1]
-  jenkins_configs_v1(path: String): [JenkinsConfig_v1]
-  jira_servers_v1(path: String): [JiraServer_v1]
-  jira_boards_v1(path: String): [JiraBoard_v1]
-  sendgrid_accounts_v1(path: String): [SendGridAccount_v1]
-  products_v1(path: String): [Product_v1]
-  environments_v1(path: String): [Environment_v1]
-  apps_v1(path: String): [App_v1]
-  escalation_policies_1(path: String): [AppEscalationPolicy_v1]
-  resources_v1(path: String, schema: String): [Resource_v1!]
-  vault_audit_backends_v1(path: String): [VaultAudit_v1]
-  vault_auth_backends_v1(path: String): [VaultAuth_v1]
-  vault_secret_engines_v1(path: String): [VaultSecretEngine_v1]
-  vault_roles_v1(path: String): [VaultRole_v1]
-  vault_policies_v1(path: String): [VaultPolicy_v1]
-  dependencies_v1(path: String): [Dependency_v1]
-  githuborg_v1(path: String): [GithubOrg_v1]
-  gitlabinstance_v1(path: String): [GitlabInstance_v1]
-  integrations_v1(path: String): [Integration_v1]
-  documents_v1(path: String): [Document_v1]
-  reports_v1(path: String): [Report_v1]
-  sre_checkpoints_v1(path: String): [SRECheckpoint_v1]
-  sentry_teams_v1(path: String): [SentryTeam_v1]
-  sentry_instances_v1(path: String): [SentryInstance_v1]
-  app_interface_sql_queries_v1(path: String): [AppInterfaceSqlQuery_v1]
-  saas_files_v1(path: String, name: String): [SaasFile_v1]
-  saas_files_v2(path: String, name: String): [SaasFile_v2]
-  pipelines_providers_v1(path: String): [PipelinesProvider_v1]
-  unleash_instances_v1(path: String): [UnleashInstance_v1]
-  gabi_instances_v1(path: String): [GabiInstance_v1]
-  dns_zone_v1(path: String): [DnsZone_v1]
-  slack_workspaces_v1(path: String): [SlackWorkspace_v1]
-  ocp_release_mirror_v1(path: String): [OcpReleaseMirror_v1]
-  slo_document_v1(path: String): [SLODocument_v1]
-  shared_resources_v1(path: String, name: String): [SharedResources_v1]
-  pagerduty_instances_v1(path: String): [PagerDutyInstance_v1]
-  ocm_instances_v1(path: String): [OpenShiftClusterManager_v1]
-  dyn_traffic_directors_v1(path: String): [DynTrafficDirector_v1]
-  status_page_v1(path: String): [StatusPage_v1]
-  status_page_component_v1(path: String): [StatusPageComponent_v1]
-  endpoint_monitoring_provider_v1(path: String): [EndpointMonitoringProvider_v1]
-}
-
-type Report_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  app: App_v1!
-  name: String!
-  date: String!
-  contentFormatVersion: String!
-  content: String!
-}
-
-type Resource_v1 {
-  path: String!
-  content: String!
-  sha256sum: String!
-  schema: String
-}
-
-type ResourceQuota_v1 {
-  schema: String!
-  labels: JSON
-  name: String!
-  description: String!
-  quotas: [ResourceQuotaItem_v1!]
-}
-
-type ResourceQuotaItem_v1 {
-  name: String!
-  resources: ResourceQuotaItemResources_v1!
-  scopes: [String]
-}
-
-type ResourceQuotaItemResources_v1 {
-  limits: ResourceValues_v1
-  requests: ResourceValues_v1
-  pods: Int
-}
-
-type ResourceRequirements_v1 {
-  cpu: String!
-  memory: String!
-}
-
-type ResourceValues_v1 {
-  cpu: String
-  memory: String
-}
-
-type Role_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  expirationDate: String
-  permissions: [Permission_v1]
-  tag_on_cluster_updates: Boolean
-  access: [Access_v1]
-  aws_groups: [AWSGroup_v1]
-  user_policies: [AWSUserPolicy_v1]
-  sentry_teams: [SentryTeam_v1]
-  sentry_roles: [SentryRole_v1]
-  sendgrid_accounts: [SendGridAccount_v1]
-  owned_saas_files: [SaasFile_v1]
-  users: [User_v1]
-  bots: [Bot_v1]
-}
-
-type SaasFile_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  app: App_v1!
-  instance: JenkinsInstance_v1!
-  slack: SlackOutput_v1!
-  managedResourceTypes: [String!]
-  authentication: SaasFileAuthentication_v1
-  parameters: JSON
-  resourceTemplates: [SaasResourceTemplate_v1!]
-  imagePatterns: [String!]
-  takeover: Boolean
-  compare: Boolean
-  timeout: Int
-  publishJobLogs: Boolean
-  clusterAdmin: Boolean
-  use_channel_in_image_tag: Boolean
-  roles: [Role_v1]
-}
-
-type SaasFile_v2 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  app: App_v1!
-  pipelinesProvider: PipelinesProvider_v1!
-  slack: SlackOutput_v1!
-  managedResourceTypes: [String!]
-  authentication: SaasFileAuthentication_v1
-  parameters: JSON
-  resourceTemplates: [SaasResourceTemplate_v2!]
-  imagePatterns: [String!]
-  takeover: Boolean
-  compare: Boolean
-  publishJobLogs: Boolean
-  clusterAdmin: Boolean
-  use_channel_in_image_tag: Boolean
-  configurableResources: Boolean
-  deployResources: DeployResources_v1
-  roles: [Role_v1]
-}
-
-type SaasFileAuthentication_v1 {
-  code: VaultSecret_v1
-  image: VaultSecret_v1
-}
-
-type SaasResourceTemplate_v1 {
-  name: String!
-  url: String!
-  path: String!
-  provider: String
-  hash_length: Int
-  parameters: JSON
-  targets: [SaasResourceTemplateTarget_v1!]
-}
-
-type SaasResourceTemplate_v2 {
-  name: String!
-  url: String!
-  path: String!
-  provider: String
-  hash_length: Int
-  parameters: JSON
-  targets: [SaasResourceTemplateTarget_v2!]
-}
-
-type SaasResourceTemplateTarget_v1 {
-  namespace: Namespace_v1!
-  ref: String!
-  promotion: SaasResourceTemplateTargetPromotion_v1
-  parameters: JSON
-  upstream: String
-  disable: Boolean
-  delete: Boolean
-}
-
-type SaasResourceTemplateTarget_v2 {
-  namespace: Namespace_v1!
-  ref: String!
-  promotion: SaasResourceTemplateTargetPromotion_v1
-  parameters: JSON
-  upstream: SaasResourceTemplateTargetUpstream_v1
-  disable: Boolean
-  delete: Boolean
-}
-
-type SaasResourceTemplateTargetPromotion_v1 {
-  auto: Boolean
-  publish: [String]
-  subscribe: [String]
-  promotion_data: [PromotionData_v1]
-}
-
-type SaasResourceTemplateTargetUpstream_v1 {
-  instance: JenkinsInstance_v1!
-  name: String!
-}
-
-type Schedule_v1 {
-  name: String!
-  description: String
-  schedule: [ScheduleEntry_v1!]
-}
-
-type ScheduleEntry_v1 {
-  start: String!
-  end: String!
-  users: [User_v1!]
-}
-
-type SendGridAccount_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  token: VaultSecret_v1!
-}
-
-type SentryInstance_v1 {
-  schema: String!
-  labels: JSON
-  name: String!
-  description: String!
-  consoleUrl: String!
-  automationToken: VaultSecret_v1!
-  adminUser: VaultSecret_v1!
-}
-
-type SentryProjectItems_v1 {
-  name: String!
-  description: String!
-  email_prefix: String!
-  platform: String!
-  sensitive_fields: [String]
-  safe_fields: [String]
-  auto_resolve_age: Int
-  allowed_domains: [String]
-}
-
-type SentryRole_v1 {
-  role: String!
-  instance: SentryInstance_v1!
-}
-
-type SentryTeam_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  instance: SentryInstance_v1!
-}
-
-type ServiceAccountTokenSpec_v1 {
-  name: String
-  namespace: Namespace_v1!
-  serviceAccountName: String!
-}
-
-type SharedResources_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  openshiftResources: [NamespaceOpenshiftResource_v1!]
-  openshiftServiceAccountTokens: [ServiceAccountTokenSpec_v1]
-  terraformResources: [NamespaceTerraformResource_v1]
-}
-
-type SlackOutput_v1 {
-  workspace: SlackWorkspace_v1!
-  channel: String
-  icon_emoji: String
-  username: String
-  output: String
-  notifications: SlackOutputNotifications_v1
-}
-
-type SlackOutputNotifications_v1 {
-  start: Boolean
-}
-
-type SlackWorkspace_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  token: VaultSecret_v1!
-  api_client: SlackWorkspaceApiClient_v1
-  integrations: [SlackWorkspaceIntegration_v1]
-  managedUsergroups: [String!]
-}
-
-type SlackWorkspaceApiClient_v1 {
-  global: SlackWorkspaceApiClientGlobalConfig_v1
-  methods: [SlackWorkspaceApiClientMethodConfig_v1]
-}
-
-type SlackWorkspaceApiClientGlobalConfig_v1 {
-  max_retries: Int
-  timeout: Int
-}
-
-type SlackWorkspaceApiClientMethodConfig_v1 {
-  name: String!
-  args: JSON!
-}
-
-type SlackWorkspaceIntegration_v1 {
-  name: String!
-  token: VaultSecret_v1!
-  channel: String!
-  icon_emoji: String!
-  username: String!
-}
-
-type SLODocument_v1 {
-  schema: String!
-  labels: JSON
-  name: String!
-  namespaces: [Namespace_v1!]
-  slos: [SLODocumentSLO_v1]
-}
-
-type SLODocumentSLO_v1 {
-  name: String!
-  SLIType: String!
-  SLISpecification: String!
-  SLODetails: String!
-  SLOTarget: Float!
-  SLOParameters: SLODocumentSLOSLOParameters_v1!
-  expr: String!
-  SLOTargetUnit: String!
-  prometheusRules: String!
-  prometheusRulesTests: String
-  dashboard: String!
-}
-
-type SLODocumentSLOSLOParameters_v1 {
-  window: String!
-}
-
-type SmtpSettings_v1 {
-  mailAddress: String!
-  credentials: VaultSecret_v1!
-}
-
-type SqlEmailOverrides_v1 {
-  db_host: String
-  db_port: String
-  db_name: String
-  db_user: String
-  db_password: String
-}
-
-type SqlQuerySettings_v1 {
-  imageRepository: String!
-  pullSecret: NamespaceOpenshiftResourceVaultSecret_v1!
-}
-
-type SQSQueuesSpecs_v1 {
-  defaults: String!
-  queues: [KeyValue_v1!]
-}
-
-type SRECheckpoint_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  app: App_v1!
-  date: String!
-  issue: String!
-}
-
-type StatusPage_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  url: String
-  provider: String!
-  apiUrl: String!
-  credentials: VaultSecret_v1!
-  pageId: String!
-  components: [StatusPageComponent_v1]
-}
-
-type StatusPageComponent_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  displayName: String!
-  description: String
-  instructions: String!
-  page: StatusPage_v1!
-  groupName: String
-  apps: [App_v1]
-}
-
-type Taint_v1 {
-  key: String!
-  value: String!
-  effect: String!
-}
-
-type UnleashFeatureToggle_v1 {
-  name: String!
-  enabled: Boolean!
-  reason: String
-}
-
-type UnleashInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  url: String!
-  token: VaultSecret_v1!
-  notifications: UnleashNotifications_v1
-  featureToggles: [UnleashFeatureToggle_v1!]
-}
-
-type UnleashNotifications_v1 {
-  slack: [SlackOutput_v1]
-}
-
-type User_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  org_username: String!
-  github_username: String!
-  quay_username: String
-  slack_username: String
-  pagerduty_username: String
-  aws_username: String
-  public_gpg_key: String
-  tag_on_merge_requests: Boolean
-  tag_on_cluster_updates: Boolean
-  roles: [Role_v1]
-  requests: [CredentialsRequest_v1]
-  queries: [AppInterfaceSqlQuery_v1]
-  gabi_instances: [GabiInstance_v1]
-}
-
-type VaultApproleOptions_v1 implements VaultRoleOptions_v1 {
-  _type: String!
-  bind_secret_id: String!
-  local_secret_ids: String!
-  token_period: String!
-  secret_id_num_uses: String!
-  secret_id_ttl: String!
-  token_explicit_max_ttl: String!
-  token_max_ttl: String!
-  token_no_default_policy: Boolean!
-  token_num_uses: String!
-  token_ttl: String!
-  token_type: String!
-  token_policies: [String!]
-  policies: [String!]
-  secret_id_bound_cidrs: [String!]
-  token_bound_cidrs: [String!]
-}
-
-type VaultAudit_v1 {
-  _path: String!
-  type: String!
-  description: String!
-  options: VaultAuditOptions_v1!
-}
-
-interface VaultAuditOptions_v1 {
-  _type: String!
-}
-
-type VaultAuditOptionsFile_v1 implements VaultAuditOptions_v1 {
-  _type: String!
-  file_path: String!
-  log_raw: String!
-  hmac_accessor: String!
-  mode: String!
-  format: String!
-  prefix: String!
-}
-
-type VaultAuth_v1 {
-  _path: String!
-  type: String!
-  description: String!
-  settings: VaultAuthSettings_v1
-  policy_mappings: [VaultPolicyMapping_v1]
-}
-
-interface VaultAuthConfig_v1 {
-  _type: String!
-}
-
-type VaultAuthConfigGithub_v1 implements VaultAuthConfig_v1 {
-  _type: String!
-  organization: String!
-  base_url: String!
-  max_ttl: String!
-  ttl: String!
-}
-
-type VaultAuthSettings_v1 {
-  config: VaultAuthConfig_v1!
-}
-
-type VaultPolicy_v1 {
-  name: String!
-  rules: String!
-}
-
-type VaultPolicyMapping_v1 {
-  github_team: PermissionGithubOrgTeam_v1!
-  policies: [VaultPolicy_v1!]
-}
-
-type VaultRole_v1 {
-  name: String!
-  type: String!
-  mount: String!
-  options: VaultRoleOptions_v1!
-}
-
-interface VaultRoleOptions_v1 {
-  _type: String!
-}
-
-type VaultSecret_v1 {
-  path: String!
-  field: String!
-  format: String
-  version: Int
-}
-
-type VaultSecretEngine_v1 {
-  _path: String!
-  type: String!
-  description: String!
-  options: VaultSecretEngineOptions_v1
-}
-
-interface VaultSecretEngineOptions_v1 {
-  _type: String!
-}
-
-type VaultSecretEngineOptionsKV_v1 implements VaultSecretEngineOptions_v1 {
-  _type: String!
-  version: String!
-}
-

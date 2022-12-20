@@ -30,6 +30,15 @@ var (
 			userValidator()
 		},
 	}
+
+	accountNotifierCmd = &cobra.Command{
+		Use:   "account-notifier",
+		Short: "Sent out notifications on new passwords",
+		Long:  "Send pgp encrypted passwords to users",
+		Run: func(cmd *cobra.Command, args []string) {
+			accountNotifier()
+		},
+	}
 )
 
 // Execute executes the rootCmd
@@ -39,8 +48,10 @@ func Execute() {
 
 func init() {
 	rootCmd.AddCommand(userValidatorCmd)
+	rootCmd.AddCommand(accountNotifierCmd)
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info", "Log level")
 	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
+	accountNotifierCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 
 	cobra.OnInitialize(initConfig)
 	cobra.OnInitialize(configureLogging)
@@ -56,7 +67,7 @@ func initConfig() {
 }
 
 func configureLogging() {
-	loggerConfig := zap.NewProductionConfig()
+	loggerConfig := zap.NewDevelopmentConfig()
 
 	switch logLevel {
 	case "info":

@@ -86,3 +86,39 @@ func NewVaultClient() (*VaultClient, error) {
 func (v *VaultClient) ReadSecret(secretPath string) (*api.Secret, error) {
 	return v.client.Logical().Read(secretPath)
 }
+
+type SecretList struct {
+	Keys []string
+}
+
+// ListSecrets list secrets on a given Secret Path
+func (v *VaultClient) ListSecrets(secretPath string) (*SecretList, error) {
+	secret, err := v.client.Logical().List(secretPath)
+	if err != nil {
+		return nil, err
+	}
+
+	keyList := make([]string, 0)
+	if secret != nil {
+		for _, key := range secret.Data["keys"].([]interface{}) {
+			switch key := key.(type) {
+			case string:
+				keyList = append(keyList, key)
+			default:
+				return nil, fmt.Errorf("unexpected return type for secret %s, this is a bug", secretPath)
+			}
+		}
+	}
+
+	return &SecretList{
+		Keys: keyList,
+	}, nil
+}
+
+func (v *VaultClient) WriteSecret(secretPath string, secret map[string]interface{}) (*api.Secret, error) {
+	return v.client.Logical().Write(secretPath, secret)
+}
+
+func (v *VaultClient) DeleteSecret(secretPath string) (*api.Secret, error) {
+	return v.client.Logical().Delete(secretPath)
+}

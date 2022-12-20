@@ -61,6 +61,108 @@ func (v *GithubOrgsResponse) GetGithuborg_v1() []GithubOrgsGithuborg_v1GithubOrg
 	return v.Githuborg_v1
 }
 
+// PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 includes the requested fields of the GraphQL type PgpReencryptSettings_v1.
+type PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 struct {
+	Aws_account_output_vault_path string `json:"aws_account_output_vault_path"`
+	Reencrypt_vault_path          string `json:"reencrypt_vault_path"`
+	Private_pgp_key_vault_path    string `json:"private_pgp_key_vault_path"`
+}
+
+// GetAws_account_output_vault_path returns PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1.Aws_account_output_vault_path, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1) GetAws_account_output_vault_path() string {
+	return v.Aws_account_output_vault_path
+}
+
+// GetReencrypt_vault_path returns PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1.Reencrypt_vault_path, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1) GetReencrypt_vault_path() string {
+	return v.Reencrypt_vault_path
+}
+
+// GetPrivate_pgp_key_vault_path returns PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1.Private_pgp_key_vault_path, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1) GetPrivate_pgp_key_vault_path() string {
+	return v.Private_pgp_key_vault_path
+}
+
+// PgpReencryptSettingsResponse is returned by PgpReencryptSettings on success.
+type PgpReencryptSettingsResponse struct {
+	Pgp_reencrypt_settings_v1 []PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 `json:"pgp_reencrypt_settings_v1"`
+}
+
+// GetPgp_reencrypt_settings_v1 returns PgpReencryptSettingsResponse.Pgp_reencrypt_settings_v1, and is useful for accessing the field via an interface.
+func (v *PgpReencryptSettingsResponse) GetPgp_reencrypt_settings_v1() []PgpReencryptSettingsPgp_reencrypt_settings_v1PgpReencryptSettings_v1 {
+	return v.Pgp_reencrypt_settings_v1
+}
+
+// SmtpSettingsResponse is returned by SmtpSettings on success.
+type SmtpSettingsResponse struct {
+	Settings []SmtpSettingsSettingsAppInterfaceSettings_v1 `json:"settings"`
+}
+
+// GetSettings returns SmtpSettingsResponse.Settings, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsResponse) GetSettings() []SmtpSettingsSettingsAppInterfaceSettings_v1 {
+	return v.Settings
+}
+
+// SmtpSettingsSettingsAppInterfaceSettings_v1 includes the requested fields of the GraphQL type AppInterfaceSettings_v1.
+type SmtpSettingsSettingsAppInterfaceSettings_v1 struct {
+	Smtp SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1 `json:"smtp"`
+}
+
+// GetSmtp returns SmtpSettingsSettingsAppInterfaceSettings_v1.Smtp, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1) GetSmtp() SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1 {
+	return v.Smtp
+}
+
+// SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1 includes the requested fields of the GraphQL type SmtpSettings_v1.
+type SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1 struct {
+	MailAddress string                                                                                  `json:"mailAddress"`
+	Timeout     int                                                                                     `json:"timeout"`
+	Credentials SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1 `json:"credentials"`
+}
+
+// GetMailAddress returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1.MailAddress, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1) GetMailAddress() string {
+	return v.MailAddress
+}
+
+// GetTimeout returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1.Timeout, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1) GetTimeout() int {
+	return v.Timeout
+}
+
+// GetCredentials returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1.Credentials, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1) GetCredentials() SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1 {
+	return v.Credentials
+}
+
+// SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1 includes the requested fields of the GraphQL type VaultSecret_v1.
+type SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1 struct {
+	Path    string `json:"path"`
+	Field   string `json:"field"`
+	Version int    `json:"version"`
+	Format  string `json:"format"`
+}
+
+// GetPath returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1.Path, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1) GetPath() string {
+	return v.Path
+}
+
+// GetField returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1.Field, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1) GetField() string {
+	return v.Field
+}
+
+// GetVersion returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1.Version, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1) GetVersion() int {
+	return v.Version
+}
+
+// GetFormat returns SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1.Format, and is useful for accessing the field via an interface.
+func (v *SmtpSettingsSettingsAppInterfaceSettings_v1SmtpSmtpSettings_v1CredentialsVaultSecret_v1) GetFormat() string {
+	return v.Format
+}
+
 // UsersResponse is returned by Users on success.
 type UsersResponse struct {
 	Users_v1 []UsersUsers_v1User_v1 `json:"users_v1"`
@@ -131,6 +233,83 @@ query GithubOrgs {
 	}
 
 	var data GithubOrgsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func PgpReencryptSettings(
+	ctx context.Context,
+) (*PgpReencryptSettingsResponse, error) {
+	req := &graphql.Request{
+		OpName: "PgpReencryptSettings",
+		Query: `
+query PgpReencryptSettings {
+	pgp_reencrypt_settings_v1 {
+		aws_account_output_vault_path
+		reencrypt_vault_path
+		private_pgp_key_vault_path
+	}
+}
+`,
+	}
+	var err error
+	var client graphql.Client
+
+	client, err = gql.NewQontractClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data PgpReencryptSettingsResponse
+	resp := &graphql.Response{Data: &data}
+
+	err = client.MakeRequest(
+		ctx,
+		req,
+		resp,
+	)
+
+	return &data, err
+}
+
+func SmtpSettings(
+	ctx context.Context,
+) (*SmtpSettingsResponse, error) {
+	req := &graphql.Request{
+		OpName: "SmtpSettings",
+		Query: `
+query SmtpSettings {
+	settings: app_interface_settings_v1 {
+		smtp {
+			mailAddress
+			timeout
+			credentials {
+				path
+				field
+				version
+				format
+			}
+		}
+	}
+}
+`,
+	}
+	var err error
+	var client graphql.Client
+
+	client, err = gql.NewQontractClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var data SmtpSettingsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(

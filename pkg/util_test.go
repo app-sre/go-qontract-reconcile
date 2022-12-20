@@ -8,8 +8,8 @@ import (
 )
 
 func TestConcatValidationErrorOkay(t *testing.T) {
-	a := []ValidationError{ValidationError{Path: "/foo/rab"}}
-	b := []ValidationError{ValidationError{Path: "/foo/bar"}}
+	a := []ValidationError{{Path: "/foo/rab"}}
+	b := []ValidationError{{Path: "/foo/bar"}}
 	c := ConcatValidationErrors(a, b)
 	assert.Len(t, c, 2)
 	assert.Contains(t, c, a[0])

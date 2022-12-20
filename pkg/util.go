@@ -1,6 +1,9 @@
 package pkg
 
 import (
+	"os"
+	"testing"
+
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -38,4 +41,16 @@ func Contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+func StrPointer(s string) *string {
+	return &s
+}
+
+func ReadKeyFile(t *testing.T, fileName string) []byte {
+	key, err := os.ReadFile(fileName)
+	if err != nil {
+		t.Fatalf("Could not read public key test data %s, error: %s", fileName, err.Error())
+	}
+	return key
 }
