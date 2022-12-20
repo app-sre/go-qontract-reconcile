@@ -29,6 +29,7 @@ const (
 
 type GetUsers func(context.Context) (*queries.UsersResponse, error)
 type GetPgpReencryptSettings func(context.Context) (*queries.PgpReencryptSettingsResponse, error)
+type GetSmtpSettings func(context.Context) (*queries.SmtpSettingsResponse, error)
 type SendEmail func(context.Context, *notify.Notify, string) error
 type SetFailedState func(context.Context, Persistence, string, notification) error
 type RmFailedState func(context.Context, Persistence, string) error
@@ -40,28 +41,24 @@ type AccountNotifier struct {
 	vaultImportPath  string
 	vaultExportPath  string
 
-	smtpauth           smtpAuth
-	getuserFunc        GetUsers
-	getReencryptFunc   GetPgpReencryptSettings
-	sendEmailFunc      SendEmail
-	setFailedStateFunc SetFailedState
-	rmFailedStateFunc  RmFailedState
+	smtpauth            smtpAuth
+	getuserFunc         GetUsers
+	getReencryptFunc    GetPgpReencryptSettings
+	getSmtpSettingsFunc GetSmtpSettings
+	sendEmailFunc       SendEmail
+	setFailedStateFunc  SetFailedState
+	rmFailedStateFunc   RmFailedState
 }
 
 type smtpAuth struct {
-	sender   string
-	username string
-	password string
-	server   string
-	port     string
+	mailAddress string
+	username    string
+	password    string
+	server      string
+	port        string
 }
 
 type KeyExpirationNotifierConfig struct {
-	EmailSender      string
-	EmailUsername    string
-	EmailPassword    string
-	EmailServer      string
-	EmailPort        string
 	AppSrePGPKeyPath string
 	VaultImportPath  string
 	VaultExportPath  string
@@ -78,18 +75,14 @@ func NewAccountNotifier() *AccountNotifier {
 		appSrePGPKeyPath: kenc.AppSrePGPKeyPath,
 		vaultImportPath:  kenc.VaultImportPath,
 		vaultExportPath:  kenc.VaultExportPath,
-		smtpauth: smtpAuth{
-			sender:   kenc.EmailSender,
-			username: kenc.EmailUsername,
-			password: kenc.EmailPassword,
-			server:   kenc.EmailServer,
-			port:     kenc.EmailPort,
-		},
 		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
 			return queries.Users(ctx)
 		},
 		getReencryptFunc: func(ctx context.Context) (*queries.PgpReencryptSettingsResponse, error) {
 			return queries.PgpReencryptSettings(ctx)
+		},
+		getSmtpSettingsFunc: func(ctx context.Context) (*queries.SmtpSettingsResponse, error) {
+			return queries.SmtpSettings(ctx)
 		},
 		sendEmailFunc: func(ctx context.Context, notifier *notify.Notify, body string) error {
 			return notifier.Send(ctx, "AWS Access provisioned", body)
@@ -157,7 +150,7 @@ func (n *AccountNotifier) LogDiff(ri *ResourceInventory) {
 func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventory) error {
 	s, err := n.vault.ListSecrets(n.vaultImportPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, fmt.Sprintf("Error while getting list of secrets from import path %s", n.vaultImportPath))
 	}
 
 	for _, secretKey := range s.Keys {
@@ -165,7 +158,7 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventor
 
 		secret, err := n.vault.ReadSecret(secretPath)
 		if err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf("Error while reading secret %s", secretPath))
 		}
 		ri.AddResourceState(secret.Data["user_name"].(string), &ResourceState{
 			Current: notification{
@@ -183,14 +176,14 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventor
 	return nil
 }
 
-func getEmailAddress(username string) string {
-	return fmt.Sprintf("%s@redhat.com", username)
+func (n *AccountNotifier) getEmailAddress(username string) string {
+	return fmt.Sprintf("%s@%s", username, n.smtpauth.mailAddress)
 }
 
 func (n *AccountNotifier) DesiredState(ctx context.Context, ri *ResourceInventory) error {
 	users, err := n.getuserFunc(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error while getting users from graphql")
 	}
 
 	userMap := make(map[string]queries.UsersUsers_v1User_v1)
@@ -217,19 +210,19 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *ResourceInventor
 				Log().Debug("Key is stale")
 				if lastNotification.LastNotifiedAt.Add(24 * time.Hour).Before(time.Now()) {
 					c := state.Current.(notification)
-					state.Desired = *c.newNotificationFromCurrent(NOTIFY_EXPIRED, user.GetPublic_gpg_key(), getEmailAddress(user.GetOrg_username()))
+					state.Desired = *c.newNotificationFromCurrent(NOTIFY_EXPIRED, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 				} else {
 					Log().Debug("Key is stale, but was notified recently")
 					c := state.Current.(notification)
-					state.Desired = *c.newNotificationFromCurrent(SKIP, user.GetPublic_gpg_key(), getEmailAddress(user.GetOrg_username()))
+					state.Desired = *c.newNotificationFromCurrent(SKIP, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 				}
 			} else {
 				c := state.Current.(notification)
-				state.Desired = *c.newNotificationFromCurrent(REENCRYPT, user.GetPublic_gpg_key(), getEmailAddress(user.GetOrg_username()))
+				state.Desired = *c.newNotificationFromCurrent(REENCRYPT, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 			}
 		} else {
 			c := state.Current.(notification)
-			state.Desired = *c.newNotificationFromCurrent(REENCRYPT, user.GetPublic_gpg_key(), getEmailAddress(user.GetOrg_username()))
+			state.Desired = *c.newNotificationFromCurrent(REENCRYPT, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 		}
 	}
 
@@ -238,7 +231,7 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *ResourceInventor
 
 func (n *AccountNotifier) newNotifier(receipt string) *notify.Notify {
 	notifier := notify.New()
-	email := mail.New(n.smtpauth.sender, fmt.Sprintf("%s:%s", n.smtpauth.server, n.smtpauth.port))
+	email := mail.New(n.smtpauth.username, fmt.Sprintf("%s:%s", n.smtpauth.server, n.smtpauth.port))
 	Log().Debugw("Sending email to", "address", receipt)
 	email.AddReceivers(receipt)
 	email.AuthenticateSMTP("", n.smtpauth.username, n.smtpauth.password, n.smtpauth.server)
@@ -296,7 +289,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 				return errors.Wrap(err, "Error while reading secret from vault")
 			}
 			if appsrekey == nil {
-				return fmt.Errorf("Appsre PGP key not found in vault path: %s", n.appSrePGPKeyPath)
+				return fmt.Errorf("appsre PGP key not found in vault path: %s", n.appSrePGPKeyPath)
 			}
 			armoredOriginalPassword, err := DecodeAndArmorBase64Entity(desired.Secret.EncyptedPassword, "PGP MESSAGE")
 			if err != nil {
@@ -369,7 +362,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			Log().Info("Notification of expired keys to be done")
 			err := n.sendEmailFunc(ctx, n.newNotifier(desired.Email), generateEmailExpired(desired.Secret.Username))
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Error while sending user notification")
 			}
 			desired.LastNotifiedAt = time.Now()
 			err = n.setFailedStateFunc(ctx, n.state, desired.Secret.Username, desired)
@@ -387,17 +380,36 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 	n.state = NewS3State("state", ACCOUNT_NOTIFIER_NAME, NewClient(ctx))
 	n.vault, err = NewVaultClient()
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error setting up vault client")
 	}
 
 	settings, err := n.getReencryptFunc(ctx)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error getting reencrypt settings")
 	}
 
 	n.appSrePGPKeyPath = settings.GetPgp_reencrypt_settings_v1()[0].GetPrivate_pgp_key_vault_path()
 	n.vaultImportPath = settings.GetPgp_reencrypt_settings_v1()[0].GetReencrypt_vault_path()
 	n.vaultExportPath = settings.GetPgp_reencrypt_settings_v1()[0].GetAws_account_output_vault_path()
+
+	allSmtpSettings, err := n.getSmtpSettingsFunc(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "Error gettoing smtp settings")
+	}
+
+	smtpSettings := allSmtpSettings.GetSettings()[0].GetSmtp()
+	smtpSecret, err := n.vault.ReadSecret(smtpSettings.GetCredentials().Path)
+	if err != nil {
+		return errors.Wrapf(err, "Error while reading smtp credentials from vault")
+	}
+
+	n.smtpauth = smtpAuth{
+		mailAddress: smtpSettings.GetMailAddress(),
+		username:    smtpSecret.Data["username"].(string),
+		password:    smtpSecret.Data["password"].(string),
+		server:      smtpSecret.Data["server"].(string),
+		port:        smtpSecret.Data["port"].(string),
+	}
 
 	return nil
 }

@@ -31,3 +31,18 @@ query PgpReencryptSettings {
  		private_pgp_key_vault_path
   }
 }
+
+query SmtpSettings {
+  settings: app_interface_settings_v1 {
+    smtp {
+      mailAddress
+      timeout
+      credentials {
+        path
+        field
+        version
+        format
+      }
+    }
+  }
+}
