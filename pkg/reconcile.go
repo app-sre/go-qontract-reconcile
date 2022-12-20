@@ -14,9 +14,11 @@ var ContextIngetrationNameKey IntegrationNameKey = "integrationName"
 
 // RunnerConfig is used to unmarshal yaml configuration Runners
 type runnerConfig struct {
-	Timeout          int
-	UseFeatureToggle bool
-	DryRun           bool
+	Timeout           int
+	UseFeatureToggle  bool
+	DryRun            bool
+	RunOnce           bool
+	SleepDurationSecs int
 }
 
 // NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
@@ -26,10 +28,14 @@ func newRunnerConfig() *runnerConfig {
 	v.SetDefault("timeout", 0)
 	v.SetDefault("usefeaturetoggle", false)
 	v.SetDefault("dryrun", true)
+	v.SetDefault("runonce", false)
+	v.SetDefault("sleepdurationsecs", 600)
 
 	v.BindEnv("timeout", "RUNNER_TIMEOUT")
 	v.BindEnv("usefeaturetoggle", "RUNNER_USE_FEATURE_TOGGLE")
-	v.BindEnv("dryrun", "RUNNER_DRY_RUN")
+	v.BindEnv("dryrun", "DRY_RUN")
+	v.BindEnv("runonce", "RUN_ONCE")
+	v.BindEnv("sleepdurationsecs", "SLEEP_DURATION_SECS")
 
 	if err := v.Unmarshal(&ic); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -89,7 +95,7 @@ func NewIntegrationRunner(runnable Integration, name string) *IntegrationRunner 
 	return v
 }
 
-func (i *IntegrationRunner) Run() {
+func (i *IntegrationRunner) runIntegration() {
 	ri := NewResourceInventory()
 
 	ctx := context.WithValue(context.Background(), ContextIngetrationNameKey, i.Name)
@@ -129,8 +135,20 @@ func (i *IntegrationRunner) Run() {
 	}
 }
 
+func (i *IntegrationRunner) Run() {
+	for {
+		i.runIntegration()
+		Log().Debugw("Sleeping", "seconds", i.config.SleepDurationSecs)
+		time.Sleep(time.Duration(i.config.SleepDurationSecs) * time.Second)
+	}
+}
+
 func (i *IntegrationRunner) Exiter(exitCode int) {
-	os.Exit(exitCode)
+	if i.config.RunOnce {
+		os.Exit(exitCode)
+	} else {
+		Log().Debugw("RunOnce is disabled, not exiting", "exitCode", exitCode)
+	}
 }
 
 // Validation describes the methods an Validation must implement
