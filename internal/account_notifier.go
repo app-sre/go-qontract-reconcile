@@ -295,6 +295,9 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			if err != nil {
 				return errors.Wrap(err, "Error while reading secret from vault")
 			}
+			if appsrekey == nil {
+				return fmt.Errorf("Appsre PGP key not found in vault path: %s", n.appSrePGPKeyPath)
+			}
 			armoredOriginalPassword, err := DecodeAndArmorBase64Entity(desired.Secret.EncyptedPassword, "PGP MESSAGE")
 			if err != nil {
 				return errors.Wrap(err, "Error decoding and armoring encrypted password")
