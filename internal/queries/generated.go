@@ -6,15 +6,14 @@ import (
 	"context"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/app-sre/user-validator/pkg/gql"
+	"github.com/app-sre/go-qontract-reconcile/pkg/gql"
 )
 
 // GithubOrgsGithuborg_v1GithubOrg_v1 includes the requested fields of the GraphQL type GithubOrg_v1.
 type GithubOrgsGithuborg_v1GithubOrg_v1 struct {
-	Name         string                                                `json:"name"`
-	Token        GithubOrgsGithuborg_v1GithubOrg_v1TokenVaultSecret_v1 `json:"token"`
-	Default      bool                                                  `json:"default"`
-	ManagedTeams []string                                              `json:"managedTeams"`
+	Name    string                                                `json:"name"`
+	Token   GithubOrgsGithuborg_v1GithubOrg_v1TokenVaultSecret_v1 `json:"token"`
+	Default bool                                                  `json:"default"`
 }
 
 // GetName returns GithubOrgsGithuborg_v1GithubOrg_v1.Name, and is useful for accessing the field via an interface.
@@ -27,9 +26,6 @@ func (v *GithubOrgsGithuborg_v1GithubOrg_v1) GetToken() GithubOrgsGithuborg_v1Gi
 
 // GetDefault returns GithubOrgsGithuborg_v1GithubOrg_v1.Default, and is useful for accessing the field via an interface.
 func (v *GithubOrgsGithuborg_v1GithubOrg_v1) GetDefault() bool { return v.Default }
-
-// GetManagedTeams returns GithubOrgsGithuborg_v1GithubOrg_v1.ManagedTeams, and is useful for accessing the field via an interface.
-func (v *GithubOrgsGithuborg_v1GithubOrg_v1) GetManagedTeams() []string { return v.ManagedTeams }
 
 // GithubOrgsGithuborg_v1GithubOrg_v1TokenVaultSecret_v1 includes the requested fields of the GraphQL type VaultSecret_v1.
 type GithubOrgsGithuborg_v1GithubOrg_v1TokenVaultSecret_v1 struct {
@@ -219,7 +215,6 @@ query GithubOrgs {
 			format
 		}
 		default
-		managedTeams
 	}
 }
 `,

@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/app-sre/user-validator/internal/queries"
-	. "github.com/app-sre/user-validator/pkg"
+	"github.com/app-sre/go-qontract-reconcile/internal/queries"
+	. "github.com/app-sre/go-qontract-reconcile/pkg"
 	"github.com/google/go-github/v42/github"
 	"github.com/stretchr/testify/assert"
 )

@@ -1,8 +1,8 @@
-.PHONY: build push gotest gobuild govet coveragereport
+.PHONY: build push gotest gobuild govet coveragereport generate test-schema validate-schema
 
 CONTAINER_ENGINE ?= $(shell which podman >/dev/null 2>&1 && echo podman || echo docker)
 
-IMAGE_NAME := quay.io/app-sre/user-validator
+IMAGE_NAME := quay.io/app-sre/go-qontract-reconcile
 IMAGE_TAG := $(shell git rev-parse --short=7 HEAD)
 
 
@@ -22,7 +22,7 @@ govet: gotest
 	go vet ./...
 
 gobuild: govet
-	CGO_ENABLED=0 GOOS=$(GOOS) go build -o user-validator -a ./main.go
+	CGO_ENABLED=0 GOOS=$(GOOS) go build -o go-qontract-reconcile -a ./main.go
 
 build:
 ifeq ($(CONTAINER_ENGINE), podman)
@@ -54,3 +54,6 @@ coveragereport:
 
 update-schema:
 	./hack/update_schema.sh
+
+generate: 
+	go generate ./...

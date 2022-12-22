@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/app-sre/user-validator/internal/queries"
-	"github.com/app-sre/user-validator/pkg"
-	"github.com/app-sre/user-validator/pkg/mock"
+	"github.com/app-sre/go-qontract-reconcile/internal/queries"
+	"github.com/app-sre/go-qontract-reconcile/pkg"
+	"github.com/app-sre/go-qontract-reconcile/pkg/mock"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/nikoksr/notify"

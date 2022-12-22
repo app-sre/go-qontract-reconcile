@@ -20,6 +20,5 @@ query GithubOrgs {
       format
     }
     default
-    managedTeams
   }
 }

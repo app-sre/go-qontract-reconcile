@@ -1,4 +1,4 @@
-module github.com/app-sre/user-validator
+module github.com/app-sre/go-qontract-reconcile
 
 go 1.18
 
