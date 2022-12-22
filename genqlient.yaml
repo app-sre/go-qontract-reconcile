@@ -1,6 +1,7 @@
 schema: schema.graphql
 operations:
-- genqlient.graphql
+- internal/queries/user-validator.graphql
+- internal/queries/account-notifier.graphql
 generated: internal/queries/generated.go
 package: queries
 client_getter: github.com/app-sre/user-validator/pkg/gql.NewQontractClient
