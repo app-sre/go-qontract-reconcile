@@ -5,7 +5,7 @@ import (
 
 	defaultlog "log"
 
-	. "github.com/app-sre/user-validator/pkg"
+	. "github.com/app-sre/go-qontract-reconcile/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -17,13 +17,13 @@ var (
 	logLevel string
 
 	rootCmd = &cobra.Command{
-		Use:   "user-validator",
-		Short: "user-validator integration",
-		Long:  "Integration, that verifies the content of users in app-interface",
+		Use:   "qo-contract-reconcile",
+		Short: "qo-contract-reconcile",
+		Long:  "CLI for integrations written in Golang",
 	}
 
 	userValidatorCmd = &cobra.Command{
-		Use:   "validate",
+		Use:   "user-validator",
 		Short: "Validate users",
 		Long:  "Run validations for pgp keys, usernames and github logins",
 		Run: func(cmd *cobra.Command, args []string) {

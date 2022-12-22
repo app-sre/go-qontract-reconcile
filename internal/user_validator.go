@@ -6,14 +6,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/app-sre/user-validator/internal/queries"
-	. "github.com/app-sre/user-validator/pkg"
+	"github.com/app-sre/go-qontract-reconcile/internal/queries"
+	. "github.com/app-sre/go-qontract-reconcile/pkg"
 	"github.com/spf13/viper"
 )
 
 type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError
 
-// ValidateUser is a Validationa s described in github.com/app-sre/user-validator/pkg/integration.go
+// ValidateUser is a Validationa s described in github.com/app-sre/go-qontract-reconcile/pkg/integration.go
 type ValidateUser struct {
 	AuthenticatedGithubClient *AuthenticatedGithubClient
 	Vc                        *VaultClient

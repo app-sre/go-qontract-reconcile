@@ -6,12 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/app-sre/user-validator/internal/queries"
-	. "github.com/app-sre/user-validator/pkg"
+	"github.com/app-sre/go-qontract-reconcile/internal/queries"
+	. "github.com/app-sre/go-qontract-reconcile/pkg"
 	"github.com/nikoksr/notify"
 	"github.com/nikoksr/notify/service/mail"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
 	phelper "github.com/ProtonMail/gopenpgp/v2/helper"
@@ -58,23 +57,8 @@ type smtpAuth struct {
 	port        string
 }
 
-type KeyExpirationNotifierConfig struct {
-	AppSrePGPKeyPath string
-	VaultImportPath  string
-	VaultExportPath  string
-}
-
 func NewAccountNotifier() *AccountNotifier {
-	var kenc KeyExpirationNotifierConfig
-	sub := EnsureViperSub(viper.GetViper(), "account_notifier")
-	if err := sub.Unmarshal(&kenc); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
-	}
-
 	notifier := AccountNotifier{
-		appSrePGPKeyPath: kenc.AppSrePGPKeyPath,
-		vaultImportPath:  kenc.VaultImportPath,
-		vaultExportPath:  kenc.VaultExportPath,
 		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
 			return queries.Users(ctx)
 		},

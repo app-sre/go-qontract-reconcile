@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/app-sre/user-validator/internal"
-	. "github.com/app-sre/user-validator/pkg"
+	"github.com/app-sre/go-qontract-reconcile/internal"
+	. "github.com/app-sre/go-qontract-reconcile/pkg"
 )
 
 func userValidator() {

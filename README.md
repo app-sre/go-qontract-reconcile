@@ -1,24 +1,19 @@
-# user-validator
+![build](https://ci.ext.devshift.net/buildStatus/icon?job=app-sre-go-qontract-reconcile-gh-build-master)
+![license](https://img.shields.io/github/license/app-sre/go-qontract-reconcile.svg?style=flat)
 
-User-validator can be used to validate user data stored inside app-interface. 
 
-## usage
+# go-qontract-reconcile
 
-`user-validator validate --config config.yaml` 
-
-You can either specify a configuration via _--config_ or set configuration via Environment variables.
-
-## Logging
-
-You can change the log level by adding `-l` to the command. Like:
-
-`user-validator validate -l debug --config config.yaml`
+Contains integrations for app-interface for go-qontract-reconcile
 
 ### Yaml configuration
 
 ```YAML
 timeout: Timeout in seconds for the run, defines maximum runtime. (default: 0)
 usefeaturetoggle: Weither to check for feature toggles
+dryrun: Run in dry run, do not apply resources (default: true)
+runonce: Run integration only once (default: false)
+sleepdurationsecs: Time to sleep between iterations (default: 600s)
 
 qontract: 
   serverurl: URL to the GraphQL API REQUIRED
@@ -50,8 +45,11 @@ unleash:
 ### Environment variables
 
 Instead of using a yaml file, all parameters can be set via environment variables:
+ * DRY_RUN
+ * RUN_ONCE
  * RUNNER_TIMEOUT
  * RUNNER_USE_FEATURE_TOGGLE
+ * SLEEP_DURATION_SECS
  * QONTRACT_SERVER_URL
  * QONTRACT_TIMEOUT
  * QONTRACT_TOKEN
@@ -69,8 +67,24 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * UNLEASH_CLIENT_ACCESS_TOKEN
  * GITHUB_API_TIMEOUT
 
-## Licence
-[Apache License Version 2.0](LICENSE).
+
+## New query
+
+If you want to extend this tooling by adding a new query, create the new query in the `internal/queries` directory. This directory contains `.graphql` files, one per integration. Choose an existing file or create a new one if you add a new integration. 
+
+Once you updated the graphql directory, run the code generator to generate the queries.
+
+`go generate ./...`
+
+The actual command can be found in `internal/queries/generate.go`
+
+This will add corresponding graphql code to `internal/queries/generated.go` 
+
+
+## New AWS calls
+
+This code base uses an interface to abstract calls to the AWS SDK. `pkg/awsclient.go`. Benefit of this is, that it enables mocking responses from the AWS SDK. The downside is, that it requires adding used methods to the mentioned interface. After adding the required method, run  `go generate ./...` to generate the corresponding mock code. 
+
 
 ## Authors
 
