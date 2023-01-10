@@ -39,10 +39,11 @@ func TestDecodePgpKeyOkay(t *testing.T) {
 	assert.NotNil(t, entity)
 }
 
-func TestTestDecodeEccFailed(t *testing.T) {
+func TestTestDecodeEccOkay(t *testing.T) {
 	key := ReadKeyFile(t, eccFile)
-	_, err := DecodePgpKey(string(key), "/test/path/file.yml")
-	assert.NotNil(t, err)
+	entity, err := DecodePgpKey(string(key), "/test/path/file.yml")
+	assert.Nil(t, err)
+	assert.NotNil(t, entity)
 }
 
 func TestDecodePgpKeyInvalidArmoredKey(t *testing.T) {
