@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
+	"github.com/ProtonMail/gopenpgp/v2/constants"
 	phelper "github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
@@ -275,7 +276,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			if appsrekey == nil {
 				return fmt.Errorf("appsre PGP key not found in vault path: %s", n.appSrePGPKeyPath)
 			}
-			armoredOriginalPassword, err := DecodeAndArmorBase64Entity(desired.Secret.EncyptedPassword, "PGP MESSAGE")
+			armoredOriginalPassword, err := DecodeAndArmorBase64Entity(desired.Secret.EncyptedPassword, constants.PGPMessageHeader)
 			if err != nil {
 				return errors.Wrap(err, "Error decoding and armoring encrypted password")
 			}
@@ -285,7 +286,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			if err != nil {
 				return errors.Wrap(err, "Error while decrypting encrypted password")
 			}
-			armoredUserPublicPgpKey, err := DecodeAndArmorBase64Entity(desired.PublicPgpKey, "PGP PUBLIC KEY BLOCK")
+			armoredUserPublicPgpKey, err := DecodeAndArmorBase64Entity(desired.PublicPgpKey, constants.PublicKeyHeader)
 			if err != nil {
 				errorWrapped := errors.Wrap(err, "Error while decoding and armoring User Public PGP Key, setting state entry")
 				err = n.setFailedStateFunc(ctx, n.state, desired.Secret.Username, desired)

@@ -12,7 +12,6 @@ import (
 	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	pgperr "github.com/ProtonMail/go-crypto/openpgp/errors"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
-
 	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
 )
 
