@@ -254,8 +254,8 @@ Encrypted password: %s
 func generateEmailExpired(path string) string {
 	return fmt.Sprintf(
 		`
-Your PGP stored in app interface is not valid anymore. 
-Changing passwords or requesting access to new AWS accounts does not work.
+Your PGP key on the record has expired and is not valid anymore.
+Changing passwords or requesting access to new AWS accounts will no longer work.
 Please generate a new one following this guide [1]
 
 Link to userfile: https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data%s
