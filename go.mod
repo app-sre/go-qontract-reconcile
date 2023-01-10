@@ -1,6 +1,6 @@
 module github.com/app-sre/go-qontract-reconcile
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Khan/genqlient v0.5.0
