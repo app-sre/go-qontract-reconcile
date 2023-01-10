@@ -232,7 +232,7 @@ You have been invited to join an AWS account!\n
 Below you will find credentials for the first sign in.
 You will be requested to change your password.
 
-The password is encrypted with your public gpg key. To decrypt the password:
+The password is encrypted with your public PGP key. To decrypt the password:
 
 echo <password> | base64 -d | gpg -d - && echo
 (you will be asked to provide your passphrase to unlock the secret)

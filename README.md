@@ -31,7 +31,7 @@ vault:
 
 user_validator:
   concurrency: Number of coroutines to use to query Github (default: 10)
-  invalidusers: Comma seperated list of keys know to be invalid and skipd for pgp key validation
+  invalidusers: Comma seperated list of keys know to be invalid and skipd for PGP key validation
 
 github:
   timeout: Timeout in seconds for Github request (default: 60s)
