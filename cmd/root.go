@@ -25,7 +25,7 @@ var (
 	userValidatorCmd = &cobra.Command{
 		Use:   "user-validator",
 		Short: "Validate users",
-		Long:  "Run validations for pgp keys, usernames and github logins",
+		Long:  "Run validations for PGP keys, usernames and github logins",
 		Run: func(cmd *cobra.Command, args []string) {
 			userValidator()
 		},
@@ -34,7 +34,7 @@ var (
 	accountNotifierCmd = &cobra.Command{
 		Use:   "account-notifier",
 		Short: "Sent out notifications on new passwords",
-		Long:  "Send pgp encrypted passwords to users",
+		Long:  "Send PGP encrypted passwords to users",
 		Run: func(cmd *cobra.Command, args []string) {
 			accountNotifier()
 		},

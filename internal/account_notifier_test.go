@@ -344,7 +344,7 @@ lastnotifiedat: %s
 	mailSent := false
 	statePersisted := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
-		assert.Contains(t, body, "Your PGP stored in app interface is not valid anymore")
+		assert.Contains(t, body, "Your PGP key on the record has expired and is not valid anymore.")
 		assert.NotNil(t, n)
 		mailSent = true
 		return nil

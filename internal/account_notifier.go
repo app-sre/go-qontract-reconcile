@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
+	"github.com/ProtonMail/gopenpgp/v2/constants"
 	phelper "github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
@@ -231,7 +232,7 @@ You have been invited to join an AWS account!\n
 Below you will find credentials for the first sign in.
 You will be requested to change your password.
 
-The password is encrypted with your public gpg key. To decrypt the password:
+The password is encrypted with your public PGP key. To decrypt the password:
 
 echo <password> | base64 -d | gpg -d - && echo
 (you will be asked to provide your passphrase to unlock the secret)
@@ -253,8 +254,8 @@ Encrypted password: %s
 func generateEmailExpired(path string) string {
 	return fmt.Sprintf(
 		`
-Your PGP stored in app interface is not valid anymore. 
-Changing passwords or requesting access to new AWS accounts does not work.
+Your PGP key on the record has expired and is not valid anymore.
+Changing passwords or requesting access to new AWS accounts will no longer work.
 Please generate a new one following this guide [1]
 
 Link to userfile: https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data%s
@@ -275,7 +276,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			if appsrekey == nil {
 				return fmt.Errorf("appsre PGP key not found in vault path: %s", n.appSrePGPKeyPath)
 			}
-			armoredOriginalPassword, err := DecodeAndArmorBase64Entity(desired.Secret.EncyptedPassword, "PGP MESSAGE")
+			armoredOriginalPassword, err := DecodeAndArmorBase64Entity(desired.Secret.EncyptedPassword, constants.PGPMessageHeader)
 			if err != nil {
 				return errors.Wrap(err, "Error decoding and armoring encrypted password")
 			}
@@ -285,7 +286,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			if err != nil {
 				return errors.Wrap(err, "Error while decrypting encrypted password")
 			}
-			armoredUserPublicPgpKey, err := DecodeAndArmorBase64Entity(desired.PublicPgpKey, "PGP PUBLIC KEY BLOCK")
+			armoredUserPublicPgpKey, err := DecodeAndArmorBase64Entity(desired.PublicPgpKey, constants.PublicKeyHeader)
 			if err != nil {
 				errorWrapped := errors.Wrap(err, "Error while decoding and armoring User Public PGP Key, setting state entry")
 				err = n.setFailedStateFunc(ctx, n.state, desired.Secret.Username, desired)
