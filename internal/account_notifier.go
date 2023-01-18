@@ -145,7 +145,6 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventor
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Error while reading secret %s", secretPath))
 		}
-		fmt.Println(secret)
 		ri.AddResourceState(secret.Data["user_name"].(string), &ResourceState{
 			Current: notification{
 				Status:     REENCRYPT,
