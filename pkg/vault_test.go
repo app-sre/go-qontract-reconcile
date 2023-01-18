@@ -15,11 +15,11 @@ import (
 
 func setupViperAll() {
 	vaultCfg := make(map[string]interface{})
-	vaultCfg["addr"] = "fooAddr"
+	vaultCfg["server"] = "fooAddr"
 	vaultCfg["token"] = "fooToken"
-	vaultCfg["roleid"] = "fooRoleID"
+	vaultCfg["role_id"] = "fooRoleID"
 	vaultCfg["authType"] = "fooAuthType"
-	vaultCfg["secretid"] = "fooSecretID"
+	vaultCfg["secret_id"] = "fooSecretID"
 
 	viper.GetViper().Set("vault", vaultCfg)
 }
@@ -55,11 +55,11 @@ func TestNewVaultConfigAll(t *testing.T) {
 	setupViperAll()
 	vc := newVaultConfig()
 
-	assert.Equal(t, vc.Addr, "fooAddr")
+	assert.Equal(t, vc.Server, "fooAddr")
 	assert.Equal(t, vc.Token, "fooToken")
-	assert.Equal(t, vc.RoleID, "fooRoleID")
+	assert.Equal(t, vc.Role_ID, "fooRoleID")
 	assert.Equal(t, vc.AuthType, "fooAuthType")
-	assert.Equal(t, vc.SecretID, "fooSecretID")
+	assert.Equal(t, vc.Secret_ID, "fooSecretID")
 }
 
 func TestNewVaultConfigEnv(t *testing.T) {
@@ -67,8 +67,8 @@ func TestNewVaultConfigEnv(t *testing.T) {
 	vc := newVaultConfig()
 
 	assert.Equal(t, vc.Token, "fooToken")
-	assert.Equal(t, vc.RoleID, "fooRoleID")
-	assert.Equal(t, vc.SecretID, "fooSecretID")
+	assert.Equal(t, vc.Role_ID, "fooRoleID")
+	assert.Equal(t, vc.Secret_ID, "fooSecretID")
 }
 
 func TestNewVaultClientToken(t *testing.T) {
@@ -93,7 +93,7 @@ func TestNewVaultClientAppRole(t *testing.T) {
 	}))
 	defer vaultMock.Close()
 
-	os.Setenv("VAULT_ADDR", vaultMock.URL)
+	os.Setenv("VAULT_SERVER", vaultMock.URL)
 
 	v, err := NewVaultClient()
 	assert.Nil(t, err)
@@ -115,7 +115,7 @@ func TestVaultClientTimeout(t *testing.T) {
 			time.Sleep(2 * time.Second)
 		}))
 	setupViperToken()
-	os.Setenv("VAULT_ADDR", vaultMock.URL)
+	os.Setenv("VAULT_SERVER", vaultMock.URL)
 	os.Setenv("VAULT_TIMEOUT", "1")
 
 	client, err := NewVaultClient()
