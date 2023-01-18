@@ -33,13 +33,12 @@ func NewHttpTestServer(handlerFunc func(w http.ResponseWriter, r *http.Request))
 
 func SetupVaultEnv(url string) {
 	os.Setenv("VAULT_TOKEN", "token")
-	os.Setenv("VAULT_ADDR", "http://foo.example")
 	os.Setenv("VAULT_AUTHTYPE", "token")
-	os.Setenv("VAULT_ADDR", url)
+	os.Setenv("VAULT_SERVER", url)
 }
 
 func SetupGqlEnv(url string) {
-	os.Setenv("QONTRACT_SERVER_URL", url)
+	os.Setenv("GRAPHQL_SERVER", url)
 }
 
 func TestANCurrentState(t *testing.T) {

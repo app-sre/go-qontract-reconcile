@@ -18,23 +18,24 @@ type VaultClient struct {
 }
 
 type vaultConfig struct {
-	Addr     string
-	AuthType string
-	Token    string
-	RoleID   string
-	SecretID string
-	Timeout  int
+	Server    string
+	AuthType  string
+	Token     string
+	Role_ID   string
+	Secret_ID string
+	Timeout   int
 }
 
 func newVaultConfig() *vaultConfig {
 	var vc vaultConfig
 	sub := EnsureViperSub(viper.GetViper(), "vault")
 	sub.SetDefault("timeout", 60)
-	sub.BindEnv("addr", "VAULT_ADDR")
+	sub.SetDefault("authtype", "approle")
+	sub.BindEnv("server", "VAULT_SERVER")
 	sub.BindEnv("authtype", "VAULT_AUTHTYPE")
 	sub.BindEnv("token", "VAULT_TOKEN")
-	sub.BindEnv("roleid", "VAULT_ROLE_ID")
-	sub.BindEnv("secretid", "VAULT_SECRET_ID")
+	sub.BindEnv("role_id", "VAULT_ROLE_ID")
+	sub.BindEnv("secret_id", "VAULT_SECRET_ID")
 	sub.BindEnv("timeout", "VAULT_TIMEOUT")
 	if err := sub.Unmarshal(&vc); err != nil {
 		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -49,7 +50,7 @@ func NewVaultClient() (*VaultClient, error) {
 		config: vc,
 	}
 	vaultCFG := api.DefaultConfig()
-	vaultCFG.Address = vc.Addr
+	vaultCFG.Address = vc.Server
 	vaultCFG.Timeout = time.Duration(vc.Timeout) * time.Second
 
 	tmpClient, err := api.NewClient(vaultCFG)
@@ -61,8 +62,8 @@ func NewVaultClient() (*VaultClient, error) {
 	switch vc.AuthType {
 	case "approle":
 		appRoleAuth, err := approle.NewAppRoleAuth(
-			vc.RoleID,
-			&approle.SecretID{FromString: vc.SecretID})
+			vc.Role_ID,
+			&approle.SecretID{FromString: vc.Secret_ID})
 
 		if err != nil {
 			return nil, err

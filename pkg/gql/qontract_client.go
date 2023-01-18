@@ -32,21 +32,21 @@ type QontractClient struct {
 }
 
 type qontractConfig struct {
-	ServerURL string
-	Timeout   int
-	Token     string
-	Retries   int
+	Server  string
+	Timeout int
+	Token   string
+	Retries int
 }
 
 func newQontractConfig() *qontractConfig {
 	var qc qontractConfig
-	sub := pkg.EnsureViperSub(viper.GetViper(), "qontract")
+	sub := pkg.EnsureViperSub(viper.GetViper(), "graphql")
 	sub.SetDefault("timeout", 60)
 	sub.SetDefault("retries", 5)
-	sub.BindEnv("serverurl", "QONTRACT_SERVER_URL")
-	sub.BindEnv("timeout", "QONTRACT_TIMEOUT")
-	sub.BindEnv("token", "QONTRACT_TOKEN")
-	sub.BindEnv("retries", "QONTRACT_RETRIES")
+	sub.BindEnv("server", "GRAPHQL_SERVER")
+	sub.BindEnv("timeout", "GRAPHQL_TIMEOUT")
+	sub.BindEnv("token", "GRAPHQL_TOKEN")
+	sub.BindEnv("retries", "GRAPHQL_RETRIES")
 	if err := sub.Unmarshal(&qc); err != nil {
 		pkg.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
@@ -78,7 +78,7 @@ func NewQontractClient(ctx context.Context) (*QontractClient, error) {
 		})
 	}
 	client := &QontractClient{
-		Client: graphql.NewClient(config.ServerURL, retryClient),
+		Client: graphql.NewClient(config.Server, retryClient),
 		config: config,
 	}
 	return client, nil

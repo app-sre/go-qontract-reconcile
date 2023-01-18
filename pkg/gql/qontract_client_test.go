@@ -21,9 +21,9 @@ func qontractSetupViper() {
 	v := viper.GetViper()
 
 	qontractCfg := make(map[string]interface{})
-	qontractCfg["serverurl"] = "http://conf.example"
+	qontractCfg["server"] = "http://conf.example"
 
-	v.Set("qontract", qontractCfg)
+	v.Set("graphql", qontractCfg)
 }
 
 func TestNewQontractClient(t *testing.T) {
@@ -31,17 +31,17 @@ func TestNewQontractClient(t *testing.T) {
 
 	client, err := NewQontractClient(context.TODO())
 	assert.Nil(t, err)
-	assert.Equal(t, "http://conf.example", client.config.ServerURL)
+	assert.Equal(t, "http://conf.example", client.config.Server)
 	assert.NotNil(t, client)
 }
 
 func TestNewQontractClientEnv(t *testing.T) {
 	qontractSetupViper()
-	os.Setenv("QONTRACT_SERVER_URL", "http://env.example")
+	os.Setenv("GRAPHQL_SERVER", "http://env.example")
 
 	client, err := NewQontractClient(context.TODO())
 	assert.Nil(t, err)
-	assert.Equal(t, "http://env.example", client.config.ServerURL)
+	assert.Equal(t, "http://env.example", client.config.Server)
 	assert.NotNil(t, client)
 }
 
@@ -51,9 +51,9 @@ func TestClientTimeout(t *testing.T) {
 			time.Sleep(2 * time.Second)
 		}))
 	qontractSetupViper()
-	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
-	os.Setenv("QONTRACT_TIMEOUT", "1")
-	os.Setenv("QONTRACT_RETRIES", "0")
+	os.Setenv("GRAPHQL_SERVER", mock.URL)
+	os.Setenv("GRAPHQL_TIMEOUT", "1")
+	os.Setenv("GRAPHQL_RETRIES", "0")
 
 	client, err := NewQontractClient(testContext)
 	assert.Nil(t, err)
@@ -75,8 +75,8 @@ func TestClientRetry(t *testing.T) {
 			}
 		}))
 	qontractSetupViper()
-	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
-	os.Setenv("QONTRACT_RETRIES", "1")
+	os.Setenv("GRAPHQL_SERVER", mock.URL)
+	os.Setenv("GRAPHQL_RETRIES", "1")
 
 	client, err := NewQontractClient(testContext)
 	assert.Nil(t, err)
@@ -94,8 +94,8 @@ func TestClientAuth(t *testing.T) {
 			w.Write([]byte(`{"data":{}, "extensions": {"schemas":[]}}`))
 		}))
 	qontractSetupViper()
-	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
-	os.Setenv("QONTRACT_TOKEN", "basic foobar")
+	os.Setenv("GRAPHQL_SERVER", mock.URL)
+	os.Setenv("GRAPHQL_TOKEN", "basic foobar")
 
 	client, err := NewQontractClient(testContext)
 	assert.Nil(t, err)
@@ -110,7 +110,7 @@ func TestBrokenExtensions(t *testing.T) {
 			w.Write([]byte(`{"data":{}, "extensions": {}}`))
 		}))
 	qontractSetupViper()
-	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
+	os.Setenv("GRAPHQL_SERVER", mock.URL)
 
 	client, err := NewQontractClient(testContext)
 	assert.Nil(t, err)
@@ -134,7 +134,7 @@ func TestIntegrationsCalled(t *testing.T) {
 			w.Write([]byte(`{"data":{}, "extensions": {"schemas": []}}`))
 		}))
 	qontractSetupViper()
-	os.Setenv("QONTRACT_SERVER_URL", mock.URL)
+	os.Setenv("GRAPHQL_SERVER", mock.URL)
 
 	client, err := NewQontractClient(testContext)
 	assert.Nil(t, err)

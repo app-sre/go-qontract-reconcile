@@ -145,6 +145,7 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *ResourceInventor
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Error while reading secret %s", secretPath))
 		}
+		fmt.Println(secret)
 		ri.AddResourceState(secret.Data["user_name"].(string), &ResourceState{
 			Current: notification{
 				Status:     REENCRYPT,
@@ -314,6 +315,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *ResourceInventory) 
 			secretMap := make(map[string]interface{})
 			secretMap["console_url"] = desired.Secret.ConsoleURL
 			secretMap["encrypted_password"] = encodedReencryptedPassword
+			secretMap["account"] = desired.Secret.Account
 			secretMap["user_name"] = desired.Secret.Username
 
 			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/%s_%s", n.vaultExportPath, desired.Secret.Account, desired.Secret.Username), secretMap)
