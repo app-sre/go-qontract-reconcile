@@ -15,18 +15,18 @@ dryrun: Run in dry run, do not apply resources (default: true)
 runonce: Run integration only once (default: false)
 sleepdurationsecs: Time to sleep between iterations (default: 600s)
 
-qontract: 
-  serverurl: URL to the GraphQL API REQUIRED
+graphql: 
+  server: URL to the GraphQL API REQUIRED
   token: Value of Authorization header
   timeout: Timeout for qontract requests (default: 60s) 
   retries: Number of times to retry requests (default: 5)
 
 vault:
-  addr: Address to access Vault REQUIRED
+  server: Address to access Vault REQUIRED
   authtype: Authentication type either token or approle REQUIRED
   token: Token to access Vault, requires setting authtype to token
-  roleid: Role ID to use for authentication, requires setting authtype to approle 
-  secretid: Secret ID to use for authentication, requires setting authtype to approle
+  role_id: Role ID to use for authentication, requires setting authtype to approle 
+  secret_id: Secret ID to use for authentication, requires setting authtype to approle
   timeout: Timeout for vault requests. (default: 60s) 
 
 user_validator:
@@ -42,6 +42,19 @@ unleash:
   clientaccesstoken: Bearer token to use for authentication
 ```
 
+Configuration can also be passed in as toml, i.e.:
+
+```TOML
+[graphql]
+server = "https://example/graphql"
+token = "Basic Xmjdsfgiohj092w34gjf90erg="
+
+[vault]
+server = "https://vault.example.net"
+role_id = "a"
+secret_id = "b"
+```
+
 ### Environment variables
 
 Instead of using a yaml file, all parameters can be set via environment variables:
@@ -50,11 +63,11 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * RUNNER_TIMEOUT
  * RUNNER_USE_FEATURE_TOGGLE
  * SLEEP_DURATION_SECS
- * QONTRACT_SERVER_URL
- * QONTRACT_TIMEOUT
- * QONTRACT_TOKEN
- * QONTRACT_RETRIES
- * VAULT_ADDR
+ * GRAPHQL_SERVER
+ * GRAPHQL_TIMEOUT
+ * GRAPHQL_TOKEN
+ * GRAPHQL_RETRIES
+ * VAULT_SERVER
  * VAULT_AUTHTYPE
  * VAULT_TOKEN
  * VAULT_ROLE_ID
@@ -65,7 +78,9 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * UNLEASH_TIMEOUT
  * UNLEASH_API_URL
  * UNLEASH_CLIENT_ACCESS_TOKEN
+ * GITHUB_API
  * GITHUB_API_TIMEOUT
+ * AWS_REGION
 
 
 ## New query
