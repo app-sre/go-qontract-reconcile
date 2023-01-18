@@ -179,10 +179,11 @@ func (i *IntegrationRunner) Run() {
 		i.runIntegration()
 		end := time.Now()
 		i.metrics.time.Set(end.Sub(start).Seconds())
-		Log().Debugw("Sleeping", "seconds", i.config.SleepDurationSecs)
-		time.Sleep(time.Duration(i.config.SleepDurationSecs) * time.Second)
 		if i.config.RunOnce {
 			i.Exiter(0)
+		} else {
+			Log().Debugw("Sleeping", "seconds", i.config.SleepDurationSecs)
+			time.Sleep(time.Duration(i.config.SleepDurationSecs) * time.Second)
 		}
 	}
 }
