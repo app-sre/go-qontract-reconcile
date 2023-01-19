@@ -45,7 +45,7 @@ objects:
         - image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
           name: int
-          args: ["-c", "/config/config.toml", "${INTEGRATION_NAME}"]
+          args: ["-c", "/config/config.toml", "--logLevel", "DEBUG", "${INTEGRATION_NAME}"]
           env:
           - name: AWS_REGION
             valueFrom:
