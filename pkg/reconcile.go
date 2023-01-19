@@ -164,7 +164,7 @@ func (i *IntegrationRunner) runIntegration() {
 			i.Exiter(1)
 		}
 	} else {
-		Log().Infow("DryRun is enabled, not running Reconcile")
+		Log().Debugw("DryRun is enabled, not running Reconcile")
 	}
 }
 
