@@ -27,7 +27,7 @@ objects:
       metadata:
         labels:
           app: go-qontract-reconcile-${INTEGRATION_NAME}
-          component: go-qontract-reconcile
+          component: qontract-reconcile
       spec:
         serviceAccountName: go-qontract-reconcile
         initContainers:
