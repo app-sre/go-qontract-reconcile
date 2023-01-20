@@ -1,18 +1,19 @@
-package pkg
+package pgp
 
 import (
 	"testing"
 
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	publicFile             = "../test/data/public_key.b64"
-	publicSingleLineFile   = "../test/data/public_key.single-line.b64"
-	publicNoEncryptionFile = "../test/data/public_key.no-encryption.b64"
-	privateFile            = "../test/data/private_key.b64"
-	expiredFile            = "../test/data/expired_key.b64"
-	eccFile                = "../test/data/ecc_key.b64"
+	publicFile             = "../../test/data/public_key.b64"
+	publicSingleLineFile   = "../../test/data/public_key.single-line.b64"
+	publicNoEncryptionFile = "../../test/data/public_key.no-encryption.b64"
+	privateFile            = "../../test/data/private_key.b64"
+	expiredFile            = "../../test/data/expired_key.b64"
+	eccFile                = "../../test/data/ecc_key.b64"
 )
 
 func TestDecodePgpKeyFailDecode(t *testing.T) {
@@ -28,19 +29,19 @@ func TestDecodePgpKeyFailEntity(t *testing.T) {
 }
 
 func TestDecodePgpKeyOkay(t *testing.T) {
-	key := ReadKeyFile(t, publicFile)
+	key := util.ReadKeyFile(t, publicFile)
 	entity, err := DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.Nil(t, err)
 	assert.NotNil(t, entity)
 
-	key = ReadKeyFile(t, publicSingleLineFile)
+	key = util.ReadKeyFile(t, publicSingleLineFile)
 	entity, err = DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.Nil(t, err)
 	assert.NotNil(t, entity)
 }
 
 func TestTestDecodeEccOkay(t *testing.T) {
-	key := ReadKeyFile(t, eccFile)
+	key := util.ReadKeyFile(t, eccFile)
 	entity, err := DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.Nil(t, err)
 	assert.NotNil(t, entity)
@@ -51,7 +52,7 @@ func TestDecodePgpKeyInvalidArmoredKey(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "ASCII-armored PGP keys are not supported; please remove type headers and checksum")
 
-	key := ReadKeyFile(t, publicFile)
+	key := util.ReadKeyFile(t, publicFile)
 	// The CRC24 checksum for this public key is: 15b421 (encoded as =FbQh),
 	// add valid CRC at the end of the key to simulate a common mistake.
 	_, err = DecodePgpKey(string(key)+"\n=FbQh\n", "/test/path/file.yml")
@@ -60,7 +61,7 @@ func TestDecodePgpKeyInvalidArmoredKey(t *testing.T) {
 }
 
 func TestDecodePgpKeyInvalidArmoredKeyChecksum(t *testing.T) {
-	key := ReadKeyFile(t, publicFile)
+	key := util.ReadKeyFile(t, publicFile)
 	// The CRC24 checksum for this public key is: 15b421 (encoded as =FbQh).
 	// add an invalid CRC at the end of the key.
 	_, err := DecodePgpKey(string(key)+"\n=T3st\n", "/test/path/file.yml")
@@ -69,7 +70,7 @@ func TestDecodePgpKeyInvalidArmoredKeyChecksum(t *testing.T) {
 }
 
 func TestDecodePgpKeyInvalidPrivateKey(t *testing.T) {
-	key := ReadKeyFile(t, privateFile)
+	key := util.ReadKeyFile(t, privateFile)
 	_, err := DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "given PGP key is not a Public Key")
@@ -82,7 +83,7 @@ func TestDecodePgpKeyInvalidSpaces(t *testing.T) {
 }
 
 func TestTestEncryptOkay(t *testing.T) {
-	key := ReadKeyFile(t, publicFile)
+	key := util.ReadKeyFile(t, publicFile)
 	entity, err := DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.Nil(t, err)
 	err = TestEncrypt(entity)
@@ -90,7 +91,7 @@ func TestTestEncryptOkay(t *testing.T) {
 }
 
 func TestTestEncryptNoEncryptionKey(t *testing.T) {
-	key := ReadKeyFile(t, publicNoEncryptionFile)
+	key := util.ReadKeyFile(t, publicNoEncryptionFile)
 	entity, err := DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.Nil(t, err)
 	err = TestEncrypt(entity)
@@ -99,7 +100,7 @@ func TestTestEncryptNoEncryptionKey(t *testing.T) {
 }
 
 func TestTestEncryptFailExpired(t *testing.T) {
-	key := ReadKeyFile(t, expiredFile)
+	key := util.ReadKeyFile(t, expiredFile)
 	entity, err := DecodePgpKey(string(key), "/test/path/file.yml")
 	assert.NotNil(t, entity)
 	assert.Nil(t, err)

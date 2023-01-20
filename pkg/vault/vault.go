@@ -1,10 +1,11 @@
-package pkg
+package vault
 
 import (
 	"context"
 	"fmt"
 	"time"
 
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/api/auth/approle"
 
@@ -28,7 +29,7 @@ type vaultConfig struct {
 
 func newVaultConfig() *vaultConfig {
 	var vc vaultConfig
-	sub := EnsureViperSub(viper.GetViper(), "vault")
+	sub := util.EnsureViperSub(viper.GetViper(), "vault")
 	sub.SetDefault("timeout", 60)
 	sub.SetDefault("authtype", "approle")
 	sub.BindEnv("server", "VAULT_SERVER")
@@ -38,7 +39,7 @@ func newVaultConfig() *vaultConfig {
 	sub.BindEnv("secret_id", "VAULT_SECRET_ID")
 	sub.BindEnv("timeout", "VAULT_TIMEOUT")
 	if err := sub.Unmarshal(&vc); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 	return &vc
 }

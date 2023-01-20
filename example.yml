@@ -7,3 +7,8 @@ vault:
 
 state_s3:
   bucket: ter-int-dev-tf-state
+
+aws:
+  region: us-east-1
+
+dryrun: false

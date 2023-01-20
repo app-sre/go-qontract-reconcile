@@ -1,4 +1,4 @@
-package pkg
+package unleash
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -27,7 +29,7 @@ type UnleashClient struct {
 }
 
 func newUnleasConfig() *unleashConfig {
-	sub := EnsureViperSub(viper.GetViper(), "unleash")
+	sub := util.EnsureViperSub(viper.GetViper(), "unleash")
 	var c unleashConfig
 
 	sub.SetDefault("timeout", 60)
@@ -37,20 +39,10 @@ func newUnleasConfig() *unleashConfig {
 	sub.BindEnv("clientaccesstoken", "UNLEASH_CLIENT_ACCESS_TOKEN")
 
 	if err := sub.Unmarshal(&c); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 
 	return &c
-}
-
-type authedTransport struct {
-	key     string
-	wrapped http.RoundTripper
-}
-
-func (t *authedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.key))
-	return t.wrapped.RoundTrip(req)
 }
 
 func NewUnleashClient() (*UnleashClient, error) {
@@ -59,9 +51,9 @@ func NewUnleashClient() (*UnleashClient, error) {
 	return &UnleashClient{
 		Client: &http.Client{
 			Timeout: time.Duration(c.Timeout) * time.Second,
-			Transport: &authedTransport{
-				key:     c.ClientAccessToken,
-				wrapped: http.DefaultTransport,
+			Transport: &util.AuthedTransport{
+				Key:     fmt.Sprintf("Bearer %s", c.ClientAccessToken),
+				Wrapped: http.DefaultTransport,
 			},
 		},
 		unleashConfig: c,
@@ -70,7 +62,7 @@ func NewUnleashClient() (*UnleashClient, error) {
 
 // Dept: split up this method if you add new URLs, do not just copy and paste it!
 func (c *UnleashClient) GetFeature(ctx context.Context, name string) (*Feature, error) {
-	Log().Debugw("Checking if feature is enabled", "feature", name)
+	util.Log().Debugw("Checking if feature is enabled", "feature", name)
 	path := fmt.Sprintf("%s/client/features/%s", c.unleashConfig.ApiUrl, name)
 	req, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 	if err != nil {

@@ -1,4 +1,4 @@
-package pkg
+package github
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/google/go-github/v42/github"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -25,12 +26,12 @@ type GithubClientConfig struct {
 
 func newGithubClientConfig() *GithubClientConfig {
 	var qc GithubClientConfig
-	sub := EnsureViperSub(viper.GetViper(), "github")
+	sub := util.EnsureViperSub(viper.GetViper(), "github")
 	sub.SetDefault("timeout", 60)
 	sub.BindEnv("baseurl", "GITHUB_API")
 	sub.BindEnv("timeout", "GITHUB_API_TIMEOUT")
 	if err := sub.Unmarshal(&qc); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 	return &qc
 }
@@ -48,7 +49,7 @@ func NewAuthenticatedGithubClient(ctx context.Context, token string) (*Authentic
 	if strings.Compare(config.BaseURL, "") != 0 {
 		actualBaseUrl := config.BaseURL
 		if !strings.HasSuffix(config.BaseURL, "/") {
-			Log().Debugw("Github Base Url has no / suffix, addding it", "url", config.BaseURL)
+			util.Log().Debugw("Github Base Url has no / suffix, addding it", "url", config.BaseURL)
 			actualBaseUrl = config.BaseURL + "/"
 		}
 		baseUrl, err := url.Parse(actualBaseUrl)

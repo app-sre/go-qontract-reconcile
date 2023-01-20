@@ -1,22 +1,13 @@
-package pkg
+package util
 
 import (
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
-
-// ConcatValidationErrors can be used to merge two list of ValiudationErros
-func ConcatValidationErrors(a, b []ValidationError) []ValidationError {
-	allErrors := make([]ValidationError, len(a)+len(b))
-	copy(allErrors, a)
-	for i, e := range b {
-		allErrors[len(a)+i] = e
-	}
-	return allErrors
-}
 
 // Log returns the SuggardLoggar that can be used accross integrations
 func Log() *zap.SugaredLogger {
@@ -53,4 +44,14 @@ func ReadKeyFile(t *testing.T, fileName string) []byte {
 		t.Fatalf("Could not read public key test data %s, error: %s", fileName, err.Error())
 	}
 	return key
+}
+
+type AuthedTransport struct {
+	Key     string
+	Wrapped http.RoundTripper
+}
+
+func (t *AuthedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Authorization", t.Key)
+	return t.Wrapped.RoundTrip(req)
 }

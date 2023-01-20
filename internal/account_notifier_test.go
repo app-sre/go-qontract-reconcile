@@ -13,8 +13,11 @@ import (
 	"time"
 
 	"github.com/app-sre/go-qontract-reconcile/internal/queries"
-	"github.com/app-sre/go-qontract-reconcile/pkg"
-	"github.com/app-sre/go-qontract-reconcile/pkg/mock"
+	"github.com/app-sre/go-qontract-reconcile/pkg/aws/mock"
+	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
+	"github.com/app-sre/go-qontract-reconcile/pkg/state"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
+	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang/mock/gomock"
 	"github.com/nikoksr/notify"
@@ -53,7 +56,7 @@ func TestANCurrentState(t *testing.T) {
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
-	v, err := pkg.NewVaultClient()
+	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
 
@@ -61,7 +64,7 @@ func TestANCurrentState(t *testing.T) {
 		vault: v,
 	}
 
-	ri := pkg.NewResourceInventory()
+	ri := reconcile.NewResourceInventory()
 	a.CurrentState(context.TODO(), ri)
 
 	assert.NotNil(t, ri.State["foobar"])
@@ -88,10 +91,10 @@ func setupVaultMock(t *testing.T) *httptest.Server {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
 		} else if r.URL.String() == "/v1/import/pgpKey" {
 			fmt.Fprintf(w, `{"data": {"user_name":"foobar","console_url": "http://a", "encrypted_password": "%s", "account": "foobar" }}`,
-				jsonEscape(string(pkg.ReadKeyFile(t, testData))))
+				jsonEscape(string(util.ReadKeyFile(t, testData))))
 		}
 		if r.URL.String() == "/v1/privatekey" {
-			fmt.Fprintf(w, `{"data": {"private_key": "%s", "passphrase": "abc123" }}`, jsonEscape(string(pkg.ReadKeyFile(t, privateKey))))
+			fmt.Fprintf(w, `{"data": {"private_key": "%s", "passphrase": "abc123" }}`, jsonEscape(string(util.ReadKeyFile(t, privateKey))))
 		}
 	})
 }
@@ -111,10 +114,10 @@ func createUserMock(pgpKey string) *queries.UsersResponse {
 	}
 }
 
-func createTestNotifier(t *testing.T, vaultMock *pkg.VaultClient, awsClientMock *mock.MockClient, users *queries.UsersResponse) AccountNotifier {
+func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.VaultClient, awsClientMock *mock.MockClient, users *queries.UsersResponse) AccountNotifier {
 	return AccountNotifier{
 		vault: vaultMock,
-		state: pkg.NewS3State("state", "test", awsClientMock),
+		state: state.NewS3State(ctx, "state", "test", awsClientMock),
 		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
 			return users, nil
 		},
@@ -141,24 +144,24 @@ Skip          Import  Read    Invalid No              TestSKip
 */
 
 func TestReencryptOkay(t *testing.T) {
-	users := createUserMock(string(pkg.ReadKeyFile(t, publicKey)))
+	users := createUserMock(string(util.ReadKeyFile(t, publicKey)))
 
 	vaultMock := setupVaultMock(t)
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
-	v, err := pkg.NewVaultClient()
+	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), pkg.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
 
 	mockClient := mock.NewMockClient(ctrl)
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
-	a := createTestNotifier(t, v, mockClient, users)
+	a := createTestNotifier(ctx, t, v, mockClient, users)
 	mailSent := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
 		assert.Contains(t, body, "You have been invited to join an AWS account")
@@ -166,7 +169,7 @@ func TestReencryptOkay(t *testing.T) {
 		mailSent = true
 		return nil
 	}
-	ri := pkg.NewResourceInventory()
+	ri := reconcile.NewResourceInventory()
 
 	err = a.CurrentState(ctx, ri)
 	assert.NoError(t, err)
@@ -186,25 +189,25 @@ func TestReencryptInvalid(t *testing.T) {
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
-	v, err := pkg.NewVaultClient()
+	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), pkg.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
 
 	mockClient := mock.NewMockClient(ctrl)
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
 
-	a := createTestNotifier(t, v, mockClient, users)
-	a.setFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string, n notification) error {
+	a := createTestNotifier(ctx, t, v, mockClient, users)
+	a.setFailedStateFunc = func(ctx context.Context, p state.Persistence, s string, n notification) error {
 		assert.Equal(t, "foobar", s)
 		assert.Equal(t, "Invalid key", n.PublicPgpKey)
 		return nil
 	}
-	ri := pkg.NewResourceInventory()
+	ri := reconcile.NewResourceInventory()
 
 	err = a.CurrentState(ctx, ri)
 	assert.NoError(t, err)
@@ -217,19 +220,19 @@ func TestReencryptInvalid(t *testing.T) {
 }
 
 func TestReencryptUpdated(t *testing.T) {
-	users := createUserMock(string(pkg.ReadKeyFile(t, publicKey)))
+	users := createUserMock(string(util.ReadKeyFile(t, publicKey)))
 
 	vaultMock := setupVaultMock(t)
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
-	v, err := pkg.NewVaultClient()
+	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), pkg.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -240,7 +243,7 @@ publicpgpkey: oldone
 `))),
 	}, nil)
 
-	a := createTestNotifier(t, v, mockClient, users)
+	a := createTestNotifier(ctx, t, v, mockClient, users)
 	stateRemoved := false
 	mailSent := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
@@ -249,13 +252,13 @@ publicpgpkey: oldone
 		mailSent = true
 		return nil
 	}
-	a.rmFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string) error {
+	a.rmFailedStateFunc = func(ctx context.Context, p state.Persistence, s string) error {
 		assert.Equal(t, "foobar", s)
 		stateRemoved = true
 		return nil
 	}
 
-	ri := pkg.NewResourceInventory()
+	ri := reconcile.NewResourceInventory()
 
 	err = a.CurrentState(ctx, ri)
 	assert.NoError(t, err)
@@ -277,13 +280,13 @@ func TestNotifySkip(t *testing.T) {
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
-	v, err := pkg.NewVaultClient()
+	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), pkg.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -298,8 +301,8 @@ lastnotifiedat: %s
 `, string(dateByte))))),
 	}, nil)
 
-	a := createTestNotifier(t, v, mockClient, users)
-	ri := pkg.NewResourceInventory()
+	a := createTestNotifier(ctx, t, v, mockClient, users)
+	ri := reconcile.NewResourceInventory()
 
 	err = a.CurrentState(ctx, ri)
 	assert.NoError(t, err)
@@ -318,13 +321,13 @@ func TestNotifyExpired(t *testing.T) {
 	defer vaultMock.Close()
 	SetupVaultEnv(vaultMock.URL)
 
-	v, err := pkg.NewVaultClient()
+	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), pkg.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -339,7 +342,7 @@ lastnotifiedat: %s
 `, string(dateByte))))),
 	}, nil)
 
-	a := createTestNotifier(t, v, mockClient, users)
+	a := createTestNotifier(ctx, t, v, mockClient, users)
 	mailSent := false
 	statePersisted := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
@@ -348,13 +351,13 @@ lastnotifiedat: %s
 		mailSent = true
 		return nil
 	}
-	a.setFailedStateFunc = func(ctx context.Context, p pkg.Persistence, s string, n notification) error {
+	a.setFailedStateFunc = func(ctx context.Context, p state.Persistence, s string, n notification) error {
 		assert.Equal(t, "foobar", s)
 		assert.Equal(t, "Invalid key", n.PublicPgpKey)
 		statePersisted = true
 		return nil
 	}
-	ri := pkg.NewResourceInventory()
+	ri := reconcile.NewResourceInventory()
 
 	err = a.CurrentState(ctx, ri)
 	assert.NoError(t, err)
