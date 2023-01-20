@@ -47,6 +47,8 @@ objects:
           name: int
           args: ["-c", "/config/config.toml", "--logLevel", "debug", "${INTEGRATION_NAME}"]
           env:
+          - name: DRY_RUN
+            value: ${DRY_RUN}
           - name: AWS_REGION
             valueFrom:
               secretKeyRef:
