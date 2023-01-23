@@ -298,7 +298,7 @@ func (v *ValidationRunner) Run() {
 	}
 }
 
-// ConcatValidationErrors can be used to merge two list of ValiudationErros
+// ConcatValidationErrors can be used to merge two list of ValiudationErrors
 func ConcatValidationErrors(a, b []ValidationError) []ValidationError {
 	allErrors := make([]ValidationError, len(a)+len(b))
 	copy(allErrors, a)
