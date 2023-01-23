@@ -26,6 +26,7 @@ var _ = `# @genqlient
     }
 }`
 
+//go:generate go run github.com/Khan/genqlient
 // QontractClient abstraction for generated GraphQL client
 type QontractClient struct {
 	Client graphql.Client
