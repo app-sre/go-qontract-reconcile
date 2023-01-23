@@ -11,10 +11,7 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-user-validator
-
-# Dependency directories (remove the comment below to include it)
-# vendor/
+go-qontract-reconcile
 
 coverage.html
 
@@ -25,4 +22,13 @@ fake_resources/
 schemas/
 graphql-schemas/
 
+# Debugging credentials
+config.toml
+config.*.toml
+config.yaml
+config.*.yaml
+config.yml
+config.*.yml
+
+# IDE temp
 .vscode

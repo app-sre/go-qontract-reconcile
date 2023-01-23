@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/app-sre/go-qontract-reconcile/pkg"
+	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -25,6 +26,7 @@ var _ = `# @genqlient
     }
 }`
 
+//go:generate go run github.com/Khan/genqlient
 // QontractClient abstraction for generated GraphQL client
 type QontractClient struct {
 	Client graphql.Client
@@ -40,7 +42,7 @@ type qontractConfig struct {
 
 func newQontractConfig() *qontractConfig {
 	var qc qontractConfig
-	sub := pkg.EnsureViperSub(viper.GetViper(), "graphql")
+	sub := util.EnsureViperSub(viper.GetViper(), "graphql")
 	sub.SetDefault("timeout", 60)
 	sub.SetDefault("retries", 5)
 	sub.BindEnv("server", "GRAPHQL_SERVER")
@@ -48,19 +50,9 @@ func newQontractConfig() *qontractConfig {
 	sub.BindEnv("token", "GRAPHQL_TOKEN")
 	sub.BindEnv("retries", "GRAPHQL_RETRIES")
 	if err := sub.Unmarshal(&qc); err != nil {
-		pkg.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 	return &qc
-}
-
-type authedTransport struct {
-	key     string
-	wrapped http.RoundTripper
-}
-
-func (t *authedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", t.key)
-	return t.wrapped.RoundTrip(req)
 }
 
 // NewQontractClient creates a new QontractClient
@@ -72,9 +64,9 @@ func NewQontractClient(ctx context.Context) (*QontractClient, error) {
 	retryClient.SetRetries(config.Retries)
 
 	if strings.Compare(config.Token, "") != 0 {
-		retryClient.SetAuthTransport(&authedTransport{
-			key:     config.Token,
-			wrapped: http.DefaultTransport,
+		retryClient.SetAuthTransport(&util.AuthedTransport{
+			Key:     config.Token,
+			Wrapped: http.DefaultTransport,
 		})
 	}
 	client := &QontractClient{
@@ -97,7 +89,7 @@ func (c *QontractClient) ensureSchema(integrationName string, resp *graphql.Resp
 	}
 	extensions := resp.Extensions["schemas"]
 	for _, schemaUsed := range extensions.([]interface{}) {
-		if !pkg.Contains(allowedIntegrations, schemaUsed.(string)) {
+		if !util.Contains(allowedIntegrations, schemaUsed.(string)) {
 			return fmt.Errorf("usage of schema %s not allowed for integration %s", schemaUsed, integrationName)
 		}
 	}
@@ -109,7 +101,7 @@ func (c *QontractClient) MakeRequest(ctx context.Context, req *graphql.Request, 
 	if err != nil {
 		return err
 	}
-	integrationName := ctx.Value(pkg.ContextIngetrationNameKey).(string)
+	integrationName := ctx.Value(reconcile.ContextIngetrationNameKey).(string)
 	integrationsResponse, err := integrations(ctx, c.Client)
 	if err != nil {
 		return err
@@ -147,7 +139,7 @@ func NewRetryableHttpWrapper() *retryableHttpWrapper {
 		Client: retryablehttp.NewClient(),
 	}
 	var zapLog retryablehttp.LeveledLogger = zapLog{
-		z: pkg.Log(),
+		z: util.Log(),
 	}
 	r.Client.Logger = zapLog
 	return r
@@ -163,7 +155,7 @@ func (r *retryableHttpWrapper) Do(req *http.Request) (*http.Response, error) {
 	return r.Client.Do(reqRetryable)
 }
 
-func (r *retryableHttpWrapper) SetAuthTransport(transport *authedTransport) {
+func (r *retryableHttpWrapper) SetAuthTransport(transport *util.AuthedTransport) {
 	r.Client.HTTPClient.Transport = transport
 }
 
