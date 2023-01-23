@@ -1,10 +1,11 @@
 // inspired by https://github.com/openshift/aws-account-operator/blob/master/pkg/awsclient/client.go
 
-package pkg
+package aws
 
 import (
 	"context"
 
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -48,19 +49,18 @@ type awsClientConfig struct {
 
 func newAwsClientConfig() *awsClientConfig {
 	var cfg awsClientConfig
-	sub := EnsureViperSub(viper.GetViper(), "aws")
+	sub := util.EnsureViperSub(viper.GetViper(), "aws")
 	sub.BindEnv("region", "AWS_REGION")
 	if err := sub.Unmarshal(&cfg); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 	return &cfg
 }
 
 func newAwsConfig(ctx context.Context, region string) *aws.Config {
-	cfg, err := config.LoadDefaultConfig(ctx)
-	cfg.Region = region
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		Log().Fatalw("Error creating AWS configuration %s", err.Error())
+		util.Log().Fatalw("Error creating AWS configuration %s", err.Error())
 	}
 	return &cfg
 }

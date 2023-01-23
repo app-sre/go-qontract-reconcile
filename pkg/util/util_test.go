@@ -1,4 +1,4 @@
-package pkg
+package util
 
 import (
 	"testing"
@@ -6,15 +6,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestConcatValidationErrorOkay(t *testing.T) {
-	a := []ValidationError{{Path: "/foo/rab"}}
-	b := []ValidationError{{Path: "/foo/bar"}}
-	c := ConcatValidationErrors(a, b)
-	assert.Len(t, c, 2)
-	assert.Contains(t, c, a[0])
-	assert.Contains(t, c, b[0])
-}
 
 func TestEnsureViperSubEmpty(t *testing.T) {
 	v := viper.New()

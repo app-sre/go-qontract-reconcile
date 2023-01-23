@@ -1,10 +1,13 @@
-package pkg
+package reconcile
 
 import (
 	"context"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/app-sre/go-qontract-reconcile/pkg/unleash"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -41,7 +44,7 @@ func newRunnerConfig() *runnerConfig {
 	v.BindEnv("sleepdurationsecs", "SLEEP_DURATION_SECS")
 
 	if err := v.Unmarshal(&ic); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 
 	return &ic
@@ -142,36 +145,36 @@ func (i *IntegrationRunner) runIntegration() {
 
 	err := i.Runnable.Setup(ctx)
 	if err != nil {
-		Log().Errorw("Error during setup", "error", err.Error())
+		util.Log().Errorw("Error during setup", "error", err.Error())
 		i.Exiter(1)
 	}
 
 	err = i.Runnable.CurrentState(ctx, ri)
 	if err != nil {
-		Log().Errorw("Error during CurrentState", "error", err.Error())
+		util.Log().Errorw("Error during CurrentState", "error", err.Error())
 		i.Exiter(1)
 	}
 	err = i.Runnable.DesiredState(ctx, ri)
 	if err != nil {
-		Log().Errorw("Error during DesiredState", "error", err.Error())
+		util.Log().Errorw("Error during DesiredState", "error", err.Error())
 		i.Exiter(1)
 	}
 	i.Runnable.LogDiff(ri)
 	if !i.config.DryRun {
 		err = i.Runnable.Reconcile(ctx, ri)
 		if err != nil {
-			Log().Errorw("Error during Reconcile", "error", err.Error())
+			util.Log().Errorw("Error during Reconcile", "error", err.Error())
 			i.Exiter(1)
 		}
 	} else {
-		Log().Debugw("DryRun is enabled, not running Reconcile")
+		util.Log().Debugw("DryRun is enabled, not running Reconcile")
 	}
 }
 
 func (i *IntegrationRunner) Run() {
 	go func(i *IntegrationRunner) {
 		http.Handle("/metrics", promhttp.HandlerFor(i.registry, promhttp.HandlerOpts{Registry: i.registry}))
-		Log().Fatal(http.ListenAndServe(":9090", nil))
+		util.Log().Fatal(http.ListenAndServe(":9090", nil))
 	}(i)
 
 	for {
@@ -182,7 +185,7 @@ func (i *IntegrationRunner) Run() {
 		if i.config.RunOnce {
 			i.Exiter(0)
 		} else {
-			Log().Debugw("Sleeping", "seconds", i.config.SleepDurationSecs)
+			util.Log().Debugw("Sleeping", "seconds", i.config.SleepDurationSecs)
 			time.Sleep(time.Duration(i.config.SleepDurationSecs) * time.Second)
 		}
 	}
@@ -193,7 +196,7 @@ func (i *IntegrationRunner) Exiter(exitCode int) {
 	if i.config.RunOnce {
 		os.Exit(exitCode)
 	} else {
-		Log().Debugw("RunOnce is disabled, not exiting", "exitCode", exitCode)
+		util.Log().Debugw("RunOnce is disabled, not exiting", "exitCode", exitCode)
 	}
 }
 
@@ -221,7 +224,7 @@ type Runner interface {
 }
 
 func isFeatureEnabled(ctx context.Context, runnable string) (bool, error) {
-	client, err := NewUnleashClient()
+	client, err := unleash.NewUnleashClient()
 	if err != nil {
 		return false, err
 	}
@@ -268,29 +271,39 @@ func (v *ValidationRunner) Run() {
 	if v.config.UseFeatureToggle {
 		enabled, err := isFeatureEnabled(ctx, v.Name)
 		if err != nil {
-			Log().Errorw("Error during integration", "error", err.Error())
+			util.Log().Errorw("Error during integration", "error", err.Error())
 			v.Exiter(1)
 		}
 		if !enabled {
-			Log().Warnw("Integration not enabled")
+			util.Log().Warnw("Integration not enabled")
 			v.Exiter(0)
 		}
 	}
 
 	if err := v.Runnable.Setup(ctx); err != nil {
-		Log().Errorw("Error during integration", "error", err.Error())
+		util.Log().Errorw("Error during integration", "error", err.Error())
 		v.Exiter(1)
 	}
 
 	validationErrors, err := v.Runnable.Validate(ctx)
 	if err != nil {
-		Log().Errorw("Error during integration", "error", err.Error())
+		util.Log().Errorw("Error during integration", "error", err.Error())
 		v.Exiter(1)
 	}
 	if len(validationErrors) > 0 {
 		for _, e := range validationErrors {
-			Log().Infow("Validation error", "path", e.Path, "validation", e.Validation, "error", e.Error.Error())
+			util.Log().Infow("Validation error", "path", e.Path, "validation", e.Validation, "error", e.Error.Error())
 		}
 		v.Exiter(1)
 	}
+}
+
+// ConcatValidationErrors can be used to merge two list of ValiudationErros
+func ConcatValidationErrors(a, b []ValidationError) []ValidationError {
+	allErrors := make([]ValidationError, len(a)+len(b))
+	copy(allErrors, a)
+	for i, e := range b {
+		allErrors[len(a)+i] = e
+	}
+	return allErrors
 }

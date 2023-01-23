@@ -1,4 +1,4 @@
-package pkg
+package pgp
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	pgperr "github.com/ProtonMail/go-crypto/openpgp/errors"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 )
 
 func TestEncrypt(entity *openpgp.Entity) error {
@@ -104,7 +105,7 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 		base64.StdEncoding.Encode(crcBytes, []byte{byte(crc >> 16), byte(crc >> 8), byte(crc)})
 		crcBytesEncoded := fmt.Sprintf("=%s", string(crcBytes))
 
-		Log().Debugw("A valid ASCII-armored PGP key has been given",
+		util.Log().Debugw("A valid ASCII-armored PGP key has been given",
 			"crc24_checksum", fmt.Sprintf("%x", crc),
 			"crc24_encoded", crcBytesEncoded,
 			"path", path,

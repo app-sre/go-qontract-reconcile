@@ -5,7 +5,7 @@ import (
 
 	defaultlog "log"
 
-	. "github.com/app-sre/go-qontract-reconcile/pkg"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -62,7 +62,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		Log().Debugw("Using configuration", "config", cfgFile)
+		util.Log().Debugw("Using configuration", "config", cfgFile)
 	}
 }
 

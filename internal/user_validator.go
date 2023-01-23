@@ -7,16 +7,20 @@ import (
 	"sync"
 
 	"github.com/app-sre/go-qontract-reconcile/internal/queries"
-	. "github.com/app-sre/go-qontract-reconcile/pkg"
+	"github.com/app-sre/go-qontract-reconcile/pkg/github"
+	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
+	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
+	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
 	"github.com/spf13/viper"
 )
 
-type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError
+type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError
 
 // ValidateUser is a Validationa s described in github.com/app-sre/go-qontract-reconcile/pkg/integration.go
 type ValidateUser struct {
-	AuthenticatedGithubClient *AuthenticatedGithubClient
-	Vc                        *VaultClient
+	AuthenticatedGithubClient *github.AuthenticatedGithubClient
+	Vc                        *vault.VaultClient
 	ValidateUserConfig        *ValidateUserConfig
 
 	// Used for mocking
@@ -31,12 +35,12 @@ type ValidateUserConfig struct {
 
 func newValidateUserConfig() *ValidateUserConfig {
 	var vuc ValidateUserConfig
-	sub := EnsureViperSub(viper.GetViper(), "user_validator")
+	sub := util.EnsureViperSub(viper.GetViper(), "user_validator")
 	sub.SetDefault("concurrency", 10)
 	sub.BindEnv("concurrency", "USER_VALIDATOR_CONCURRENCY")
 	sub.BindEnv("invalidusers", "USER_VALIDATOR_INVALID_USERS")
 	if err := sub.Unmarshal(&vuc); err != nil {
-		Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
 	return &vuc
 }
@@ -57,7 +61,7 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	i.Vc, err = NewVaultClient()
+	i.Vc, err = vault.NewVaultClient()
 	if err != nil {
 		return err
 	}
@@ -77,33 +81,33 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 	if secret == nil {
 		return fmt.Errorf("Github Secret \"%s\" not found", tokenPath)
 	}
-	i.AuthenticatedGithubClient, err = NewAuthenticatedGithubClient(ctx, secret.Data[tokenField].(string))
+	i.AuthenticatedGithubClient, err = github.NewAuthenticatedGithubClient(ctx, secret.Data[tokenField].(string))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (i *ValidateUser) validatePgpKeys(users queries.UsersResponse) []ValidationError {
+func (i *ValidateUser) validatePgpKeys(users queries.UsersResponse) []reconcile.ValidationError {
 	validUsers := i.removeInvalidUsers(&users)
 
-	validationErrors := make([]ValidationError, 0)
+	validationErrors := make([]reconcile.ValidationError, 0)
 	for _, user := range validUsers.GetUsers_v1() {
 		pgpKey := user.GetPublic_gpg_key()
 		if len(pgpKey) > 0 {
 			path := user.GetPath()
-			entity, err := DecodePgpKey(pgpKey, path)
+			entity, err := pgp.DecodePgpKey(pgpKey, path)
 			if err != nil {
-				validationErrors = append(validationErrors, ValidationError{
+				validationErrors = append(validationErrors, reconcile.ValidationError{
 					Path:       path,
 					Validation: "validatePgpKeys",
 					Error:      err,
 				})
 				continue
 			}
-			err = TestEncrypt(entity)
+			err = pgp.TestEncrypt(entity)
 			if err != nil {
-				validationErrors = append(validationErrors, ValidationError{
+				validationErrors = append(validationErrors, reconcile.ValidationError{
 					Path:       user.GetPath(),
 					Validation: "validatePgpKeys",
 					Error:      err,
@@ -114,8 +118,8 @@ func (i *ValidateUser) validatePgpKeys(users queries.UsersResponse) []Validation
 	return validationErrors
 }
 
-func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []ValidationError {
-	validationErrors := make([]ValidationError, 0)
+func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []reconcile.ValidationError {
+	validationErrors := make([]reconcile.ValidationError, 0)
 	usersPaths := make(map[string][]string)
 
 	for _, u := range users.GetUsers_v1() {
@@ -128,7 +132,7 @@ func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []Va
 	for k, v := range usersPaths {
 		if len(v) > 1 {
 			for _, path := range v {
-				validationErrors = append(validationErrors, ValidationError{
+				validationErrors = append(validationErrors, reconcile.ValidationError{
 					Path:       path,
 					Validation: "validateUsersSinglePath",
 					Error:      fmt.Errorf("user \"%s\" has multiple user files", k),
@@ -139,18 +143,18 @@ func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []Va
 	return validationErrors
 }
 
-func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
-	Log().Debugw("Getting github user", "user", user.GetOrg_username())
+func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError {
+	util.Log().Debugw("Getting github user", "user", user.GetOrg_username())
 	ghUser, err := i.AuthenticatedGithubClient.GetUsers(ctx, user.GetGithub_username())
 	if err != nil {
-		Log().Debugw("API error", "user", user.Org_username, "error", err.Error())
-		return &ValidationError{
+		util.Log().Debugw("API error", "user", user.Org_username, "error", err.Error())
+		return &reconcile.ValidationError{
 			Path:       user.Path,
 			Validation: "validateUsersGithub",
 			Error:      err,
 		}
 	} else if ghUser.GetLogin() != user.GetGithub_username() {
-		return &ValidationError{
+		return &reconcile.ValidationError{
 			Path:       user.Path,
 			Validation: "validateUsersGithub",
 			Error: fmt.Errorf("Github username is case sensitive in OSD. GithubUsername \"%s\","+
@@ -160,13 +164,13 @@ func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.User
 	return nil
 }
 
-func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.UsersResponse) []ValidationError {
-	validationErrors := make([]ValidationError, 0)
+func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.UsersResponse) []reconcile.ValidationError {
+	validationErrors := make([]reconcile.ValidationError, 0)
 	validateWg := sync.WaitGroup{}
 	gatherWg := sync.WaitGroup{}
 
 	userChan := make(chan queries.UsersUsers_v1User_v1)
-	retChan := make(chan ValidationError)
+	retChan := make(chan reconcile.ValidationError)
 
 	gatherWg.Add(1)
 	go func() {
@@ -176,7 +180,7 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.Us
 		}
 	}()
 
-	Log().Debugw("Starting github coroutines", "count", i.ValidateUserConfig.Concurrency)
+	util.Log().Debugw("Starting github coroutines", "count", i.ValidateUserConfig.Concurrency)
 	for t := 0; t < i.ValidateUserConfig.Concurrency; t++ {
 		validateWg.Add(1)
 		go func() {
@@ -222,23 +226,23 @@ func (i *ValidateUser) removeInvalidUsers(users *queries.UsersResponse) *queries
 		if _, ok := invalidPaths[user.GetPath()]; !ok {
 			returnUsers.Users_v1 = append(returnUsers.GetUsers_v1(), user)
 		} else {
-			Log().Debugw("Skipping invalid user key", "path", user.GetPath())
+			util.Log().Debugw("Skipping invalid user key", "path", user.GetPath())
 		}
 	}
 	return returnUsers
 }
 
 // Validate run user validation
-func (i *ValidateUser) Validate(ctx context.Context) ([]ValidationError, error) {
-	allValidationErrors := make([]ValidationError, 0)
+func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationError, error) {
+	allValidationErrors := make([]reconcile.ValidationError, 0)
 	users, err := queries.Users(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	allValidationErrors = ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(*users))
-	allValidationErrors = ConcatValidationErrors(allValidationErrors, i.validatePgpKeys(*users))
-	allValidationErrors = ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, *users))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(*users))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validatePgpKeys(*users))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, *users))
 
 	return allValidationErrors, nil
 }

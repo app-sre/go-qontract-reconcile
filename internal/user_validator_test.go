@@ -10,7 +10,8 @@ import (
 	"testing"
 
 	"github.com/app-sre/go-qontract-reconcile/internal/queries"
-	. "github.com/app-sre/go-qontract-reconcile/pkg"
+	ghlocal "github.com/app-sre/go-qontract-reconcile/pkg/github"
+	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/google/go-github/v42/github"
 	"github.com/stretchr/testify/assert"
 )
@@ -117,7 +118,7 @@ func TestGetAndValidateUserOK(t *testing.T) {
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
 
-	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+	v.AuthenticatedGithubClient = &ghlocal.AuthenticatedGithubClient{
 		GithubClient: gh,
 	}
 
@@ -140,7 +141,7 @@ func TestGetAndValidateUserFailed(t *testing.T) {
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
 
-	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+	v.AuthenticatedGithubClient = &ghlocal.AuthenticatedGithubClient{
 		GithubClient: gh,
 	}
 
@@ -165,7 +166,7 @@ func TestGetAndValidateUserApiFailed(t *testing.T) {
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
 
-	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+	v.AuthenticatedGithubClient = &ghlocal.AuthenticatedGithubClient{
 		GithubClient: gh,
 	}
 
@@ -194,7 +195,7 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
 
-	v.AuthenticatedGithubClient = &AuthenticatedGithubClient{
+	v.AuthenticatedGithubClient = &ghlocal.AuthenticatedGithubClient{
 		GithubClient: gh,
 	}
 
@@ -214,7 +215,7 @@ func TestValidateUsersGithubCallingValidate(t *testing.T) {
 		Concurrency: 1,
 	}
 	validated := false
-	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
+	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError {
 		validated = true
 		return nil
 	}
@@ -233,8 +234,8 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 	v.ValidateUserConfig = &ValidateUserConfig{
 		Concurrency: 1,
 	}
-	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *ValidationError {
-		return &ValidationError{}
+	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError {
+		return &reconcile.ValidationError{}
 	}
 
 	v.validateUsersGithub(context.Background(), queries.UsersResponse{

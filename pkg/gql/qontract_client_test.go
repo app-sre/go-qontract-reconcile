@@ -10,12 +10,13 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/app-sre/go-qontract-reconcile/pkg"
+	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
+	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
-var testContext = context.WithValue(context.TODO(), pkg.ContextIngetrationNameKey, "user-validator")
+var testContext = context.WithValue(context.TODO(), reconcile.ContextIngetrationNameKey, "user-validator")
 
 func qontractSetupViper() {
 	v := viper.GetViper()
@@ -128,7 +129,7 @@ func TestIntegrationsCalled(t *testing.T) {
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			b, _ := io.ReadAll(r.Body)
-			if pkg.Contains(expected_queries, string(b)) {
+			if util.Contains(expected_queries, string(b)) {
 				extensionsQueried = true
 			}
 			w.Write([]byte(`{"data":{}, "extensions": {"schemas": []}}`))

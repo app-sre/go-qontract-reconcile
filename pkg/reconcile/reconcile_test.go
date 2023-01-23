@@ -1,4 +1,4 @@
-package pkg
+package reconcile
 
 import (
 	"bytes"
@@ -190,4 +190,13 @@ func TestValidationTimeoutOK(t *testing.T) {
 	assert.Equal(t, 0, exitCode)
 	assert.True(t, tv.SetupRun)
 	assert.True(t, tv.ValidateRun)
+}
+
+func TestConcatValidationErrorOkay(t *testing.T) {
+	a := []ValidationError{{Path: "/foo/rab"}}
+	b := []ValidationError{{Path: "/foo/bar"}}
+	c := ConcatValidationErrors(a, b)
+	assert.Len(t, c, 2)
+	assert.Contains(t, c, a[0])
+	assert.Contains(t, c, b[0])
 }
