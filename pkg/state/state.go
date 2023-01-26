@@ -48,16 +48,24 @@ func newS3StateConfig() *s3StateConfig {
 	return &s3c
 }
 
-func NewS3State(ctx context.Context, base_path, infix string, vc vault.VaultClient) *S3State {
+func NewS3State(ctx context.Context, base_path, infix string, vc *vault.VaultClient, client aws.Client) *S3State {
 	config := *newS3StateConfig()
 
-	client := aws.NewClient(ctx, vc, config.Account)
+	var awsClient aws.Client
+
+	if vc != nil && client == nil {
+		awsClient = aws.NewClient(ctx, *vc, config.Account)
+	} else if client != nil {
+		awsClient = client
+	} else {
+		util.Log().Fatalw("No aws client or vault client provided")
+	}
 
 	state := &S3State{
 		state:     make(map[string]interface{}),
 		base_path: base_path,
 		infix:     infix,
-		client:    client,
+		client:    awsClient,
 		config:    config,
 	}
 	return state

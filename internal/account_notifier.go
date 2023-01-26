@@ -372,7 +372,7 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 		return errors.Wrapf(err, "Error setting up vault client")
 	}
 
-	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, *n.vault)
+	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, n.vault, nil)
 
 	settings, err := n.getReencryptFunc(ctx)
 	if err != nil {
