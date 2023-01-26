@@ -1,0 +1,9 @@
+schema: ../../schema.graphql
+operations:
+- awsclient.go
+generated: generated.go
+package: aws
+client_getter: github.com/app-sre/go-qontract-reconcile/pkg/gql.NewQontractClient
+bindings:
+  JSON:
+    type: map[string]interface{}

@@ -6,11 +6,31 @@ import (
 	"context"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
-	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/viper"
 )
+
+//go:generate go run github.com/Khan/genqlient
+
+var _ = `# @genqlient
+query GetAccounts($AccountName: String!)
+{
+	accounts: awsaccounts_v1 (name: $AccountName)
+	{
+		name
+		resourcesDefaultRegion
+		automationToken {
+			path
+			field
+			version
+			format
+		}
+	}
+}
+`
 
 //go:generate mockgen -source=./awsclient.go -destination=./mock/zz_generated.mock_client.go -package=mock
 
@@ -57,17 +77,31 @@ func newAwsClientConfig() *awsClientConfig {
 	return &cfg
 }
 
-func newAwsConfig(ctx context.Context, region string) *aws.Config {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+func NewClient(ctx context.Context, vc vault.VaultClient, account string) *awsClient {
+	result, err := GetAccounts(ctx, account)
+	if err != nil {
+		util.Log().Fatalw("Error getting AWS account info %s", err.Error())
+	}
+	accounts := result.GetAccounts()
+	if len(accounts) != 1 {
+		util.Log().Fatalw("Expected one AWS with name %s", account)
+
+	}
+
+	secret, err := vc.ReadSecret(accounts[0].AutomationToken.GetPath())
+	if err != nil {
+		util.Log().Fatalw("Error reading automation token %s", err.Error())
+	}
+	awsCfg := newAwsClientConfig()
+
+	aws_access_key_id := secret.Data["aws_access_key_id"].(string)
+	aws_secret_access_key := secret.Data["aws_secret_access_key"].(string)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(awsCfg.Region), config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(aws_access_key_id, aws_secret_access_key, "")))
 	if err != nil {
 		util.Log().Fatalw("Error creating AWS configuration %s", err.Error())
 	}
-	return &cfg
-}
 
-func NewClient(ctx context.Context) *awsClient {
-	cfg := newAwsClientConfig()
 	return &awsClient{
-		s3Client: *s3.NewFromConfig(*newAwsConfig(ctx, cfg.Region)),
+		s3Client: *s3.NewFromConfig(cfg),
 	}
 }

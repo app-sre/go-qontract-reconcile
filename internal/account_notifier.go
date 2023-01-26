@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/app-sre/go-qontract-reconcile/internal/queries"
-	"github.com/app-sre/go-qontract-reconcile/pkg/aws"
 	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/state"
@@ -373,7 +372,7 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 		return errors.Wrapf(err, "Error setting up vault client")
 	}
 
-	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, aws.NewClient(ctx))
+	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, *n.vault)
 
 	settings, err := n.getReencryptFunc(ctx)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/aws"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
+	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -47,8 +48,11 @@ func newS3StateConfig() *s3StateConfig {
 	return &s3c
 }
 
-func NewS3State(ctx context.Context, base_path, infix string, client aws.Client) *S3State {
+func NewS3State(ctx context.Context, base_path, infix string, vc vault.VaultClient) *S3State {
 	config := *newS3StateConfig()
+
+	client := aws.NewClient(ctx, vc, config.Account)
+
 	state := &S3State{
 		state:     make(map[string]interface{}),
 		base_path: base_path,
