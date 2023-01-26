@@ -16,10 +16,8 @@ import (
 //go:generate go run github.com/Khan/genqlient
 
 var _ = `# @genqlient
-query GetAccounts($AccountName: String!)
-{
-	accounts: awsaccounts_v1 (name: $AccountName)
-	{
+query getAccounts($name: String) {
+	awsaccounts_v1 (name: $name) {
 		name
 		resourcesDefaultRegion
 		automationToken {
@@ -78,19 +76,22 @@ func newAwsClientConfig() *awsClientConfig {
 }
 
 func NewClient(ctx context.Context, vc vault.VaultClient, account string) *awsClient {
-	result, err := GetAccounts(ctx, account)
-	if err != nil {
-		util.Log().Fatalw("Error getting AWS account info %s", err.Error())
+	if len(account) == 0 {
+		util.Log().Fatalw("No AWS account name provided")
 	}
-	accounts := result.GetAccounts()
+	result, err := getAccounts(ctx, account)
+	if err != nil {
+		util.Log().Fatalw("Error getting AWS account info", "error", err.Error())
+	}
+	accounts := result.GetAwsaccounts_v1()
 	if len(accounts) != 1 {
-		util.Log().Fatalw("Expected one AWS with name %s", account)
+		util.Log().Fatalw("Expected one AWS with name", "account", account)
 
 	}
 
 	secret, err := vc.ReadSecret(accounts[0].AutomationToken.GetPath())
 	if err != nil {
-		util.Log().Fatalw("Error reading automation token %s", err.Error())
+		util.Log().Fatalw("Error reading automation token", "error", err.Error())
 	}
 	awsCfg := newAwsClientConfig()
 
@@ -98,7 +99,7 @@ func NewClient(ctx context.Context, vc vault.VaultClient, account string) *awsCl
 	aws_secret_access_key := secret.Data["aws_secret_access_key"].(string)
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(awsCfg.Region), config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(aws_access_key_id, aws_secret_access_key, "")))
 	if err != nil {
-		util.Log().Fatalw("Error creating AWS configuration %s", err.Error())
+		util.Log().Fatalw("Error creating AWS configuration", "error", err.Error())
 	}
 
 	return &awsClient{

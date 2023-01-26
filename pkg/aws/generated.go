@@ -9,79 +9,81 @@ import (
 	"github.com/app-sre/go-qontract-reconcile/pkg/gql"
 )
 
-// GetAccountsAccountsAWSAccount_v1 includes the requested fields of the GraphQL type AWSAccount_v1.
-type GetAccountsAccountsAWSAccount_v1 struct {
-	Name                   string                                                        `json:"name"`
-	ResourcesDefaultRegion string                                                        `json:"resourcesDefaultRegion"`
-	AutomationToken        GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1 `json:"automationToken"`
+// __getAccountsInput is used internally by genqlient
+type __getAccountsInput struct {
+	Name string `json:"name"`
 }
 
-// GetName returns GetAccountsAccountsAWSAccount_v1.Name, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1) GetName() string { return v.Name }
+// GetName returns __getAccountsInput.Name, and is useful for accessing the field via an interface.
+func (v *__getAccountsInput) GetName() string { return v.Name }
 
-// GetResourcesDefaultRegion returns GetAccountsAccountsAWSAccount_v1.ResourcesDefaultRegion, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1) GetResourcesDefaultRegion() string {
+// getAccountsAwsaccounts_v1AWSAccount_v1 includes the requested fields of the GraphQL type AWSAccount_v1.
+type getAccountsAwsaccounts_v1AWSAccount_v1 struct {
+	Name                   string                                                              `json:"name"`
+	ResourcesDefaultRegion string                                                              `json:"resourcesDefaultRegion"`
+	AutomationToken        getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1 `json:"automationToken"`
+}
+
+// GetName returns getAccountsAwsaccounts_v1AWSAccount_v1.Name, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1) GetName() string { return v.Name }
+
+// GetResourcesDefaultRegion returns getAccountsAwsaccounts_v1AWSAccount_v1.ResourcesDefaultRegion, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1) GetResourcesDefaultRegion() string {
 	return v.ResourcesDefaultRegion
 }
 
-// GetAutomationToken returns GetAccountsAccountsAWSAccount_v1.AutomationToken, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1) GetAutomationToken() GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1 {
+// GetAutomationToken returns getAccountsAwsaccounts_v1AWSAccount_v1.AutomationToken, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1) GetAutomationToken() getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1 {
 	return v.AutomationToken
 }
 
-// GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1 includes the requested fields of the GraphQL type VaultSecret_v1.
-type GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1 struct {
+// getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1 includes the requested fields of the GraphQL type VaultSecret_v1.
+type getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1 struct {
 	Path    string `json:"path"`
 	Field   string `json:"field"`
 	Version int    `json:"version"`
 	Format  string `json:"format"`
 }
 
-// GetPath returns GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1.Path, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1) GetPath() string {
+// GetPath returns getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1.Path, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1) GetPath() string {
 	return v.Path
 }
 
-// GetField returns GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1.Field, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1) GetField() string {
+// GetField returns getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1.Field, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1) GetField() string {
 	return v.Field
 }
 
-// GetVersion returns GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1.Version, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1) GetVersion() int {
+// GetVersion returns getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1.Version, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1) GetVersion() int {
 	return v.Version
 }
 
-// GetFormat returns GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1.Format, and is useful for accessing the field via an interface.
-func (v *GetAccountsAccountsAWSAccount_v1AutomationTokenVaultSecret_v1) GetFormat() string {
+// GetFormat returns getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1.Format, and is useful for accessing the field via an interface.
+func (v *getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1) GetFormat() string {
 	return v.Format
 }
 
-// GetAccountsResponse is returned by GetAccounts on success.
-type GetAccountsResponse struct {
-	Accounts []GetAccountsAccountsAWSAccount_v1 `json:"accounts"`
+// getAccountsResponse is returned by getAccounts on success.
+type getAccountsResponse struct {
+	Awsaccounts_v1 []getAccountsAwsaccounts_v1AWSAccount_v1 `json:"awsaccounts_v1"`
 }
 
-// GetAccounts returns GetAccountsResponse.Accounts, and is useful for accessing the field via an interface.
-func (v *GetAccountsResponse) GetAccounts() []GetAccountsAccountsAWSAccount_v1 { return v.Accounts }
-
-// __GetAccountsInput is used internally by genqlient
-type __GetAccountsInput struct {
-	AccountName string `json:"AccountName"`
+// GetAwsaccounts_v1 returns getAccountsResponse.Awsaccounts_v1, and is useful for accessing the field via an interface.
+func (v *getAccountsResponse) GetAwsaccounts_v1() []getAccountsAwsaccounts_v1AWSAccount_v1 {
+	return v.Awsaccounts_v1
 }
 
-// GetAccountName returns __GetAccountsInput.AccountName, and is useful for accessing the field via an interface.
-func (v *__GetAccountsInput) GetAccountName() string { return v.AccountName }
-
-func GetAccounts(
+func getAccounts(
 	ctx context.Context,
-	AccountName string,
-) (*GetAccountsResponse, error) {
+	name string,
+) (*getAccountsResponse, error) {
 	req := &graphql.Request{
-		OpName: "GetAccounts",
+		OpName: "getAccounts",
 		Query: `
-query GetAccounts ($AccountName: String!) {
-	accounts: awsaccounts_v1(name: $AccountName) {
+query getAccounts ($name: String) {
+	awsaccounts_v1(name: $name) {
 		name
 		resourcesDefaultRegion
 		automationToken {
@@ -93,8 +95,8 @@ query GetAccounts ($AccountName: String!) {
 	}
 }
 `,
-		Variables: &__GetAccountsInput{
-			AccountName: AccountName,
+		Variables: &__getAccountsInput{
+			Name: name,
 		},
 	}
 	var err error
@@ -105,7 +107,7 @@ query GetAccounts ($AccountName: String!) {
 		return nil, err
 	}
 
-	var data GetAccountsResponse
+	var data getAccountsResponse
 	resp := &graphql.Response{Data: &data}
 
 	err = client.MakeRequest(
