@@ -117,7 +117,7 @@ func createUserMock(pgpKey string) *queries.UsersResponse {
 func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.VaultClient, awsClientMock *mock.MockClient, users *queries.UsersResponse) AccountNotifier {
 	return AccountNotifier{
 		vault: vaultMock,
-		state: state.NewS3State(ctx, "state", "test", nil, awsClientMock),
+		state: state.NewS3State(ctx, "state", "test", awsClientMock),
 		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
 			return users, nil
 		},

@@ -6,10 +6,10 @@ import (
 	"context"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
-	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
 
@@ -75,34 +75,18 @@ func newAwsClientConfig() *awsClientConfig {
 	return &cfg
 }
 
-func NewClient(ctx context.Context, vc vault.VaultClient, account string) *awsClient {
-	if len(account) == 0 {
-		util.Log().Fatalw("No AWS account name provided")
-	}
-	result, err := getAccounts(ctx, account)
-	if err != nil {
-		util.Log().Fatalw("Error getting AWS account info", "error", err.Error())
-	}
-	accounts := result.GetAwsaccounts_v1()
-	if len(accounts) != 1 {
-		util.Log().Fatalw("Expected one AWS with name", "account", account)
-
-	}
-
-	secret, err := vc.ReadSecret(accounts[0].AutomationToken.GetPath())
-	if err != nil {
-		util.Log().Fatalw("Error reading automation token", "error", err.Error())
-	}
+func NewClient(ctx context.Context, creds *Credentials) (*awsClient, error) {
 	awsCfg := newAwsClientConfig()
 
-	aws_access_key_id := secret.Data["aws_access_key_id"].(string)
-	aws_secret_access_key := secret.Data["aws_secret_access_key"].(string)
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(awsCfg.Region), config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(aws_access_key_id, aws_secret_access_key, "")))
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
+		config.WithRegion(awsCfg.Region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, "")))
 	if err != nil {
-		util.Log().Fatalw("Error creating AWS configuration", "error", err.Error())
+		return nil, errors.Wrap(err, "error creating AWS configuration")
 	}
 
 	return &awsClient{
 		s3Client: *s3.NewFromConfig(cfg),
-	}
+	}, nil
 }
