@@ -49,26 +49,13 @@ objects:
           env:
           - name: DRY_RUN
             value: ${DRY_RUN}
-          - name: AWS_REGION
+          - name: APP_INTERFACE_STATE_BUCKET
             valueFrom:
               secretKeyRef:
-                key: aws.region
-                name: ${AWS_S3_STATE_SECRET}
-          - name: AWS_SECRET_ACCESS_KEY
-            valueFrom:
-              secretKeyRef:
-                key: aws.secret.access.key
-                name: ${AWS_S3_STATE_SECRET}
-          - name: AWS_ACCESS_KEY_ID
-            valueFrom:
-              secretKeyRef:
-                key: aws.access.key.id
-                name: ${AWS_S3_STATE_SECRET}
-          - name: STATE_S3_BUCKET
-            valueFrom:
-              secretKeyRef:
+                name: app-interface
                 key: aws.s3.bucket
-                name: ${AWS_S3_STATE_SECRET}
+          - name: APP_INTERFACE_STATE_BUCKET_ACCOUNT
+            value: "${APP_INTERFACE_STATE_BUCKET_ACCOUNT}"
           resources:
             requests:
               memory: ${MEMORY_REQUESTS}
@@ -102,14 +89,14 @@ parameters:
   value: latest
 - name: INTERNAL_CERTIFICATES_IMAGE_PULL_POLICY
   value: Always
+- name: APP_INTERFACE_STATE_BUCKET_ACCOUNT
+  value: app-sre
 - name: DRY_RUN
   description: runs vault-manager in dry-run mode when true
   value: 'true'
 - name: RUN_ONCE
   description: exits after one reconciliation attempt when true
   value: 'false'
-- name: AWS_S3_STATE_SECRET
-  value: app-interface
 - name: QONTRACT_RECONCILE_TOML
   value: qontract-reconcile-toml
 - name: INTEGRATION_NAME

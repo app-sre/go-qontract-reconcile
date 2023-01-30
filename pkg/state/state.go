@@ -32,15 +32,13 @@ type S3State struct {
 }
 
 type s3StateConfig struct {
-	Bucket  string
-	Account string
+	Bucket string
 }
 
 func newS3StateConfig() *s3StateConfig {
 	var s3c s3StateConfig
 	sub := util.EnsureViperSub(viper.GetViper(), "state_s3")
 	sub.BindEnv("bucket", "APP_INTERFACE_STATE_BUCKET")
-	sub.BindEnv("account", "APP_INTERFACE_STATE_BUCKET_ACCOUNT")
 	if err := sub.Unmarshal(&s3c); err != nil {
 		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}

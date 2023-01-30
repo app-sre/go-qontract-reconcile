@@ -373,7 +373,17 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 		return errors.Wrapf(err, "Error setting up vault client")
 	}
 
-	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, aws.NewClient(ctx))
+	awsSecrets, err := aws.GetAwsCredentials(ctx, n.vault)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting AWS secrets")
+	}
+
+	awsclient, err := aws.NewClient(ctx, awsSecrets)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting AWS client")
+	}
+
+	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, awsclient)
 
 	settings, err := n.getReencryptFunc(ctx)
 	if err != nil {

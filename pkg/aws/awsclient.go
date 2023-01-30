@@ -6,11 +6,29 @@ import (
 	"context"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
+
+//go:generate go run github.com/Khan/genqlient
+
+var _ = `# @genqlient
+query getAccounts($name: String) {
+	awsaccounts_v1 (name: $name) {
+		name
+		resourcesDefaultRegion
+		automationToken {
+			path
+			field
+			version
+			format
+		}
+	}
+}
+`
 
 //go:generate mockgen -source=./awsclient.go -destination=./mock/zz_generated.mock_client.go -package=mock
 
@@ -57,17 +75,18 @@ func newAwsClientConfig() *awsClientConfig {
 	return &cfg
 }
 
-func newAwsConfig(ctx context.Context, region string) *aws.Config {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
-	if err != nil {
-		util.Log().Fatalw("Error creating AWS configuration %s", err.Error())
-	}
-	return &cfg
-}
+func NewClient(ctx context.Context, creds *Credentials) (*awsClient, error) {
+	awsCfg := newAwsClientConfig()
 
-func NewClient(ctx context.Context) *awsClient {
-	cfg := newAwsClientConfig()
-	return &awsClient{
-		s3Client: *s3.NewFromConfig(*newAwsConfig(ctx, cfg.Region)),
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
+		config.WithRegion(awsCfg.Region),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, "")))
+	if err != nil {
+		return nil, errors.Wrap(err, "error creating AWS configuration")
 	}
+
+	return &awsClient{
+		s3Client: *s3.NewFromConfig(cfg),
+	}, nil
 }
