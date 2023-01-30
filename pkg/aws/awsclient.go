@@ -78,9 +78,14 @@ func newAwsClientConfig() *awsClientConfig {
 func NewClient(ctx context.Context, creds *Credentials) (*awsClient, error) {
 	awsCfg := newAwsClientConfig()
 
+	region := awsCfg.Region
+	if region == "" {
+		region = creds.DefaultRegion
+	}
+
 	cfg, err := config.LoadDefaultConfig(
 		ctx,
-		config.WithRegion(awsCfg.Region),
+		config.WithRegion(region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(creds.AccessKeyID, creds.SecretAccessKey, "")))
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating AWS configuration")
