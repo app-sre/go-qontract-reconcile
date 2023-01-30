@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
@@ -15,10 +14,10 @@ import (
 func TestGetCredentialsFromEnv(t *testing.T) {
 	assert.Nil(t, getCredentialsFromEnv())
 
-	os.Setenv("AWS_ACCESS_KEY_ID", "foo")
+	t.Setenv("AWS_ACCESS_KEY_ID", "foo")
 	assert.Nil(t, getCredentialsFromEnv())
 
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "bar")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "bar")
 	c := getCredentialsFromEnv()
 	assert.NotNil(t, c)
 	assert.IsType(t, &Credentials{}, c)
@@ -50,9 +49,9 @@ func TestGetCredentialsFromVault(t *testing.T) {
 		},
 	}
 
-	os.Setenv("VAULT_TOKEN", "token")
-	os.Setenv("VAULT_AUTHTYPE", "token")
-	os.Setenv("VAULT_SERVER", vaultMock.URL)
+	t.Setenv("VAULT_TOKEN", "token")
+	t.Setenv("VAULT_AUTHTYPE", "token")
+	t.Setenv("VAULT_SERVER", vaultMock.URL)
 	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
@@ -67,6 +66,6 @@ func TestGetCredentialsFromVault(t *testing.T) {
 func TestGuessAccountName(t *testing.T) {
 	assert.Equal(t, "", guessAccountName())
 
-	os.Setenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT", "foo")
+	t.Setenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT", "foo")
 	assert.Equal(t, "foo", guessAccountName())
 }

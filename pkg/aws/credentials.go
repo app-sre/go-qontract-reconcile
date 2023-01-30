@@ -15,7 +15,7 @@ type Credentials struct {
 }
 
 func getCredentialsFromEnv() *Credentials {
-	if len(os.Getenv("AWS_ACCESS_KEY_ID")) != 0 && len(os.Getenv("AWS_SECRET_ACCESS_KEY")) != 0 {
+	if os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
 		return &Credentials{
 			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
@@ -64,8 +64,5 @@ func GetAwsCredentials(ctx context.Context, vc *vault.VaultClient) (*Credentials
 
 func guessAccountName() string {
 	// qontract reconcile uses APP_INTERFACE_STATE_BUCKET_ACCOUNT for the account name of the state bucket
-	if len(os.Getenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT")) != 0 {
-		return os.Getenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT")
-	}
-	return ""
+	return os.Getenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT")
 }
