@@ -18,11 +18,13 @@ func TestGetCredentialsFromEnv(t *testing.T) {
 	assert.Nil(t, getCredentialsFromEnv())
 
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "bar")
+	t.Setenv("AWS_REGION", "us-east-1")
 	c := getCredentialsFromEnv()
 	assert.NotNil(t, c)
 	assert.IsType(t, &Credentials{}, c)
 	assert.Equal(t, "foo", c.AccessKeyID)
 	assert.Equal(t, "bar", c.SecretAccessKey)
+	assert.Equal(t, "us-east-1", c.DefaultRegion)
 }
 
 func setupVaultMock(t *testing.T) *httptest.Server {
@@ -45,7 +47,10 @@ func TestGetCredentialsFromVault(t *testing.T) {
 
 	accounts := getAccountsResponse{
 		[]getAccountsAwsaccounts_v1AWSAccount_v1{
-			{AutomationToken: getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1{Path: "token"}},
+			{
+				AutomationToken:        getAccountsAwsaccounts_v1AWSAccount_v1AutomationTokenVaultSecret_v1{Path: "token"},
+				ResourcesDefaultRegion: "us-east-1",
+			},
 		},
 	}
 
@@ -61,6 +66,7 @@ func TestGetCredentialsFromVault(t *testing.T) {
 
 	assert.Equal(t, "foo", c.AccessKeyID)
 	assert.Equal(t, "bar", c.SecretAccessKey)
+	assert.Equal(t, "us-east-1", c.DefaultRegion)
 }
 
 func TestGuessAccountName(t *testing.T) {

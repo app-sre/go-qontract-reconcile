@@ -12,13 +12,15 @@ import (
 type Credentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
+	DefaultRegion   string
 }
 
 func getCredentialsFromEnv() *Credentials {
-	if os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+	if os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" && os.Getenv("AWS_REGION") != "" {
 		return &Credentials{
 			AccessKeyID:     os.Getenv("AWS_ACCESS_KEY_ID"),
 			SecretAccessKey: os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			DefaultRegion:   os.Getenv("AWS_REGION"),
 		}
 	}
 	return nil
@@ -41,6 +43,7 @@ func getCredentialsFromVault(ctx context.Context, vc *vault.VaultClient, account
 	return &Credentials{
 		AccessKeyID:     aws_access_key_id,
 		SecretAccessKey: aws_secret_access_key,
+		DefaultRegion:   accounts[0].GetResourcesDefaultRegion(),
 	}, nil
 
 }
