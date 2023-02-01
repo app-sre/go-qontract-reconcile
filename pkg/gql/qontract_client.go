@@ -139,7 +139,7 @@ func NewRetryableHttpWrapper() *retryableHttpWrapper {
 		Client: retryablehttp.NewClient(),
 	}
 	var zapLog retryablehttp.LeveledLogger = zapLog{
-		z: util.Log(),
+		z: util.NoopLog(),
 	}
 	r.Client.Logger = zapLog
 	return r
