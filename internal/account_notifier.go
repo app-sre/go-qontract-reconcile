@@ -128,11 +128,11 @@ func (n *AccountNotifier) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		current := ri.State[target].Current.(notification)
 		if current.Status == SKIP {
-			util.Log().Debugw("Skipping notification for", "account", current.Secret.Account, "username", current.Secret.Username)
+			util.Log().Infow("Skipping notification for", "account", current.Secret.Account, "username", current.Secret.Username)
 		} else if current.Status == REENCRYPT {
-			util.Log().Debugw("Reencrypting", "account", current.Secret.Account, "username", current.Secret.Username)
+			util.Log().Infow("Reencrypting", "account", current.Secret.Account, "username", current.Secret.Username)
 		} else if current.Status == NOTIFY_EXPIRED {
-			util.Log().Debugw("PGP Key expired, notifying", "account", current.Secret.Account, "username", current.Secret.Username)
+			util.Log().Infow("PGP Key expired, notifying", "account", current.Secret.Account, "username", current.Secret.Username)
 		}
 	}
 }

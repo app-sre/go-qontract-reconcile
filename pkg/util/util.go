@@ -14,6 +14,11 @@ func Log() *zap.SugaredLogger {
 	return zap.L().Sugar()
 }
 
+// NoopLog returns a no-op logger, that can be used to supress logging
+func NoopLog() *zap.SugaredLogger {
+	return zap.NewNop().Sugar()
+}
+
 // EnsureViperSub will return a viper sub if available or create one
 func EnsureViperSub(viper *viper.Viper, key string) *viper.Viper {
 	sub := viper.Sub(key)
