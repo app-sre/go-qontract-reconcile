@@ -39,11 +39,6 @@ else
 	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) --config=$(DOCKER_CONF) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile.validate . --progress=plain
 endif
 
-test-schema:
-	go run github.com/Khan/genqlient
-	cd pkg && go run github.com/Khan/genqlient && cd ..
-	CGO_ENABLED=0 GOOS=$(GOOS) go test ./...
-
 push:
 	@$(CONTAINER_ENGINE) --config=$(DOCKER_CONF) push $(IMAGE_NAME):latest
 	@$(CONTAINER_ENGINE) --config=$(DOCKER_CONF) push $(IMAGE_NAME):$(IMAGE_TAG)
