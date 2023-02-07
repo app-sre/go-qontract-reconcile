@@ -12,7 +12,7 @@ import (
 
 const TAR_DIRECTORY = "tars"
 
-func (g *GitPartitionSyncProducer) tarRepos(repoPath, sName string) (string, error) {
+func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (string, error) {
 	err := g.clean(TAR_DIRECTORY)
 	if err != nil {
 		return "", err
@@ -23,7 +23,7 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath, sName string) (string, err
 		return "", fmt.Errorf("Unable to tar files - %v", err.Error())
 	}
 
-	tarPath := fmt.Sprintf("%s/%s/%s.tar", g.config.Workdir, TAR_DIRECTORY, sName)
+	tarPath := fmt.Sprintf("%s/%s/%s.tar", g.config.Workdir, TAR_DIRECTORY, sync.SourceProjectName)
 	f, err := os.Create(tarPath)
 	if err != nil {
 		return "", err

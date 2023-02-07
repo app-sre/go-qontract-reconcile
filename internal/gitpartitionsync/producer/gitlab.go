@@ -11,13 +11,13 @@ import (
 
 const CLONE_DIRECTORY = "glrepos"
 
-func (g *GitPartitionSyncProducer) cloneRepos(toUpdate GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1) (string, error) {
+func (g *GitPartitionSyncProducer) cloneRepos(sync syncConfig) (string, error) {
 	err := g.clean(CLONE_DIRECTORY)
 	if err != nil {
 		return "", err
 	}
 
-	authURL, err := g.formatAuthURL(fmt.Sprintf("%s/%s", toUpdate.SourceProject.Group, toUpdate.SourceProject.Name))
+	authURL, err := g.formatAuthURL(fmt.Sprintf("%s/%s", sync.SourceProjectGroup, sync.SourceProjectName))
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func (g *GitPartitionSyncProducer) cloneRepos(toUpdate GetGitlabSyncAppsApps_v1A
 		return "", errors.New(strings.ReplaceAll(stderr.String(), g.config.GlToken, "[REDACTED]"))
 	}
 
-	return fmt.Sprintf("%s/%s/%s", g.config.Workdir, CLONE_DIRECTORY, toUpdate.SourceProject.Name), nil
+	return fmt.Sprintf("%s/%s/%s", g.config.Workdir, CLONE_DIRECTORY, sync.SourceProjectName), nil
 }
 
 // returns git user-auth format of remote url

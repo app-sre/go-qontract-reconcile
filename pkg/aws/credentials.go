@@ -52,6 +52,8 @@ func GetAwsCredentials(ctx context.Context, vc *vault.VaultClient) (*Credentials
 	secretsFromEnv := getCredentialsFromEnv()
 	if secretsFromEnv != nil {
 		return secretsFromEnv, nil
+	} else if vc == nil {
+		return nil, fmt.Errorf("could not get AWS credentials from environment and vault client is not configured")
 	}
 
 	account := guessAccountName()

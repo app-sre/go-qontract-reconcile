@@ -11,7 +11,7 @@ import (
 const ENCRYPT_DIRECTORY = "encrypted"
 
 // utilizes x25519 to output encrypted tars
-func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath, projectName string) (string, error) {
+func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConfig) (string, error) {
 	err := g.clean(ENCRYPT_DIRECTORY)
 	if err != nil {
 		return "", err
@@ -22,7 +22,7 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath, projectName string) 
 		log.Fatalf("Failed to parse public key %q: %v", g.config.PublicKey, err)
 	}
 
-	encryptPath := fmt.Sprintf("%s/%s/%s.tar.age", g.config.Workdir, ENCRYPT_DIRECTORY, projectName)
+	encryptPath := fmt.Sprintf("%s/%s/%s.tar.age", g.config.Workdir, ENCRYPT_DIRECTORY, sync.SourceProjectName)
 	f, err := os.Create(encryptPath)
 	if err != nil {
 		return "", err

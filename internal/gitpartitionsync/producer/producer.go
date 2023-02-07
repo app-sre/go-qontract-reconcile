@@ -5,15 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"time"
 
+	"github.com/app-sre/go-qontract-reconcile/pkg/aws"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -33,8 +31,8 @@ type gitPartitionSyncProducerConfig struct {
 type GitPartitionSyncProducer struct {
 	config gitPartitionSyncProducerConfig
 
-	glClient *gitlab.Client
-	s3Client *s3.Client
+	glClient  *gitlab.Client
+	awsClient aws.Client
 }
 
 type S3ObjectInfo struct {
@@ -75,7 +73,7 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
-	res, err := g.s3Client.ListObjectsV2(ctxTimeout, &s3.ListObjectsV2Input{
+	res, err := g.awsClient.ListObjectsV2(ctxTimeout, &s3.ListObjectsV2Input{
 		Bucket: &g.config.Bucket,
 	})
 	if err != nil {
@@ -158,14 +156,17 @@ func (g *GitPartitionSyncProducer) Setup(ctx context.Context) error {
 	}
 	g.glClient = gl
 
-	g.s3Client = s3.New(s3.Options{
-		Region: "us-east-1",
-		Credentials: aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
-			os.Getenv("AWS_ACCESS_KEY_ID"),
-			os.Getenv("AWS_SECRET_ACCESS_KEY"),
-			os.Getenv("AWS_SESSION_TOKEN"),
-		)),
-	})
+	awsSecrets, err := aws.GetAwsCredentials(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting AWS secrets")
+	}
+
+	awsclient, err := aws.NewClient(ctx, awsSecrets)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting AWS client")
+	}
+
+	g.awsClient = awsclient
 
 	return nil
 }
@@ -181,10 +182,27 @@ func needsUpdate(current, desired *S3ObjectInfo) bool {
 	return false
 }
 
+type syncConfig struct {
+	SourceProjectName       string
+	SourceProjectGroup      string
+	SourceBranch            string
+	DestinationProjectName  string
+	DestinationProjectGroup string
+	DestinationBranch       string
+}
+
 func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	for target := range ri.State {
 		state := ri.GetResourceState(target)
 		sync := state.Config.(GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1)
+		syncConfig := syncConfig{
+			SourceProjectName:       sync.SourceProject.Name,
+			SourceProjectGroup:      sync.SourceProject.Group,
+			SourceBranch:            sync.SourceProject.Branch,
+			DestinationProjectName:  sync.DestinationProject.Name,
+			DestinationProjectGroup: sync.DestinationProject.Group,
+			DestinationBranch:       sync.DestinationProject.Branch,
+		}
 		var current, desired *S3ObjectInfo
 		if state.Current != nil {
 			current = state.Current.(*S3ObjectInfo)
@@ -196,25 +214,25 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 			util.Log().Info("Updating repo", "repo", target)
 
 			util.Log().Debug("Cloning repo")
-			repoPath, err := g.cloneRepos(sync)
+			repoPath, err := g.cloneRepos(syncConfig)
 			if err != nil {
 				return err
 			}
 
 			util.Log().Debug("Tarring repo")
-			tarPath, err := g.tarRepos(repoPath, sync.SourceProject.Name)
+			tarPath, err := g.tarRepos(repoPath, syncConfig)
 			if err != nil {
 				return err
 			}
 
 			util.Log().Debug("Encrypting repo")
-			encryptPath, err := g.encryptRepoTars(tarPath, sync.SourceProject.Name)
+			encryptPath, err := g.encryptRepoTars(tarPath, syncConfig)
 			if err != nil {
 				return err
 			}
 
 			util.Log().Debug("Uploading repo")
-			err = g.uploadLatest(ctx, encryptPath, sync.SourceProject.Group, sync.SourceProject.Name, desired.CommitSHA, sync.DestinationProject.Group, sync.DestinationProject.Name)
+			err = g.uploadLatest(ctx, encryptPath, desired.CommitSHA, syncConfig)
 			if err != nil {
 				return err
 			}

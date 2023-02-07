@@ -17,7 +17,7 @@ func (g *GitPartitionSyncProducer) removeOutdated(ctx context.Context, keyToDele
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
 
-	_, err := g.s3Client.DeleteObject(ctxTimeout, &s3.DeleteObjectInput{
+	_, err := g.awsClient.DeleteObject(ctxTimeout, &s3.DeleteObjectInput{
 		Bucket: &g.config.Bucket,
 		Key:    keyToDelete,
 	})
@@ -30,16 +30,16 @@ func (g *GitPartitionSyncProducer) removeOutdated(ctx context.Context, keyToDele
 }
 
 // cocurrently uploads latest encrypted tars to target s3 bucket
-func (g *GitPartitionSyncProducer) uploadLatest(ctx context.Context, encryptPath, dGroup, dName, commitSha, sBranch, dBranch string) error {
+func (g *GitPartitionSyncProducer) uploadLatest(ctx context.Context, encryptPath, commitSha string, sync syncConfig) error {
 	ctxTimeout, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	jsonStruct := &DecodedKey{
-		Group:        dGroup,
-		ProjectName:  dName,
+		Group:        sync.DestinationProjectGroup,
+		ProjectName:  sync.DestinationProjectName,
 		CommitSHA:    commitSha,
-		LocalBranch:  sBranch,
-		RemoteBranch: dBranch,
+		LocalBranch:  sync.SourceBranch,
+		RemoteBranch: sync.DestinationBranch,
 	}
 
 	jsonBytes, err := json.Marshal(jsonStruct)
@@ -56,7 +56,7 @@ func (g *GitPartitionSyncProducer) uploadLatest(ctx context.Context, encryptPath
 	}
 	defer f.Close()
 
-	_, err = g.s3Client.PutObject(ctxTimeout, &s3.PutObjectInput{
+	_, err = g.awsClient.PutObject(ctxTimeout, &s3.PutObjectInput{
 		Bucket: &g.config.Bucket,
 		Key:    &objKey,
 		Body:   f,
