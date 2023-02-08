@@ -35,6 +35,10 @@ type GitPartitionSyncProducer struct {
 	awsClient aws.Client
 }
 
+type CurrentState struct {
+	S3ObjectInfos []S3ObjectInfo
+}
+
 type S3ObjectInfo struct {
 	Key       *string
 	CommitSHA string
@@ -80,6 +84,8 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 		return errors.Wrap(err, "error listing objects in s3")
 	}
 
+	var commitShas map[string][]S3ObjectInfo = make(map[string][]S3ObjectInfo)
+
 	for _, obj := range res.Contents {
 		// remove file extension before attempting decode
 		// extension is .tar.age, split at first occurrence of .
@@ -94,12 +100,23 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 			return errors.Wrap(err, "error unmarshalling json key")
 		}
 		pid := fmt.Sprintf("%s/%s", jsonKey.Group, jsonKey.ProjectName)
-		ri.AddResourceState(pid, &reconcile.ResourceState{
-			Current: &S3ObjectInfo{
-				Key:       obj.Key,
-				CommitSHA: jsonKey.CommitSHA,
-			}})
+		if _, ok := commitShas[pid]; !ok {
+			commitShas[pid] = []S3ObjectInfo{}
+		}
+		commitShas[pid] = append(commitShas[pid], S3ObjectInfo{
+			Key:       obj.Key,
+			CommitSHA: jsonKey.CommitSHA,
+		})
 	}
+
+	for pid, objectInfos := range commitShas {
+		ri.AddResourceState(pid, &reconcile.ResourceState{
+			Current: &CurrentState{
+				S3ObjectInfos: objectInfos,
+			},
+		})
+	}
+
 	return nil
 }
 
@@ -114,11 +131,12 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 			sync := cc.GetGitlabSync()
 			if len(sync.GetDestinationProject().Group) != 0 {
 				pid := fmt.Sprintf("%s/%s", sync.GetSourceProject().Group, sync.GetSourceProject().Name)
+				target := fmt.Sprintf("%s/%s", sync.GetDestinationProject().Group, sync.GetDestinationProject().Name)
 				commit, _, err := g.glClient.Commits.GetCommit(pid, sync.SourceProject.Branch, nil)
 				if err != nil {
 					return errors.Wrap(err, "Error while getting commit")
 				}
-				state := ri.GetResourceState(pid)
+				state := ri.GetResourceState(target)
 				if state != nil {
 					rsNew := &reconcile.ResourceState{
 						Config:  sync,
@@ -127,9 +145,9 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 							CommitSHA: commit.ID,
 						},
 					}
-					ri.AddResourceState(pid, rsNew)
+					ri.AddResourceState(target, rsNew)
 				} else {
-					ri.AddResourceState(pid, &reconcile.ResourceState{
+					ri.AddResourceState(target, &reconcile.ResourceState{
 						Config: sync,
 						Desired: &S3ObjectInfo{
 							CommitSHA: commit.ID,
@@ -171,13 +189,19 @@ func (g *GitPartitionSyncProducer) Setup(ctx context.Context) error {
 	return nil
 }
 
-func needsUpdate(current, desired *S3ObjectInfo) bool {
+func needsUpdate(current *CurrentState, desired *S3ObjectInfo) bool {
+	// No S3 objects exist, thus update
 	if current == nil && desired != nil {
 		return true
 	} else if current != nil && desired != nil {
-		if current.CommitSHA != desired.CommitSHA {
-			return true
+		for _, s3ObjectInfo := range current.S3ObjectInfos {
+			// Current commit (from desired) is already in S3, thus exit
+			if s3ObjectInfo.CommitSHA == desired.CommitSHA {
+				return false
+			}
 		}
+		// Current commit not found in S3, thus update
+		return true
 	}
 	return false
 }
@@ -192,7 +216,10 @@ type syncConfig struct {
 }
 
 func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory) error {
+	defer g.clear()
+
 	for target := range ri.State {
+		util.Log().Debugw("Reconciling target", "target", target)
 		state := ri.GetResourceState(target)
 		sync := state.Config.(GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1)
 		syncConfig := syncConfig{
@@ -203,47 +230,51 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 			DestinationProjectGroup: sync.DestinationProject.Group,
 			DestinationBranch:       sync.DestinationProject.Branch,
 		}
-		var current, desired *S3ObjectInfo
+		var current *CurrentState
+		var desired *S3ObjectInfo
 		if state.Current != nil {
-			current = state.Current.(*S3ObjectInfo)
+			current = state.Current.(*CurrentState)
 		}
 		if state.Desired != nil {
 			desired = state.Desired.(*S3ObjectInfo)
 		}
 		if needsUpdate(current, desired) {
-			util.Log().Info("Updating repo", "repo", target)
+			util.Log().Infow("Updating repo", "repo", target)
 
-			util.Log().Debug("Cloning repo")
+			util.Log().Debugw("Cloning repo", "repo", target)
 			repoPath, err := g.cloneRepos(syncConfig)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Error while cloning repo %s", target)
 			}
 
-			util.Log().Debug("Tarring repo")
+			util.Log().Debugw("Tarring repo", "repo", target)
 			tarPath, err := g.tarRepos(repoPath, syncConfig)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Error while tarring repo %s", target)
 			}
 
-			util.Log().Debug("Encrypting repo")
+			util.Log().Debugw("Encrypting repo", "repo", target)
 			encryptPath, err := g.encryptRepoTars(tarPath, syncConfig)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Error while encrypting repo %s", target)
 			}
 
-			util.Log().Debug("Uploading repo")
+			util.Log().Debugw("Uploading repo", "repo", target)
 			err = g.uploadLatest(ctx, encryptPath, desired.CommitSHA, syncConfig)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "Error while uploading repo %s", target)
 			}
+		}
 
-		} else if state.Current != nil && state.Desired == nil {
-			err := g.removeOutdated(ctx, desired.Key)
-			if err != nil {
-				util.Log().Info("Deleting outdated s3 object")
-				return errors.Wrap(err, "Error while removing outdated s3 object")
+		for _, s3ObjectInfo := range current.S3ObjectInfos {
+			if s3ObjectInfo.CommitSHA != desired.CommitSHA {
+				util.Log().Debugw("Removing outdated s3 object", "s3ObjectInfo", s3ObjectInfo)
+				err := g.removeOutdated(ctx, s3ObjectInfo.Key)
+				if err != nil {
+					util.Log().Info("Deleting outdated s3 object")
+					return errors.Wrap(err, "Error while removing outdated s3 object")
+				}
 			}
-
 		}
 	}
 	return nil
@@ -252,10 +283,11 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 func (g *GitPartitionSyncProducer) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		state := ri.GetResourceState(target)
-		var current, desired *S3ObjectInfo
+		var current *CurrentState
+		var desired *S3ObjectInfo
 
 		if state.Current != nil {
-			current = state.Current.(*S3ObjectInfo)
+			current = state.Current.(*CurrentState)
 		}
 		if state.Desired != nil {
 			desired = state.Desired.(*S3ObjectInfo)
