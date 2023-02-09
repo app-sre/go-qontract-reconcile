@@ -18,6 +18,8 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
+type GetGitlabSyncAppsFunc func(context.Context) (*GetGitlabSyncAppsResponse, error)
+
 type gitPartitionSyncProducerConfig struct {
 	AwsRegion  string
 	Bucket     string
@@ -33,6 +35,8 @@ type GitPartitionSyncProducer struct {
 
 	glClient  *gitlab.Client
 	awsClient aws.Client
+
+	getGitlabSyncAppsFunc GetGitlabSyncAppsFunc
 }
 
 type CurrentState struct {
@@ -70,6 +74,9 @@ func newNewGitPartitionSyncProducerConfig() *gitPartitionSyncProducerConfig {
 func NewGitPartitionSyncProducer() *GitPartitionSyncProducer {
 	return &GitPartitionSyncProducer{
 		config: *newNewGitPartitionSyncProducerConfig(),
+		getGitlabSyncAppsFunc: func(ctx context.Context) (*GetGitlabSyncAppsResponse, error) {
+			return GetGitlabSyncApps(ctx)
+		},
 	}
 }
 
@@ -121,7 +128,7 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 }
 
 func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconcile.ResourceInventory) error {
-	apps, err := GetGitlabSyncApps(ctx)
+	apps, err := g.getGitlabSyncAppsFunc(ctx)
 	if err != nil {
 		return errors.Wrap(err, "Error while getting gitlab sync apps")
 	}
@@ -138,14 +145,13 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 				}
 				state := ri.GetResourceState(target)
 				if state != nil {
-					rsNew := &reconcile.ResourceState{
+					ri.AddResourceState(target, &reconcile.ResourceState{
 						Config:  sync,
 						Current: state.Current,
 						Desired: &S3ObjectInfo{
 							CommitSHA: commit.ID,
 						},
-					}
-					ri.AddResourceState(target, rsNew)
+					})
 				} else {
 					ri.AddResourceState(target, &reconcile.ResourceState{
 						Config: sync,
