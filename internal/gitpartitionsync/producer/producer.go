@@ -272,13 +272,15 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 			}
 		}
 
-		for _, s3ObjectInfo := range current.S3ObjectInfos {
-			if s3ObjectInfo.CommitSHA != desired.CommitSHA {
-				util.Log().Debugw("Removing outdated s3 object", "s3ObjectInfo", s3ObjectInfo)
-				err := g.removeOutdated(ctx, s3ObjectInfo.Key)
-				if err != nil {
-					util.Log().Info("Deleting outdated s3 object")
-					return errors.Wrap(err, "Error while removing outdated s3 object")
+		if current != nil {
+			for _, s3ObjectInfo := range current.S3ObjectInfos {
+				if s3ObjectInfo.CommitSHA != desired.CommitSHA {
+					util.Log().Debugw("Removing outdated s3 object", "s3ObjectInfo", s3ObjectInfo)
+					err := g.removeOutdated(ctx, s3ObjectInfo.Key)
+					if err != nil {
+						util.Log().Info("Deleting outdated s3 object")
+						return errors.Wrap(err, "Error while removing outdated s3 object")
+					}
 				}
 			}
 		}
