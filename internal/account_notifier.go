@@ -233,7 +233,7 @@ func (n *AccountNotifier) newNotifier(receipt string) *notify.Notify {
 func generateEmail(consoleUrl, username, password string) string {
 	return fmt.Sprintf(
 		`
-You have been invited to join an AWS account!\n
+You have been invited to join an AWS account!
 Below you will find credentials for the first sign in.
 You will be requested to change your password.
 
@@ -322,7 +322,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 			secretMap["account"] = desired.Secret.Account
 			secretMap["user_name"] = desired.Secret.Username
 
-			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/%s_%s", n.vaultExportPath, desired.Secret.Account, desired.Secret.Username), secretMap)
+			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/%s_%s", n.vaultExportPath, desired.Secret.Username, desired.Secret.Account), secretMap)
 			if err != nil {
 				return errors.Wrap(err, "Error while writing encrypted password to vault")
 			}
