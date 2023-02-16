@@ -151,3 +151,49 @@ func TestDesiredState(t *testing.T) {
 	assert.NotNil(t, state.Desired)
 	assert.Equal(t, "test_sha", state.Desired.(*S3ObjectInfo).CommitSHA)
 }
+
+func TestNeedsUpdate(t *testing.T) {
+	type testCase struct {
+		description string
+		c           *CurrentState
+		d           *S3ObjectInfo
+		expected    bool
+	}
+
+	for _, c := range []testCase{
+		{
+			description: "nothing set",
+			expected:    true,
+		},
+		{
+			description: "set but diff found",
+			c: &CurrentState{
+				S3ObjectInfos: []S3ObjectInfo{
+					{CommitSHA: "a"},
+				},
+			},
+			d:        &S3ObjectInfo{CommitSHA: "b"},
+			expected: true,
+		},
+		{
+			description: "multiple set no diff found",
+			c: &CurrentState{
+				S3ObjectInfos: []S3ObjectInfo{
+					{CommitSHA: "a"},
+					{CommitSHA: "b"},
+				},
+			},
+			d:        &S3ObjectInfo{CommitSHA: "b"},
+			expected: false,
+		},
+		{
+			description: "new item",
+			d:           &S3ObjectInfo{CommitSHA: "b"},
+			expected:    true,
+		},
+	} {
+		t.Run(c.description, func(t *testing.T) {
+			assert.Equal(t, c.expected, needsUpdate(c.c, c.d))
+		})
+	}
+}
