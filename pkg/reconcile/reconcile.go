@@ -79,6 +79,7 @@ func (ri *ResourceInventory) GetResourceState(target string) *ResourceState {
 }
 
 type ResourceState struct {
+	Config  interface{}
 	Current interface{}
 	Desired interface{}
 }

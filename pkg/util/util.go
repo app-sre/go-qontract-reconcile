@@ -2,6 +2,7 @@ package util
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -59,4 +60,8 @@ type AuthedTransport struct {
 func (t *AuthedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", t.Key)
 	return t.Wrapped.RoundTrip(req)
+}
+
+func NewHttpTestServer(handlerFunc func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(handlerFunc))
 }

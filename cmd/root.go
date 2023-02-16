@@ -39,6 +39,15 @@ var (
 			accountNotifier()
 		},
 	}
+
+	gitPartitionSyncProducerCmd = &cobra.Command{
+		Use:   "git-partition-sync-producer",
+		Short: "Produce messages for git partition sync",
+		Long:  "Produce messages for git partition sync",
+		Run: func(cmd *cobra.Command, args []string) {
+			gitPartitionSyncProducer()
+		},
+	}
 )
 
 // Execute executes the rootCmd
@@ -49,9 +58,11 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(userValidatorCmd)
 	rootCmd.AddCommand(accountNotifierCmd)
+	rootCmd.AddCommand(gitPartitionSyncProducerCmd)
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info", "Log level")
 	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 	accountNotifierCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
+	gitPartitionSyncProducerCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 
 	cobra.OnInitialize(initConfig)
 	cobra.OnInitialize(configureLogging)

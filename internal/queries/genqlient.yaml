@@ -1,8 +1,8 @@
-schema: schema.graphql
+schema: ../../schema.graphql
 operations:
-- internal/queries/user-validator.graphql
-- internal/queries/account-notifier.graphql
-generated: internal/queries/generated.go
+- user-validator.graphql
+- account-notifier.graphql
+generated: generated.go
 package: queries
 client_getter: github.com/app-sre/go-qontract-reconcile/pkg/gql.NewQontractClient
 bindings:

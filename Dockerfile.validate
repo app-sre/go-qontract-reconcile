@@ -1,5 +1,6 @@
 FROM quay.io/app-sre/golang:1.18.7 as validator
 WORKDIR /build
 COPY . .
-RUN make test-schema
-
+RUN go install github.com/golang/mock/mockgen && \
+    go install github.com/Khan/genqlient
+RUN make generate gotest
