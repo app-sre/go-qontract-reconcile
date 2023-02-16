@@ -80,93 +80,6 @@ func NewGitPartitionSyncProducer() *GitPartitionSyncProducer {
 	}
 }
 
-func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconcile.ResourceInventory) error {
-	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*5)
-	defer cancel()
-
-	res, err := g.awsClient.ListObjectsV2(ctxTimeout, &s3.ListObjectsV2Input{
-		Bucket: &g.config.Bucket,
-	})
-	if err != nil {
-		return errors.Wrap(err, "error listing objects in s3")
-	}
-
-	var commitShas map[string][]S3ObjectInfo = make(map[string][]S3ObjectInfo)
-
-	for _, obj := range res.Contents {
-		// remove file extension before attempting decode
-		// extension is .tar.age, split at first occurrence of .
-		encodedKey := strings.SplitN(*obj.Key, ".", 2)[0]
-		decodedBytes, err := base64.StdEncoding.DecodeString(encodedKey)
-		if err != nil {
-			return errors.Wrap(err, "error decoding key")
-		}
-		var jsonKey DecodedKey
-		err = json.Unmarshal(decodedBytes, &jsonKey)
-		if err != nil {
-			return errors.Wrap(err, "error unmarshalling json key")
-		}
-		pid := fmt.Sprintf("%s/%s", jsonKey.Group, jsonKey.ProjectName)
-		if _, ok := commitShas[pid]; !ok {
-			commitShas[pid] = []S3ObjectInfo{}
-		}
-		commitShas[pid] = append(commitShas[pid], S3ObjectInfo{
-			Key:       obj.Key,
-			CommitSHA: jsonKey.CommitSHA,
-		})
-	}
-
-	for pid, objectInfos := range commitShas {
-		ri.AddResourceState(pid, &reconcile.ResourceState{
-			Current: &CurrentState{
-				S3ObjectInfos: objectInfos,
-			},
-		})
-	}
-
-	return nil
-}
-
-func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconcile.ResourceInventory) error {
-	apps, err := g.getGitlabSyncAppsFunc(ctx)
-	if err != nil {
-		return errors.Wrap(err, "Error while getting gitlab sync apps")
-	}
-
-	for _, app := range apps.GetApps_v1() {
-		for _, cc := range app.GetCodeComponents() {
-			sync := cc.GetGitlabSync()
-			if len(sync.GetDestinationProject().Group) != 0 {
-				pid := fmt.Sprintf("%s/%s", sync.GetSourceProject().Group, sync.GetSourceProject().Name)
-				target := fmt.Sprintf("%s/%s", sync.GetDestinationProject().Group, sync.GetDestinationProject().Name)
-				commit, _, err := g.glClient.Commits.GetCommit(pid, sync.SourceProject.Branch, nil)
-				if err != nil {
-					return errors.Wrap(err, "Error while getting commit")
-				}
-				state := ri.GetResourceState(target)
-				if state != nil {
-					ri.AddResourceState(target, &reconcile.ResourceState{
-						Config:  sync,
-						Current: state.Current,
-						Desired: &S3ObjectInfo{
-							CommitSHA: commit.ID,
-						},
-					})
-				} else {
-					ri.AddResourceState(target, &reconcile.ResourceState{
-						Config: sync,
-						Desired: &S3ObjectInfo{
-							CommitSHA: commit.ID,
-						},
-					})
-				}
-			}
-		}
-
-	}
-	return nil
-}
-
 func (g *GitPartitionSyncProducer) Setup(ctx context.Context) error {
 	cmd := exec.Command("mkdir", "-p", g.config.Workdir)
 	err := cmd.Run()
@@ -195,21 +108,103 @@ func (g *GitPartitionSyncProducer) Setup(ctx context.Context) error {
 	return nil
 }
 
+func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconcile.ResourceInventory) error {
+	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*5)
+	defer cancel()
+
+	res, err := g.awsClient.ListObjectsV2(ctxTimeout, &s3.ListObjectsV2Input{
+		Bucket: &g.config.Bucket,
+	})
+	if err != nil {
+		return errors.Wrap(err, "error listing objects in s3")
+	}
+
+	var commitShas map[string][]S3ObjectInfo = make(map[string][]S3ObjectInfo)
+
+	for _, obj := range res.Contents {
+		// remove file extension before attempting decode
+		// extension is .tar.age, split at first occurrence of .
+		encodedKey := strings.SplitN(*obj.Key, ".", 2)[0]
+		decodedBytes, err := base64.StdEncoding.DecodeString(encodedKey)
+		if err != nil {
+			return errors.Wrap(err, "error decoding key")
+		}
+		var jsonKey DecodedKey
+		err = json.Unmarshal(decodedBytes, &jsonKey)
+		if err != nil {
+			return errors.Wrap(err, "error unmarshalling json key")
+		}
+		targetPid := fmt.Sprintf("%s/%s", jsonKey.Group, jsonKey.ProjectName)
+		if _, ok := commitShas[targetPid]; !ok {
+			commitShas[targetPid] = []S3ObjectInfo{}
+		}
+		commitShas[targetPid] = append(commitShas[targetPid], S3ObjectInfo{
+			Key:       obj.Key,
+			CommitSHA: jsonKey.CommitSHA,
+		})
+	}
+
+	for pid, objectInfos := range commitShas {
+		ri.AddResourceState(pid, &reconcile.ResourceState{
+			Current: &CurrentState{
+				S3ObjectInfos: objectInfos,
+			},
+		})
+	}
+
+	return nil
+}
+
+func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconcile.ResourceInventory) error {
+	apps, err := g.getGitlabSyncAppsFunc(ctx)
+	if err != nil {
+		return errors.Wrap(err, "Error while getting gitlab sync apps")
+	}
+
+	for _, app := range apps.GetApps_v1() {
+		for _, cc := range app.GetCodeComponents() {
+			sync := cc.GetGitlabSync()
+			if len(sync.GetDestinationProject().Group) != 0 {
+				sourcePid := fmt.Sprintf("%s/%s", sync.GetSourceProject().Group, sync.GetSourceProject().Name)
+				targetPid := fmt.Sprintf("%s/%s", sync.GetDestinationProject().Group, sync.GetDestinationProject().Name)
+				commit, _, err := g.glClient.Commits.GetCommit(sourcePid, sync.SourceProject.Branch, nil)
+				if err != nil {
+					return errors.Wrap(err, "Error while getting commit")
+				}
+				state := ri.GetResourceState(targetPid)
+				if state != nil {
+					ri.AddResourceState(targetPid, &reconcile.ResourceState{
+						Config:  sync,
+						Current: state.Current,
+						Desired: &S3ObjectInfo{
+							CommitSHA: commit.ID,
+						},
+					})
+				} else {
+					ri.AddResourceState(targetPid, &reconcile.ResourceState{
+						Config: sync,
+						Desired: &S3ObjectInfo{
+							CommitSHA: commit.ID,
+						},
+					})
+				}
+			}
+		}
+
+	}
+	return nil
+}
+
 func needsUpdate(current *CurrentState, desired *S3ObjectInfo) bool {
-	// No S3 objects exist, thus update
-	if current == nil && desired != nil {
-		return true
-	} else if current != nil && desired != nil {
+	if current != nil && desired != nil {
 		for _, s3ObjectInfo := range current.S3ObjectInfos {
 			// Current commit (from desired) is already in S3, thus exit
 			if s3ObjectInfo.CommitSHA == desired.CommitSHA {
 				return false
 			}
 		}
-		// Current commit not found in S3, thus update
-		return true
 	}
-	return false
+	return true
 }
 
 type syncConfig struct {
@@ -224,9 +219,9 @@ type syncConfig struct {
 func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	defer g.clear()
 
-	for target := range ri.State {
-		util.Log().Debugw("Reconciling target", "target", target)
-		state := ri.GetResourceState(target)
+	for targetPid := range ri.State {
+		util.Log().Debugw("Reconciling target", "target", targetPid)
+		state := ri.GetResourceState(targetPid)
 		sync := state.Config.(GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1)
 		syncConfig := syncConfig{
 			SourceProjectName:       sync.SourceProject.Name,
@@ -245,33 +240,34 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 			desired = state.Desired.(*S3ObjectInfo)
 		}
 		if needsUpdate(current, desired) {
-			util.Log().Infow("Updating repo", "repo", target)
+			util.Log().Infow("Updating repo", "repo", targetPid)
 
-			util.Log().Debugw("Cloning repo", "repo", target)
+			util.Log().Debugw("Cloning repo", "repo", targetPid)
 			repoPath, err := g.cloneRepos(syncConfig)
 			if err != nil {
-				return errors.Wrapf(err, "Error while cloning repo %s", target)
+				return errors.Wrapf(err, "Error while cloning repo %s", targetPid)
 			}
 
-			util.Log().Debugw("Tarring repo", "repo", target)
+			util.Log().Debugw("Tarring repo", "repo", targetPid)
 			tarPath, err := g.tarRepos(repoPath, syncConfig)
 			if err != nil {
-				return errors.Wrapf(err, "Error while tarring repo %s", target)
+				return errors.Wrapf(err, "Error while tarring repo %s", targetPid)
 			}
 
-			util.Log().Debugw("Encrypting repo", "repo", target)
+			util.Log().Debugw("Encrypting repo", "repo", targetPid)
 			encryptPath, err := g.encryptRepoTars(tarPath, syncConfig)
 			if err != nil {
-				return errors.Wrapf(err, "Error while encrypting repo %s", target)
+				return errors.Wrapf(err, "Error while encrypting repo %s", targetPid)
 			}
 
-			util.Log().Debugw("Uploading repo", "repo", target)
+			util.Log().Debugw("Uploading repo", "repo", targetPid)
 			err = g.uploadLatest(ctx, encryptPath, desired.CommitSHA, syncConfig)
 			if err != nil {
-				return errors.Wrapf(err, "Error while uploading repo %s", target)
+				return errors.Wrapf(err, "Error while uploading repo %s", targetPid)
 			}
 		}
 
+		// Current is not nil means, there are old objects in S3, thus we need to check if objects need to be removed
 		if current != nil {
 			for _, s3ObjectInfo := range current.S3ObjectInfos {
 				if s3ObjectInfo.CommitSHA != desired.CommitSHA {
