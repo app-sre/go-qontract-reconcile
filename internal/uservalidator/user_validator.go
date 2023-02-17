@@ -1,4 +1,4 @@
-package internal
+package uservalidator
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/app-sre/go-qontract-reconcile/internal/queries"
 	"github.com/app-sre/go-qontract-reconcile/pkg/github"
 	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
@@ -15,7 +14,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type githubValidateFunc func(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError
+type githubValidateFunc func(ctx context.Context, user UsersUsers_v1User_v1) *reconcile.ValidationError
 
 // ValidateUser is a Validationa s described in github.com/app-sre/go-qontract-reconcile/pkg/integration.go
 type ValidateUser struct {
@@ -57,7 +56,7 @@ func NewValidateUser() *ValidateUser {
 // Setup runs setup for user validator
 func (i *ValidateUser) Setup(ctx context.Context) error {
 	var err error
-	orgs, err := queries.GithubOrgs(ctx)
+	orgs, err := GithubOrgs(ctx)
 	if err != nil {
 		return err
 	}
@@ -88,7 +87,7 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 	return nil
 }
 
-func (i *ValidateUser) validatePgpKeys(users queries.UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validatePgpKeys(users UsersResponse) []reconcile.ValidationError {
 	validUsers := i.removeInvalidUsers(&users)
 
 	validationErrors := make([]reconcile.ValidationError, 0)
@@ -118,7 +117,7 @@ func (i *ValidateUser) validatePgpKeys(users queries.UsersResponse) []reconcile.
 	return validationErrors
 }
 
-func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validateUsersSinglePath(users UsersResponse) []reconcile.ValidationError {
 	validationErrors := make([]reconcile.ValidationError, 0)
 	usersPaths := make(map[string][]string)
 
@@ -143,7 +142,7 @@ func (i *ValidateUser) validateUsersSinglePath(users queries.UsersResponse) []re
 	return validationErrors
 }
 
-func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError {
+func (i *ValidateUser) getAndValidateUser(ctx context.Context, user UsersUsers_v1User_v1) *reconcile.ValidationError {
 	util.Log().Debugw("Getting github user", "user", user.GetOrg_username())
 	ghUser, err := i.AuthenticatedGithubClient.GetUsers(ctx, user.GetGithub_username())
 	if err != nil {
@@ -164,12 +163,12 @@ func (i *ValidateUser) getAndValidateUser(ctx context.Context, user queries.User
 	return nil
 }
 
-func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validateUsersGithub(ctx context.Context, users UsersResponse) []reconcile.ValidationError {
 	validationErrors := make([]reconcile.ValidationError, 0)
 	validateWg := sync.WaitGroup{}
 	gatherWg := sync.WaitGroup{}
 
-	userChan := make(chan queries.UsersUsers_v1User_v1)
+	userChan := make(chan UsersUsers_v1User_v1)
 	retChan := make(chan reconcile.ValidationError)
 
 	gatherWg.Add(1)
@@ -212,9 +211,9 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users queries.Us
 // TODO: This is just a hack, really we should remove the invalid keys from app-interface
 //
 //	and mange invalid keys stateful
-func (i *ValidateUser) removeInvalidUsers(users *queries.UsersResponse) *queries.UsersResponse {
-	returnUsers := &queries.UsersResponse{
-		Users_v1: make([]queries.UsersUsers_v1User_v1, 0),
+func (i *ValidateUser) removeInvalidUsers(users *UsersResponse) *UsersResponse {
+	returnUsers := &UsersResponse{
+		Users_v1: make([]UsersUsers_v1User_v1, 0),
 	}
 
 	invalidPaths := make(map[string]bool)
@@ -235,7 +234,7 @@ func (i *ValidateUser) removeInvalidUsers(users *queries.UsersResponse) *queries
 // Validate run user validation
 func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationError, error) {
 	allValidationErrors := make([]reconcile.ValidationError, 0)
-	users, err := queries.Users(ctx)
+	users, err := Users(ctx)
 	if err != nil {
 		return nil, err
 	}

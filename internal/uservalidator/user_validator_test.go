@@ -1,4 +1,4 @@
-package internal
+package uservalidator
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/app-sre/go-qontract-reconcile/internal/queries"
 	ghlocal "github.com/app-sre/go-qontract-reconcile/pkg/github"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/google/go-github/v42/github"
@@ -17,7 +16,7 @@ import (
 )
 
 var (
-	publicFile = "../test/data/public_key.b64"
+	publicFile = "../../test/data/public_key.b64"
 )
 
 func readKeyFile(t *testing.T, fileName string) []byte {
@@ -31,8 +30,8 @@ func readKeyFile(t *testing.T, fileName string) []byte {
 func TestValidatePgpKeysValid(t *testing.T) {
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	userResponse := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Public_gpg_key: string(readKeyFile(t, publicFile)),
 		}},
 	}
@@ -44,8 +43,8 @@ func TestValidatePgpKeysInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	userResponse := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:           "/foo/bar",
 			Public_gpg_key: "a",
 		}},
@@ -61,8 +60,8 @@ func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	userResponse := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:         "/foo/bar",
 			Org_username: "foo",
 		}, {
@@ -82,8 +81,8 @@ func TestValidateValidateUsersSinglePathValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	userResponse := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:         "/foo/bar",
 			Org_username: "foo",
 		}, {
@@ -122,7 +121,7 @@ func TestGetAndValidateUserOK(t *testing.T) {
 		GithubClient: gh,
 	}
 
-	validationError := v.getAndValidateUser(context.Background(), queries.UsersUsers_v1User_v1{
+	validationError := v.getAndValidateUser(context.Background(), UsersUsers_v1User_v1{
 		Path:            "/foo/bar",
 		Github_username: "bar",
 	})
@@ -145,7 +144,7 @@ func TestGetAndValidateUserFailed(t *testing.T) {
 		GithubClient: gh,
 	}
 
-	validationError := v.getAndValidateUser(context.Background(), queries.UsersUsers_v1User_v1{
+	validationError := v.getAndValidateUser(context.Background(), UsersUsers_v1User_v1{
 		Path:            "/foo/bar",
 		Github_username: "Bar",
 	})
@@ -170,7 +169,7 @@ func TestGetAndValidateUserApiFailed(t *testing.T) {
 		GithubClient: gh,
 	}
 
-	validationError := v.getAndValidateUser(context.Background(), queries.UsersUsers_v1User_v1{
+	validationError := v.getAndValidateUser(context.Background(), UsersUsers_v1User_v1{
 		Path:            "/foo/bar",
 		Github_username: "bar",
 	})
@@ -199,8 +198,8 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 		GithubClient: gh,
 	}
 
-	validationErrors := v.validateUsersGithub(context.Background(), queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	validationErrors := v.validateUsersGithub(context.Background(), UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:            "/foo/bar",
 			Github_username: "Bar",
 		}},
@@ -215,13 +214,13 @@ func TestValidateUsersGithubCallingValidate(t *testing.T) {
 		Concurrency: 1,
 	}
 	validated := false
-	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError {
+	v.githubValidateFunc = func(ctx context.Context, user UsersUsers_v1User_v1) *reconcile.ValidationError {
 		validated = true
 		return nil
 	}
 
-	v.validateUsersGithub(context.Background(), queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	v.validateUsersGithub(context.Background(), UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:            "/foo/bar",
 			Github_username: "bar",
 		}},
@@ -234,12 +233,12 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 	v.ValidateUserConfig = &ValidateUserConfig{
 		Concurrency: 1,
 	}
-	v.githubValidateFunc = func(ctx context.Context, user queries.UsersUsers_v1User_v1) *reconcile.ValidationError {
+	v.githubValidateFunc = func(ctx context.Context, user UsersUsers_v1User_v1) *reconcile.ValidationError {
 		return &reconcile.ValidationError{}
 	}
 
-	v.validateUsersGithub(context.Background(), queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	v.validateUsersGithub(context.Background(), UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:            "/foo/bar",
 			Github_username: "bar",
 		}, {
@@ -256,8 +255,8 @@ func TestRemoveInvalidUsers(t *testing.T) {
 		InvalidUsers: "/foo/bar",
 	}
 
-	users := queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+	users := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path: "/foo/bar",
 		}, {
 			Path: "/bar/foo",

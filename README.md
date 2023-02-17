@@ -83,17 +83,17 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * AWS_REGION
 
 
-## New query
+## New Integration
 
-If you want to extend this tooling by adding a new query, create the new query in the `internal/queries` directory. This directory contains `.graphql` files, one per integration. Choose an existing file or create a new one if you add a new integration. 
+If you want to add a new generate you can use the code in `internal/example` as starting point. Copy this folder and give the module a valid go module name. 
 
-Once you updated the graphql directory, run the code generator to generate the queries.
+Any queries required must be added to the file `generate.go`. Afterwards, update the package parameter in `genqlient.yaml`
+
+Once you updated the graphql files, run the code generator to generate the queries.
 
 `go generate ./...`
 
-The actual command can be found in `internal/queries/generate.go`
-
-This will add corresponding graphql code to `internal/queries/generated.go` 
+This will generate the required code to query `qontract-server`.
 
 
 ## New AWS calls
