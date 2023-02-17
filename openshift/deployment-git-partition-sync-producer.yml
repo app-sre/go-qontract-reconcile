@@ -91,6 +91,11 @@ objects:
               secretKeyRef:
                 key: gitlab.token
                 name: ${PRODUCER_GITLAB_SECRET}
+          - name: PUBLIC_KEY
+            valueFrom:
+              secretKeyRef:
+                key: public.key
+                name: ${PRODUCER_GITLAB_SECRET}
           - name: WORKDIR
             value: ${VOLUME_PATH}/${WORKDIR}
           resources:
