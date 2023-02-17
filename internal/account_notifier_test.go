@@ -163,7 +163,8 @@ func TestReencryptOkay(t *testing.T) {
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	mailSent := false
-	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
+	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
+		assert.Contains(t, subject, "provisioned")
 		assert.Contains(t, body, "You have been invited to join an AWS account")
 		assert.NotNil(t, n)
 		mailSent = true
@@ -246,7 +247,8 @@ publicpgpkey: oldone
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	stateRemoved := false
 	mailSent := false
-	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
+	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
+		assert.Contains(t, subject, "provisioned")
 		assert.Contains(t, body, "You have been invited to join an AWS account")
 		assert.NotNil(t, n)
 		mailSent = true
@@ -345,7 +347,8 @@ lastnotifiedat: %s
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	mailSent := false
 	statePersisted := false
-	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, body string) error {
+	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
+		assert.Contains(t, subject, "Action required")
 		assert.Contains(t, body, "Your PGP key on the record has expired and is not valid anymore.")
 		assert.NotNil(t, n)
 		mailSent = true

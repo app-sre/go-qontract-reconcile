@@ -35,7 +35,7 @@ const (
 type GetUsers func(context.Context) (*queries.UsersResponse, error)
 type GetPgpReencryptSettings func(context.Context) (*queries.PgpReencryptSettingsResponse, error)
 type GetSmtpSettings func(context.Context) (*queries.SmtpSettingsResponse, error)
-type SendEmail func(context.Context, *notify.Notify, string) error
+type SendEmail func(context.Context, *notify.Notify, string, string) error
 type SetFailedState func(context.Context, state.Persistence, string, notification) error
 type RmFailedState func(context.Context, state.Persistence, string) error
 
@@ -74,8 +74,8 @@ func NewAccountNotifier() *AccountNotifier {
 		getSmtpSettingsFunc: func(ctx context.Context) (*queries.SmtpSettingsResponse, error) {
 			return queries.SmtpSettings(ctx)
 		},
-		sendEmailFunc: func(ctx context.Context, notifier *notify.Notify, body string) error {
-			return notifier.Send(ctx, "AWS Access provisioned", body)
+		sendEmailFunc: func(ctx context.Context, notifier *notify.Notify, subject, body string) error {
+			return notifier.Send(ctx, subject, body)
 		},
 		setFailedStateFunc: func(ctx context.Context, state state.Persistence, path string, desiredState notification) error {
 			return state.Add(ctx, path, desiredState)
@@ -343,7 +343,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 				}
 			}
 
-			err = n.sendEmailFunc(ctx, n.newNotifier(desired.Email), generateEmail(desired.Secret.ConsoleURL, desired.Secret.Username, encodedReencryptedPassword))
+			err = n.sendEmailFunc(ctx, n.newNotifier(desired.Email), "AWS Access provisioned", generateEmail(desired.Secret.ConsoleURL, desired.Secret.Username, encodedReencryptedPassword))
 			if err != nil {
 				return errors.Wrap(err, "Error while sending user notification")
 			}
@@ -351,7 +351,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 		}
 		if desired.Status == NOTIFY_EXPIRED {
 			util.Log().Info("Notification of expired keys to be done")
-			err := n.sendEmailFunc(ctx, n.newNotifier(desired.Email), generateEmailExpired(desired.Secret.Username))
+			err := n.sendEmailFunc(ctx, n.newNotifier(desired.Email), "Action required: Update PGP key", generateEmailExpired(desired.Secret.Username))
 			if err != nil {
 				return errors.Wrapf(err, "Error while sending user notification")
 			}
