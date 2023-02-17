@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: go-qontract-reconcile
+objects:
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    labels:
+      app: go-qontract-reconcile-git-partition-sync-producer
+    annotations:
+      ignore-check.kube-linter.io/minimum-three-replicas: "go-qontract-reconcile integrations do not support replication"
+      ignore-check.kube-linter.io/no-readiness-probe: "go-qontract-reconcile integrations are not getting traffic"
+      ignore-check.kube-linter.io/no-liveness-probe: "go-qontract-reconcile integrations are monitored for being stuck"
+    name: go-qontract-reconcile-git-partition-sync-producer
+  spec:
+    replicas: 1
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxUnavailable: 0
+        maxSurge: 1
+    selector:
+      matchLabels:
+        app: go-qontract-reconcile-git-partition-sync-producer
+    template:
+      metadata:
+        labels:
+          app: go-qontract-reconcile-git-partition-sync-producer
+          component: qontract-reconcile
+      spec:
+        serviceAccountName: go-qontract-reconcile
+        initContainers:
+        - name: internal-certificates
+          image: ${INTERNAL_CERTIFICATES_IMAGE}:${INTERNAL_CERTIFICATES_IMAGE_TAG}
+          imagePullPolicy: ${INTERNAL_CERTIFICATES_IMAGE_PULL_POLICY}
+          command: ["/bin/sh", "-c"]
+          args:
+          - |
+            cp -r /etc/pki/. /tmp/etc-pki/
+          volumeMounts:
+          - name: internal-certificates
+            mountPath: /tmp/etc-pki/
+        containers:
+        - image: ${IMAGE}:${IMAGE_TAG}
+          imagePullPolicy: Always
+          name: int
+          args: ["-c", "/config/config.toml", "--logLevel", "debug", "git-partition-sync-producer"]
+          env:
+          - name: DRY_RUN
+            value: ${DRY_RUN}
+          - name: APP_INTERFACE_STATE_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: app-interface
+                key: aws.s3.bucket
+          - name: APP_INTERFACE_STATE_BUCKET_ACCOUNT
+            value: "${APP_INTERFACE_STATE_BUCKET_ACCOUNT}"
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                key: aws.access.key.id
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                key: aws.secret.access.key
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: AWS_REGION
+            valueFrom:
+              secretKeyRef:
+                key: aws.region
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: AWS_GIT_SYNC_BUCKET
+            valueFrom:
+              secretKeyRef:
+                key: aws.s3.bucket
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: GITLAB_BASE_URL
+            valueFrom:
+              secretKeyRef:
+                key: gitlab.url
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: GITLAB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: gitlab.username
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: GITLAB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                key: gitlab.token
+                name: ${PRODUCER_GITLAB_SECRET}
+          - name: WORKDIR
+            value: ${VOLUME_PATH}/${WORKDIR}
+          resources:
+            requests:
+              memory: ${MEMORY_REQUESTS}
+              cpu: ${CPU_REQUESTS}
+            limits:
+              memory: ${MEMORY_LIMIT}
+              cpu: ${CPU_LIMIT}
+          volumeMounts:
+          - name: internal-certificates
+            mountPath: /etc/pki/
+          - name: qontract-reconcile-toml
+            mountPath: /config
+          - name: sync-ops
+            mountPath: ${VOLUME_PATH}
+        volumes:
+        - name: internal-certificates
+          emptyDir: {}
+        - name: sync-ops
+          emptyDir: {}
+        - name: qontract-reconcile-toml
+          secret:
+            secretName: ${QONTRACT_RECONCILE_TOML}
+parameters:
+- name: IMAGE
+  value: quay.io/app-sre/go-qontract-reconcile
+  displayName: go-qontract-reconcile image
+  description: go-qontract-reconcile docker image. Defaults to quay.io/app-sre/go-qontract-reconcile
+- name: IMAGE_TAG
+  value: latest
+  displayName: go-qontract-reconcile version
+  description: go-qontract-reconcile version which defaults to latest
+- name: INTERNAL_CERTIFICATES_IMAGE
+  value: quay.io/app-sre/internal-redhat-ca
+- name: INTERNAL_CERTIFICATES_IMAGE_TAG
+  value: latest
+- name: INTERNAL_CERTIFICATES_IMAGE_PULL_POLICY
+  value: Always
+- name: APP_INTERFACE_STATE_BUCKET_ACCOUNT
+  value: app-sre
+- name: DRY_RUN
+  description: runs vault-manager in dry-run mode when true
+  value: 'true'
+- name: RUN_ONCE
+  description: exits after one reconciliation attempt when true
+  value: 'false'
+- name: QONTRACT_RECONCILE_TOML
+  value: qontract-reconcile-toml
+- name: VOLUME_PATH
+  value: '/sync-ops'
+- name: WORKDIR
+  value: 'working'
+- name: PRODUCER_GITLAB_SECRET
+  value: go-git-partition-sync-consumer
+- name: MEMORY_REQUESTS
+  value: 1000Mi
+- name: MEMORY_LIMIT
+  value: 1000Mi
+- name: CPU_REQUESTS
+  value: 300m
+- name: CPU_LIMIT
+  value: 500m
