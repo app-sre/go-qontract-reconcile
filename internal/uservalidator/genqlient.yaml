@@ -1,0 +1,9 @@
+schema: ../../schema.graphql
+operations:
+- generate.go
+generated: generated.go
+package: uservalidator
+client_getter: github.com/app-sre/go-qontract-reconcile/pkg/gql.NewQontractClient
+bindings:
+  JSON:
+    type: map[string]interface{}

@@ -1,4 +1,4 @@
-package internal
+package accountnotifier
 
 import (
 	"bytes"
@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/app-sre/go-qontract-reconcile/internal/queries"
 	"github.com/app-sre/go-qontract-reconcile/pkg/aws/mock"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/state"
@@ -25,9 +24,9 @@ import (
 )
 
 var (
-	privateKey = "../test/data/notifier_private_key.b64"
-	publicKey  = "../test/data/notifier_public_key.b64"
-	testData   = "../test/data/notifier_test_data.b64"
+	privateKey = "../../test/data/notifier_private_key.b64"
+	publicKey  = "../../test/data/notifier_public_key.b64"
+	testData   = "../../test/data/notifier_test_data.b64"
 )
 
 func NewHttpTestServer(handlerFunc func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
@@ -99,9 +98,9 @@ func setupVaultMock(t *testing.T) *httptest.Server {
 	})
 }
 
-func createUserMock(pgpKey string) *queries.UsersResponse {
-	return &queries.UsersResponse{
-		Users_v1: []queries.UsersUsers_v1User_v1{{
+func createUserMock(pgpKey string) *UsersResponse {
+	return &UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
 			Path:               "testing.yml",
 			Name:               "foobar",
 			Org_username:       "foobar",
@@ -114,11 +113,11 @@ func createUserMock(pgpKey string) *queries.UsersResponse {
 	}
 }
 
-func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.VaultClient, awsClientMock *mock.MockClient, users *queries.UsersResponse) AccountNotifier {
+func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.VaultClient, awsClientMock *mock.MockClient, users *UsersResponse) AccountNotifier {
 	return AccountNotifier{
 		vault: vaultMock,
 		state: state.NewS3State(ctx, "state", "test", awsClientMock),
-		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
+		getuserFunc: func(ctx context.Context) (*UsersResponse, error) {
 			return users, nil
 		},
 		appSrePGPKeyPath: "privatekey",

@@ -1,4 +1,4 @@
-package internal
+package accountnotifier
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/app-sre/go-qontract-reconcile/internal/queries"
 	"github.com/app-sre/go-qontract-reconcile/pkg/aws"
 	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
@@ -32,9 +31,9 @@ const (
 	NOTIFY_EXPIRED
 )
 
-type GetUsers func(context.Context) (*queries.UsersResponse, error)
-type GetPgpReencryptSettings func(context.Context) (*queries.PgpReencryptSettingsResponse, error)
-type GetSmtpSettings func(context.Context) (*queries.SmtpSettingsResponse, error)
+type GetUsers func(context.Context) (*UsersResponse, error)
+type GetPgpReencryptSettings func(context.Context) (*PgpReencryptSettingsResponse, error)
+type GetSmtpSettings func(context.Context) (*SmtpSettingsResponse, error)
 type SendEmail func(context.Context, *notify.Notify, string, string) error
 type SetFailedState func(context.Context, state.Persistence, string, notification) error
 type RmFailedState func(context.Context, state.Persistence, string) error
@@ -65,14 +64,14 @@ type smtpAuth struct {
 
 func NewAccountNotifier() *AccountNotifier {
 	notifier := AccountNotifier{
-		getuserFunc: func(ctx context.Context) (*queries.UsersResponse, error) {
-			return queries.Users(ctx)
+		getuserFunc: func(ctx context.Context) (*UsersResponse, error) {
+			return Users(ctx)
 		},
-		getReencryptFunc: func(ctx context.Context) (*queries.PgpReencryptSettingsResponse, error) {
-			return queries.PgpReencryptSettings(ctx)
+		getReencryptFunc: func(ctx context.Context) (*PgpReencryptSettingsResponse, error) {
+			return PgpReencryptSettings(ctx)
 		},
-		getSmtpSettingsFunc: func(ctx context.Context) (*queries.SmtpSettingsResponse, error) {
-			return queries.SmtpSettings(ctx)
+		getSmtpSettingsFunc: func(ctx context.Context) (*SmtpSettingsResponse, error) {
+			return SmtpSettings(ctx)
 		},
 		sendEmailFunc: func(ctx context.Context, notifier *notify.Notify, subject, body string) error {
 			return notifier.Send(ctx, subject, body)
@@ -176,7 +175,7 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *reconcile.Resour
 		return errors.Wrap(err, "Error while getting users from graphql")
 	}
 
-	userMap := make(map[string]queries.UsersUsers_v1User_v1)
+	userMap := make(map[string]UsersUsers_v1User_v1)
 	for _, user := range users.GetUsers_v1() {
 		userMap[user.Org_username] = user
 	}
