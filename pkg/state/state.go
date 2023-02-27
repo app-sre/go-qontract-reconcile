@@ -3,6 +3,7 @@ package state
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 type Persistence interface {
@@ -78,7 +78,7 @@ func (s *S3State) Exists(ctx context.Context, key string) (error, bool) {
 
 func (s *S3State) Add(ctx context.Context, key string, value interface{}) error {
 	util.Log().Debugw("Putting key to bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
-	bytesOut, err := yaml.Marshal(value)
+	bytesOut, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (s *S3State) Get(ctx context.Context, key string, value interface{}) error 
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal(bodyBytes, value)
+	return json.Unmarshal(bodyBytes, value)
 }
 
 func (s *S3State) Rm(ctx context.Context, key string) error {
