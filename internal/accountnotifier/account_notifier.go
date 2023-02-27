@@ -321,9 +321,9 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 			secretMap["account"] = desired.Secret.Account
 			secretMap["user_name"] = desired.Secret.Username
 
-			_, err = n.vault.WriteSecret(fmt.Sprintf("%s/%s_%s", n.vaultExportPath, desired.Secret.Username, desired.Secret.Account), secretMap)
+			err = n.state.Add(ctx, fmt.Sprintf("output/%s/%s", desired.Secret.Account, desired.Secret.Username), secretMap)
 			if err != nil {
-				return errors.Wrap(err, "Error while writing encrypted password to vault")
+				return errors.Wrap(err, "Error while writing encrypted password to s3")
 			}
 
 			_, err = n.vault.DeleteSecret(desired.SecretPath)

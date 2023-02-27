@@ -133,10 +133,10 @@ are a couple of states the code could be in.
 Status        Vault   State   PGP     Notification    Test name
 ------------- ------- ------- ------- --------------- --------------------
 Reencrypt     Import  None    Valid   Yes             TestReencryptOkay
-              Export
+	                  Updated
 Reencrypt     Import  Update  Invalid No              TestReencryptInvalid
 Reencrypt     Import  Delete  Updated Yes             TestReencryptUpdated
-              Export
+					  Update
 NotifyExpired Import  Updated Invalid Yes             TestNotifyExpired
 Skip          Import  Read    Invalid No              TestSKip
 
@@ -160,6 +160,8 @@ func TestReencryptOkay(t *testing.T) {
 	mockClient := mock.NewMockClient(ctrl)
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
+	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
+
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	mailSent := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
@@ -242,6 +244,8 @@ func TestReencryptUpdated(t *testing.T) {
 publicpgpkey: oldone
 `))),
 	}, nil)
+
+	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
 
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	stateRemoved := false

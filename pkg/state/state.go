@@ -62,7 +62,7 @@ func (s *S3State) keyPath(key string) *string {
 }
 
 func (s *S3State) Exists(ctx context.Context, key string) (error, bool) {
-	util.Log().Debugw("Check key existsence in bucket", "key", key, "bucket", s.config.Bucket)
+	util.Log().Debugw("Check key existsence in bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: &s.config.Bucket,
 		Key:    s.keyPath(key),
@@ -93,7 +93,7 @@ func (s *S3State) Add(ctx context.Context, key string, value interface{}) error 
 }
 
 func (s *S3State) Get(ctx context.Context, key string, value interface{}) error {
-	util.Log().Debugw("Getting key from bucket", "key", key, "bucket", s.config.Bucket)
+	util.Log().Debugw("Getting key from bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	resp, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket:              &s.config.Bucket,
 		Key:                 s.keyPath(key),
@@ -111,7 +111,7 @@ func (s *S3State) Get(ctx context.Context, key string, value interface{}) error 
 }
 
 func (s *S3State) Rm(ctx context.Context, key string) error {
-	util.Log().Debugw("Deleting key from bucket", "key", key, "bucket", s.config.Bucket)
+	util.Log().Debugw("Deleting key from bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
 		Bucket: &s.config.Bucket,
 		Key:    s.keyPath(key),
