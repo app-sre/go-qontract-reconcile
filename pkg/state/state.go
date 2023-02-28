@@ -62,7 +62,7 @@ func (s *S3State) keyPath(key string) *string {
 }
 
 func (s *S3State) Exists(ctx context.Context, key string) (error, bool) {
-	util.Log().Debugw("Check key existsence in bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
+	util.Log().Debugw("Check key existence in bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: &s.config.Bucket,
 		Key:    s.keyPath(key),

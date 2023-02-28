@@ -316,13 +316,13 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 
 			encodedReencryptedPassword := base64.StdEncoding.EncodeToString(unarmoredReencryptedPassword)
 
-			type outPutSecret struct {
+			type outputSecret struct {
 				Console_url        string `json:"console_url"`
 				Encrypted_password string `json:"encrypted_password"`
 				Acount             string `json:"account"`
 				User_name          string `json:"user_name"`
 			}
-			output := outPutSecret{
+			output := outputSecret{
 				Console_url:        desired.Secret.ConsoleURL,
 				Encrypted_password: encodedReencryptedPassword,
 				Acount:             desired.Secret.Account,
