@@ -24,7 +24,7 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 	}
 
 	tarPath := fmt.Sprintf("%s/%s/%s.tar", g.config.Workdir, TAR_DIRECTORY, sync.SourceProjectName)
-	f, err := os.Create(tarPath)
+	f, err := os.Create(filepath.Clean(tarPath))
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +60,7 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 		}
 
 		// open files for taring
-		f, err := os.Open(file)
+		f, err := os.Open(filepath.Clean(file))
 		if err != nil {
 			return err
 		}
