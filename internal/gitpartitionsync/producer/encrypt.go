@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"filippo.io/age"
 )
@@ -24,14 +25,14 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConf
 	}
 
 	encryptPath := fmt.Sprintf("%s/%s/%s.tar.age", g.config.Workdir, ENCRYPT_DIRECTORY, sync.SourceProjectName)
-	f, err := os.Create(encryptPath)
+	f, err := os.Create(filepath.Clean(encryptPath))
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
 	// read in tar data
-	tarFile, err := os.Open(tarPath)
+	tarFile, err := os.Open(filepath.Clean(tarPath))
 	if err != nil {
 		return "", err
 	}
