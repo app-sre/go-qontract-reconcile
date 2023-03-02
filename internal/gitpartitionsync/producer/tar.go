@@ -74,9 +74,9 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 			return err
 		}
 
-		// manually close here after each file operation; defering would cause each file close
-		// to wait until all operations have completed.
-		f.Close()
+		if err := f.Close(); err != nil {
+			return err
+		}
 
 		return nil
 	})
