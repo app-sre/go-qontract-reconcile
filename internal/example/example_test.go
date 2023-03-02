@@ -83,3 +83,27 @@ func TestCurrent(t *testing.T) {
 	assert.Equal(t, fileInfo.Name(), current.FileNames)
 	assert.Equal(t, fileInfo.content, current.GpgKey)
 }
+
+func TestDesired(t *testing.T) {
+	e := NewExample()
+
+	e.getUsersFunc = func(ctx context.Context) (*UsersResponse, error) {
+		return &UsersResponse{
+			Users_v1: []UsersUsers_v1User_v1{
+				{
+					Org_username:   "test",
+					Public_gpg_key: "key",
+				},
+			},
+		}, nil
+	}
+
+	ctx := context.Background()
+	ri := reconcile.NewResourceInventory()
+
+	err := e.DesiredState(ctx, ri)
+	assert.NoError(t, err)
+
+	state := ri.GetResourceState("test")
+	assert.NotNil(t, state)
+}

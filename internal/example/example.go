@@ -15,6 +15,7 @@ var EXAMPLE_INTEGRATION_NAME = "example"
 
 type ListDirectoryFunc func(string) ([]os.FileInfo, error)
 type ReadFileFunc func(string) ([]byte, error)
+type GetUsers func(context.Context) (*UsersResponse, error)
 
 type ExampleConfig struct {
 	Tempdir string
@@ -36,6 +37,7 @@ type Example struct {
 
 	listDirectoryFunc ListDirectoryFunc
 	readFileFunc      ReadFileFunc
+	getUsersFunc      GetUsers
 }
 
 func NewExample() *Example {
@@ -47,6 +49,9 @@ func NewExample() *Example {
 		},
 		readFileFunc: func(path string) ([]byte, error) {
 			return ioutil.ReadFile(path)
+		},
+		getUsersFunc: func(ctx context.Context) (*UsersResponse, error) {
+			return Users(ctx)
 		},
 	}
 }
@@ -86,7 +91,7 @@ func (e *Example) CurrentState(ctx context.Context, ri *reconcile.ResourceInvent
 func (e *Example) DesiredState(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	util.Log().Infow("Getting desired state")
 
-	users, err := Users(ctx)
+	users, err := e.getUsersFunc(ctx)
 
 	if err != nil {
 		return errors.Wrap(err, "Error while getting users")
@@ -96,6 +101,7 @@ func (e *Example) DesiredState(ctx context.Context, ri *reconcile.ResourceInvent
 		state := ri.GetResourceState(user.GetOrg_username())
 		if state == nil {
 			state = &reconcile.ResourceState{}
+			ri.AddResourceState(user.GetOrg_username(), state)
 		}
 		state.Desired = &UserFiles{
 			FileNames: user.GetOrg_username(),
