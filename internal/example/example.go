@@ -13,6 +13,9 @@ import (
 
 var EXAMPLE_INTEGRATION_NAME = "example"
 
+type ListDirectoryFunc func(string) ([]os.FileInfo, error)
+type ReadFileFunc func(string) ([]byte, error)
+
 type ExampleConfig struct {
 	Tempdir string
 }
@@ -30,11 +33,22 @@ func newExampleConfig() *ExampleConfig {
 
 type Example struct {
 	config *ExampleConfig
+
+	listDirectoryFunc ListDirectoryFunc
+	readFileFunc      ReadFileFunc
 }
 
 func NewExample() *Example {
 	ec := newExampleConfig()
-	return &Example{config: ec}
+	return &Example{
+		config: ec,
+		listDirectoryFunc: func(path string) ([]os.FileInfo, error) {
+			return ioutil.ReadDir(path)
+		},
+		readFileFunc: func(path string) ([]byte, error) {
+			return ioutil.ReadFile(path)
+		},
+	}
 }
 
 type UserFiles struct {
@@ -45,7 +59,7 @@ type UserFiles struct {
 func (e *Example) CurrentState(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	util.Log().Infow("Getting current state")
 
-	files, err := ioutil.ReadDir(e.config.Tempdir)
+	files, err := e.listDirectoryFunc(e.config.Tempdir)
 	if err != nil {
 		return errors.Wrap(err, "Error while reading workdir")
 	}
@@ -53,7 +67,7 @@ func (e *Example) CurrentState(ctx context.Context, ri *reconcile.ResourceInvent
 	for _, f := range files {
 		absolutePath := e.config.Tempdir + "/" + f.Name()
 		util.Log().Debugw("Found file", "file", absolutePath)
-		content, err := ioutil.ReadFile(absolutePath)
+		content, err := e.readFileFunc(absolutePath)
 		if err != nil {
 			return errors.Wrap(err, "Error while reading file")
 		}
