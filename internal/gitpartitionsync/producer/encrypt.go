@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -30,7 +31,7 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConf
 	defer f.Close()
 
 	// read in tar data
-	tarBytes, err := os.ReadFile(tarPath)
+	tarFile, err := os.Open(tarPath)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +41,10 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConf
 	if err != nil {
 		return "", err
 	}
-	encWriter.Write(tarBytes)
+
+	if _, err := io.Copy(encWriter, tarFile); err != nil {
+		return "", err
+	}
 
 	if err := encWriter.Close(); err != nil {
 		return "", err
