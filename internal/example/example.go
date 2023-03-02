@@ -103,6 +103,7 @@ func (e *Example) DesiredState(ctx context.Context, ri *reconcile.ResourceInvent
 			state = &reconcile.ResourceState{}
 			ri.AddResourceState(user.GetOrg_username(), state)
 		}
+		state.Config = user
 		state.Desired = &UserFiles{
 			FileNames: user.GetOrg_username(),
 			GpgKey:    user.GetPublic_gpg_key(),
@@ -123,15 +124,16 @@ func (e *Example) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory
 		if state.Desired != nil {
 			desired = state.Desired.(*UserFiles)
 		}
-		absolutePath := e.config.Tempdir + "/" + current.FileNames
 
 		if current != nil && desired == nil {
+			absolutePath := e.config.Tempdir + "/" + current.FileNames
 			util.Log().Infow("Deleting file", "file", current.FileNames)
 			err := os.Remove(absolutePath)
 			if err != nil {
 				return errors.Wrap(err, "Error while deleting file")
 			}
 		} else if current == nil || current.GpgKey != desired.GpgKey {
+			absolutePath := e.config.Tempdir + "/" + desired.FileNames
 			util.Log().Infow("Writing file", "file", desired.FileNames)
 			err := ioutil.WriteFile(absolutePath, []byte(desired.GpgKey), 0644)
 			if err != nil {
