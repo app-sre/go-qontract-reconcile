@@ -94,6 +94,32 @@ func (e *Example) DesiredState(ctx context.Context, ri *reconcile.ResourceInvent
 
 func (e *Example) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	util.Log().Infow("Reconciling")
+
+	for _, state := range ri.State {
+		var current, desired *UserFiles
+		if state.Current != nil {
+			current = state.Current.(*UserFiles)
+		}
+		if state.Desired != nil {
+			desired = state.Desired.(*UserFiles)
+		}
+		absolutePath := e.config.Tempdir + "/" + current.FileNames
+
+		if current != nil && desired == nil {
+			util.Log().Infow("Deleting file", "file", current.FileNames)
+			err := os.Remove(absolutePath)
+			if err != nil {
+				return errors.Wrap(err, "Error while deleting file")
+			}
+		} else if current == nil || current.GpgKey != desired.GpgKey {
+			util.Log().Infow("Writing file", "file", desired.FileNames)
+			err := ioutil.WriteFile(absolutePath, []byte(desired.GpgKey), 0644)
+			if err != nil {
+				return errors.Wrap(err, "Error while writing file")
+			}
+		}
+
+	}
 	return nil
 }
 
