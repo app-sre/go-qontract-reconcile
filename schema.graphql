@@ -55,6 +55,7 @@ type Query {
   gabi_instances_v1(path: String): [GabiInstance_v1!]
   template_tests_v1(path: String): [TemplateTest_v1!]
   dns_zone_v1(path: String): [DnsZone_v1!]
+  cloudflare_dns_zone_v1(path: String): [CloudflareDnsZone_v1!]
   slack_workspaces_v1(path: String): [SlackWorkspace_v1!]
   ocp_release_mirror_v1(path: String): [OcpReleaseMirror_v1!]
   slo_document_v1(path: String): [SLODocument_v1!]
@@ -68,6 +69,8 @@ type Query {
   change_types_v1(path: String, name: String): [ChangeType_v1!]
   scorecards_v2(path: String): [Scorecard_v2!]
   pgp_reencrypt_settings_v1(path: String): [PgpReencryptSettings_v1!]
+  skupper_network_v1(path: String): [SkupperNetwork_v1!]
+  cloudflare_account_role_v1(path: String): [CloudflareAccountRole_v1!]
 }
 
 type AppInterfaceSettings_v1 {
@@ -94,6 +97,7 @@ type AppInterfaceSettings_v1 {
   ldap: LdapSettings_v1
   jiraWatcher: JiraWatcherSettings_v1
   glitchtip: GlitchtipSettings_v1
+  cloudflareEmailDomainAllowList: [String!]
 }
 
 scalar JSON
@@ -193,6 +197,7 @@ type Cluster_v1 implements DatafileObject_v1 {
   insecureSkipTLSVerify: Boolean
   jumpHost: ClusterJumpHost_v1
   automationToken: VaultSecret_v1
+  clusterAdmin: Boolean
   clusterAdminAutomationToken: VaultSecret_v1
   internal: Boolean
   disable: DisableClusterAutomations_v1
@@ -229,7 +234,7 @@ type Namespace_v1 implements DatafileObject_v1 {
   managedRoles: Boolean
   managedResourceTypes: [String!]
   managedResourceTypeOverrides: [NamespaceManagedResourceTypeOverrides_v1!]
-  managedResourceNames: [NamespaceManagedResourceNames_v1!]
+  managedResourceNames: [ManagedResourceNames_v1!]
   sharedResources: [SharedResources_v1!]
   openshiftResources: [NamespaceOpenshiftResource_v1!]
   managedExternalResources: Boolean
@@ -237,6 +242,7 @@ type Namespace_v1 implements DatafileObject_v1 {
   openshiftServiceAccountTokens: [ServiceAccountTokenSpec_v1!]
   glitchtipProjects: [GlitchtipProjects_v1!]
   kafkaCluster: KafkaCluster_v1
+  skupperSite: NamespaceSkupperSiteConfig_v1
 }
 
 type App_v1 implements DatafileObject_v1 {
@@ -321,19 +327,26 @@ type AppQuayRepos_v1 {
   items: [AppQuayReposItems_v1!]!
 }
 
-type QuayOrg_v1 {
+type QuayOrg_v1 implements DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
   name: String!
   description: String!
   mirror: QuayOrg_v1
+  mirrorFilters: [QuayOrgMirrorFilter_v1!]
   managedRepos: Boolean!
   instance: QuayInstance_v1!
   serverUrl: String
   managedTeams: [String!]!
   automationToken: VaultSecret_v1
   pushCredentials: VaultSecret_v1
+}
+
+type QuayOrgMirrorFilter_v1 {
+  name: String!
+  tags: [String!]
+  tagsExclude: [String!]
 }
 
 type QuayInstance_v1 {
@@ -390,6 +403,7 @@ type Role_v1 implements DatafileObject_v1 {
   glitchtip_roles: [GlitchtipRole_v1!]
   sendgrid_accounts: [SendGridAccount_v1!]
   self_service: [SelfServiceConfig_v1!]
+  cloudflare_access: [CloudflareAccountRole_v1!]
   users: [User_v1!]!
   bots: [Bot_v1!]!
 }
@@ -478,6 +492,7 @@ type User_v1 implements DatafileObject_v1 {
   slack_username: String
   pagerduty_username: String
   aws_username: String
+  cloudflare_user: String
   public_gpg_key: String
   tag_on_merge_requests: Boolean
   tag_on_cluster_updates: Boolean
@@ -583,6 +598,8 @@ type OpenShiftClusterManager_v1 implements DatafileObject_v1 {
   accessTokenClientId: String!
   accessTokenUrl: String!
   accessTokenClientSecret: VaultSecret_v1
+  addonManagedUpgrades: Boolean
+  addonUpgradeTests: [AddonUpgradeTest_v1!]
   recommendedVersions: [OpenShiftClusterManagerRecommendedVersions_v1!]
   recommendedVersionWeight: OpenShiftClusterManagerRecommendedVersionsWeight_v1
   blockedVersions: [String!]
@@ -591,12 +608,70 @@ type OpenShiftClusterManager_v1 implements DatafileObject_v1 {
   sectors: [OpenShiftClusterManagerSector_v1!]
   upgradePolicyDefaults: [OpenShiftClusterManagerUpgradePolicyDefault_v1!]
   upgradePolicyClusters: [OpenShiftClusterManagerUpgradePolicyCluster_v1!]
+  inheritVersionData: [OpenShiftClusterManager_v1!]
+  publishVersionData: [OpenShiftClusterManager_v1!]
   clusters: [Cluster_v1!]
+}
+
+type AddonUpgradeTest_v1 {
+  addon: ClusterAddon_v1!
+  instance: JenkinsInstance_v1!
+  name: String!
+}
+
+type ClusterAddon_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String
+  parameters: [ClusterAddonParameters_v1!]
+}
+
+type ClusterAddonParameters_v1 {
+  id: String!
+  value: String!
+}
+
+type JenkinsInstance_v1 {
+  schema: String!
+  path: String!
+  labels: JSON
+  name: String!
+  description: String!
+  serverUrl: String!
+  token: VaultSecret_v1!
+  previousUrls: [String!]
+  plugins: [String!]
+  deleteMethod: String
+  managedProjects: [String!]
+  buildsCleanupRules: [JenkinsInstanceBuildsCleanupRules_v1!]
+  workerFleets: [JenkinsWorkerFleets_v1!]
+}
+
+type JenkinsInstanceBuildsCleanupRules_v1 {
+  name: String!
+  keep_hours: Int!
+}
+
+type JenkinsWorkerFleets_v1 {
+  account: String!
+  identifier: String!
+  namespace: Namespace_v1!
+  credentialsId: String!
+  fsRoot: String
+  labelString: String!
+  numExecutors: Int
+  idleMinutes: Int
+  minSpareSize: Int
+  noDelayProvision: Boolean
 }
 
 type OpenShiftClusterManagerRecommendedVersions_v1 {
   recommendedVersion: String!
+  initialVersion: String!
   workload: String!
+  channel: String
 }
 
 type OpenShiftClusterManagerRecommendedVersionsWeight_v1 {
@@ -733,7 +808,7 @@ type GlitchtipInstance_v1 {
   name: String!
   description: String!
   consoleUrl: String!
-  automationUserEmail: String!
+  automationUserEmail: VaultSecret_v1!
   automationToken: VaultSecret_v1!
   organizations: [GlitchtipOrganization_v1!]!
 }
@@ -766,6 +841,7 @@ type ChangeType_v1 {
   disabled: Boolean
   inherit: [ChangeType_v1!]
   changes: [ChangeTypeChangeDetector_v1!]!
+  implicitOwnership: [ChangeTypeImplicitOwnership_v1!]
 }
 
 interface ChangeTypeChangeDetector_v1 {
@@ -777,6 +853,35 @@ interface ChangeTypeChangeDetector_v1 {
 type ChangeTypeChangeDetectorContextSelector_v1 {
   selector: String!
   when: String
+}
+
+interface ChangeTypeImplicitOwnership_v1 {
+  provider: String!
+}
+
+type CloudflareAccountRole_v1 {
+  schema: String!
+  path: String!
+  account: CloudflareAccount_v1!
+  name: String!
+  description: String!
+  roles: [String!]!
+  access_roles: [Role_v1!]
+}
+
+type CloudflareAccount_v1 implements ExternalResourcesProvisioner_v1 {
+  schema: String!
+  path: String!
+  name: String!
+  description: String
+  providerVersion: String!
+  accountOwners: [Owner_v1!]!
+  enableDeletion: Boolean
+  apiCredentials: VaultSecret_v1!
+  terraformStateAccount: AWSAccount_v1!
+  deletionApprovals: [DeletionApproval_v1!]
+  enforceTwofactor: Boolean
+  type: String
 }
 
 type Bot_v1 {
@@ -818,7 +923,7 @@ type AppEscalationPolicyChannels_v1 {
   nextEscalationPolicy: AppEscalationPolicy_v1
 }
 
-type PermissionSlackUsergroup_v1 implements Permission_v1 {
+type PermissionSlackUsergroup_v1 implements Permission_v1 & DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -890,7 +995,9 @@ type PagerDutyInstance_v1 {
   token: VaultSecret_v1!
 }
 
-type Schedule_v1 {
+type Schedule_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
   name: String!
   description: String
   schedule: [ScheduleEntry_v1!]!
@@ -1075,7 +1182,7 @@ interface StatusProvider_v1 {
   provider: String!
 }
 
-type JenkinsConfig_v1 {
+type JenkinsConfig_v1 implements DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -1088,26 +1195,6 @@ type JenkinsConfig_v1 {
   config_path: Resource_v1
 }
 
-type JenkinsInstance_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String!
-  serverUrl: String!
-  token: VaultSecret_v1!
-  previousUrls: [String!]
-  plugins: [String!]
-  deleteMethod: String
-  managedProjects: [String!]
-  buildsCleanupRules: [JenkinsInstanceBuildsCleanupRules_v1!]
-}
-
-type JenkinsInstanceBuildsCleanupRules_v1 {
-  name: String!
-  keep_hours: Int!
-}
-
 type SaasFile_v2 implements DatafileObject_v1 {
   schema: String!
   path: String!
@@ -1118,6 +1205,7 @@ type SaasFile_v2 implements DatafileObject_v1 {
   pipelinesProvider: PipelinesProvider_v1!
   slack: SlackOutput_v1
   managedResourceTypes: [String!]!
+  managedResourceNames: [ManagedResourceNames_v1!]
   authentication: SaasFileAuthentication_v1
   parameters: JSON
   allowedSecretParameterPaths: [String!]
@@ -1142,6 +1230,11 @@ interface PipelinesProvider_v1 {
   name: String!
   description: String!
   provider: String!
+}
+
+type ManagedResourceNames_v1 {
+  resource: String!
+  resourceNames: [String!]!
 }
 
 type SaasFileAuthentication_v1 {
@@ -1224,8 +1317,9 @@ type SRECheckpoint_v1 implements DatafileObject_v1 {
   issue: String!
 }
 
-type SLODocument_v1 {
+type SLODocument_v1 implements DatafileObject_v1 {
   schema: String!
+  path: String!
   labels: JSON
   name: String!
   app: App_v1!
@@ -1282,7 +1376,7 @@ type ServiceAccountTokenSpec_v1 {
   serviceAccountName: String!
 }
 
-type Environment_v1 {
+type Environment_v1 implements DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -1295,7 +1389,7 @@ type Environment_v1 {
   namespaces: [Namespace_v1!]
 }
 
-type Product_v1 {
+type Product_v1 implements DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -1352,11 +1446,6 @@ type NamespaceManagedResourceTypeOverrides_v1 {
   override: String!
 }
 
-type NamespaceManagedResourceNames_v1 {
-  resource: String!
-  resourceNames: [String!]!
-}
-
 interface NamespaceExternalResource_v1 {
   provider: String!
   provisioner: ExternalResourcesProvisioner_v1!
@@ -1377,6 +1466,73 @@ type KafkaClusterSpec_v1 {
   provider: String!
   region: String!
   multi_az: Boolean!
+}
+
+type NamespaceSkupperSiteConfig_v1 {
+  network: SkupperNetwork_v1!
+  delete: Boolean
+  config: SkupperSiteConfig_v1
+}
+
+type SkupperNetwork_v1 implements DatafileObject_v1 {
+  schema: String!
+  identifier: String!
+  siteConfigDefaults: SkupperSiteConfigDefaults_v1!
+  path: String!
+  namespaces: [Namespace_v1!]!
+}
+
+type SkupperSiteConfigDefaults_v1 {
+  clusterLocal: Boolean
+  console: Boolean
+  consoleAuthentication: String
+  consoleIngress: String
+  controllerCpuLimit: String
+  controllerCpu: String
+  controllerMemoryLimit: String
+  controllerMemory: String
+  controllerPodAntiaffinity: String
+  controllerServiceAnnotations: String
+  edge: Boolean
+  ingress: String
+  routerConsole: Boolean
+  routerCpuLimit: String
+  routerCpu: String
+  routerMemoryLimit: String
+  routerMemory: String
+  routerLogging: String
+  routerPodAntiaffinity: String
+  routerServiceAnnotations: String
+  routers: Int
+  serviceController: Boolean
+  serviceSync: Boolean
+  skupperSiteController: String!
+}
+
+type SkupperSiteConfig_v1 {
+  clusterLocal: Boolean
+  console: Boolean
+  consoleAuthentication: String
+  consoleIngress: String
+  controllerCpuLimit: String
+  controllerCpu: String
+  controllerMemoryLimit: String
+  controllerMemory: String
+  controllerPodAntiaffinity: String
+  controllerServiceAnnotations: String
+  edge: Boolean
+  ingress: String
+  routerConsole: Boolean
+  routerCpuLimit: String
+  routerCpu: String
+  routerMemoryLimit: String
+  routerMemory: String
+  routerLogging: String
+  routerPodAntiaffinity: String
+  routerServiceAnnotations: String
+  routers: Int
+  serviceController: Boolean
+  serviceSync: Boolean
 }
 
 interface ClusterSpec_v1 {
@@ -1445,25 +1601,12 @@ interface ClusterPeeringConnection_v1 {
   delete: Boolean
 }
 
-type ClusterAddon_v1 {
-  schema: String!
-  path: String!
-  labels: JSON
-  name: String!
-  description: String
-  parameters: [ClusterAddonParameters_v1!]
-}
-
-type ClusterAddonParameters_v1 {
-  id: String!
-  value: String!
-}
-
 type ClusterJumpHost_v1 {
   hostname: String!
   knownHosts: String!
   user: String!
   port: Int
+  remotePort: Int
   identity: VaultSecret_v1!
   clusters: [Cluster_v1!]
 }
@@ -1544,21 +1687,6 @@ type ExternalUser_v1 {
   sponsors: [User_v1!]!
 }
 
-type CloudflareAccount_v1 implements ExternalResourcesProvisioner_v1 {
-  schema: String!
-  path: String!
-  name: String!
-  description: String
-  providerVersion: String!
-  accountOwners: [Owner_v1!]!
-  enableDeletion: Boolean
-  apiCredentials: VaultSecret_v1!
-  terraformStateAccount: AWSAccount_v1!
-  deletionApprovals: [DeletionApproval_v1!]
-  enforceTwofactor: Boolean
-  type: String
-}
-
 type CNAExperimentalProvisioner_v1 implements ExternalResourcesProvisioner_v1 {
   schema: String!
   path: String!
@@ -1574,11 +1702,24 @@ type VaultInstance_v1 {
   description: String!
   address: String!
   auth: VaultInstanceAuth_v1!
+  replication: [VaultReplicationConfig_v1!]
 }
 
 interface VaultInstanceAuth_v1 {
   provider: String!
   secretEngine: String!
+  kubeRoleName: String
+}
+
+type VaultReplicationConfig_v1 {
+  vaultInstance: VaultInstance_v1!
+  destAuth: VaultInstanceAuth_v1!
+  sourceAuth: VaultInstanceAuth_v1!
+  paths: [VaultReplicationPaths_v1!]
+}
+
+interface VaultReplicationPaths_v1 {
+  provider: String!
 }
 
 type VaultAudit_v1 {
@@ -1615,7 +1756,7 @@ type VaultPolicyMapping_v1 {
   policies: [VaultPolicy_v1!]!
 }
 
-type PermissionGithubOrgTeam_v1 implements Permission_v1 {
+type PermissionGithubOrgTeam_v1 implements Permission_v1 & DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -1711,6 +1852,7 @@ type IntegrationPrCheck_v1 {
   no_validate_schemas: Boolean
   run_for_valid_saas_file_changes: Boolean
   early_exit: Boolean
+  check_only_affected_shards: Boolean
   shardSpecOverride: [IntegrationSpecShardSpecOverride_v1!]
 }
 
@@ -1738,7 +1880,7 @@ type IntegrationSpec_v1 {
   fluentdResources: DeployResources_v1
   shards: Int
   shardingStrategy: String
-  sleepDurationSecs: Int
+  sleepDurationSecs: String
   state: Boolean
   storage: String
   trigger: Boolean
@@ -1789,7 +1931,7 @@ type QontractQuery_v1 {
   path: String!
 }
 
-type UnleashInstance_v1 {
+type UnleashInstance_v1 implements DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -1890,6 +2032,39 @@ type DnsNamespaceZone_v1 {
   name: String!
 }
 
+type CloudflareDnsZone_v1 implements DatafileObject_v1 {
+  schema: String!
+  path: String!
+  identifier: String!
+  account: CloudflareAccount_v1!
+  zone: String!
+  type: String
+  plan: String
+  records: [CloudflareDnsRecord_v1!]
+  delete: Boolean
+}
+
+type CloudflareDnsRecord_v1 {
+  identifier: String!
+  name: String!
+  type: String!
+  ttl: Int!
+  value: String
+  data: CloudflareDnsRecordDataSettings_v1
+  proxied: Boolean
+  priority: Int
+}
+
+type CloudflareDnsRecordDataSettings_v1 {
+  algorithm: Int
+  key_tag: Int
+  flags: Int
+  protocol: Int
+  public_key: String
+  digest_type: Int
+  digest: String
+}
+
 type OcpReleaseMirror_v1 {
   hiveCluster: Cluster_v1!
   ecrResourcesNamespace: Namespace_v1!
@@ -1927,6 +2102,7 @@ type AcceptanceCriteriaItem_v1 {
 }
 
 type PgpReencryptSettings_v1 {
+  schema: String!
   public_gpg_key: String!
   private_pgp_key_vault_path: String!
   reencrypt_vault_path: String!
@@ -1959,6 +2135,11 @@ type VaultAuthConfigOidc_v1 implements VaultAuthConfig_v1 {
   oidc_client_secret: VaultSecret_v1!
   oidc_client_secret_kv_version: String!
   default_role: String!
+}
+
+type VaultAuthConfigKubernetes_v1 implements VaultAuthConfig_v1 {
+  _type: String!
+  kubernetes_host: String!
 }
 
 type VaultSecretEngineOptionsKV_v1 implements VaultSecretEngineOptions_v1 {
@@ -2013,6 +2194,23 @@ type VaultRoleOidcOptions_v1 implements VaultRoleOptions_v1 {
   verbose_oidc_logging: Boolean
 }
 
+type VaultRoleKubernetesOptions_v1 implements VaultRoleOptions_v1 {
+  _type: String!
+  alias_name_source: String!
+  audience: String
+  bound_service_account_names: [String!]!
+  bound_service_account_namespaces: [String!]!
+  token_ttl: String!
+  token_max_ttl: String!
+  token_explicit_max_ttl: String!
+  token_type: String!
+  token_period: String!
+  token_policies: [String!]!
+  token_bound_cidrs: [String!]!
+  token_no_default_policy: Boolean!
+  token_num_uses: String!
+}
+
 type KeyValue_v1 {
   key: String!
   value: String!
@@ -2031,6 +2229,16 @@ type ClusterAuthGithubOrgTeam_v1 implements ClusterAuth_v1 {
 
 type ClusterAuthOIDC_v1 implements ClusterAuth_v1 {
   service: String!
+  name: String!
+  issuer: String
+  claims: ClusterAuthOIDCClaims_v1
+}
+
+type ClusterAuthOIDCClaims_v1 {
+  email: [String!]
+  username: [String!]
+  name: [String!]
+  groups: [String!]
 }
 
 type ClusterSpecOSD_v1 implements ClusterSpec_v1 {
@@ -2082,6 +2290,7 @@ type ClusterPeeringConnectionAccount_v1 implements ClusterPeeringConnection_v1 {
   vpc: AWSVPC_v1!
   description: String
   manageRoutes: Boolean
+  manageAccountRoutes: Boolean
   delete: Boolean
   assumeRole: String
 }
@@ -2239,7 +2448,7 @@ type NamespaceTerraformResourceCloudflareZone_v1 implements NamespaceTerraformRe
   type: String
   settings: JSON
   argo: CloudflareZoneArgo_v1
-  records: [CloudflareZoneRecord_v1!]
+  records: [CloudflareDnsRecord_v1!]
   workers: [CloudflareZoneWorker_v1!]
   certificates: [CloudflareZoneCertificate_v1!]
 }
@@ -2247,14 +2456,6 @@ type NamespaceTerraformResourceCloudflareZone_v1 implements NamespaceTerraformRe
 type CloudflareZoneArgo_v1 {
   tiered_caching: Boolean
   smart_routing: Boolean
-}
-
-type CloudflareZoneRecord_v1 {
-  name: String!
-  type: String!
-  ttl: Int!
-  value: String!
-  proxied: Boolean
 }
 
 type CloudflareZoneWorker_v1 {
@@ -2415,6 +2616,7 @@ type NamespaceTerraformResourceRDS_v1 implements NamespaceTerraformResourceAWS_v
   output_resource_db_name: String
   reset_password: String
   enhanced_monitoring: Boolean
+  grafana_datasource: Boolean
   replica_source: String
   ca_cert: VaultSecret_v1
   annotations: JSON
@@ -2616,6 +2818,9 @@ type NamespaceTerraformResourceALB_v1 implements NamespaceTerraformResourceAWS_v
   vpc: AWSVPC_v1!
   certificate_arn: String!
   idle_timeout: Int
+  enable_http2: Boolean
+  ingress_cidr_blocks: [String!]!
+  ip_address_type: String
   targets: [NamespaceTerraformResourceALBTargets_v1!]!
   rules: [NamespaceTerraformResourceALBRules_v1!]!
   output_resource_name: String
@@ -2672,6 +2877,7 @@ type NamespaceTerraformResourceRosaAuthenticator_V1 implements NamespaceTerrafor
   certificate_arn: String!
   domain_name: String!
   openshift_ingress_load_balancer_arn: String
+  insights_callback_urls: [String!]
   defaults: String!
   output_resource_name: String
   output_format: NamespaceTerraformResourceOutputFormat_v1
@@ -2744,17 +2950,30 @@ type PipelinesProviderPipelineTemplates_v1 {
   openshiftSaasDeploy: PipelinesProviderTektonObjectTemplate_v1!
 }
 
+type VaultReplicationJenkins_v1 implements VaultReplicationPaths_v1 {
+  provider: String!
+  jenkinsInstance: JenkinsInstance_v1!
+  policy: VaultPolicy_v1
+}
+
+type VaultReplicationPolicy_v1 implements VaultReplicationPaths_v1 {
+  provider: String!
+  policy: VaultPolicy_v1
+}
+
 type VaultInstanceAuthApprole_v1 implements VaultInstanceAuth_v1 {
   provider: String!
   secretEngine: String!
   roleID: VaultSecret_v1!
   secretID: VaultSecret_v1!
+  kubeRoleName: String
 }
 
 type VaultInstanceAuthToken_v1 implements VaultInstanceAuth_v1 {
   provider: String!
   secretEngine: String!
   token: VaultSecret_v1!
+  kubeRoleName: String
 }
 
 type OidcPermissionVault_v1 implements OidcPermission_v1 {
@@ -2767,7 +2986,7 @@ type OidcPermissionVault_v1 implements OidcPermission_v1 {
   vault_policies: [VaultPolicy_v1!]!
 }
 
-type PermissionGithubOrg_v1 implements Permission_v1 {
+type PermissionGithubOrg_v1 implements Permission_v1 & DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -2778,7 +2997,7 @@ type PermissionGithubOrg_v1 implements Permission_v1 {
   role: String
 }
 
-type PermissionJenkinsRole_v1 implements Permission_v1 {
+type PermissionJenkinsRole_v1 implements Permission_v1 & DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -2790,7 +3009,7 @@ type PermissionJenkinsRole_v1 implements Permission_v1 {
   token: VaultSecret_v1!
 }
 
-type PermissionGitlabGroupMembership_v1 implements Permission_v1 {
+type PermissionGitlabGroupMembership_v1 implements Permission_v1 & DatafileObject_v1 {
   schema: String!
   path: String!
   labels: JSON
@@ -2878,9 +3097,21 @@ type ManualStatusProviderConfig_v1 {
   until: String
 }
 
+type ChangeTypeImplicitOwnershipJsonPathProvider_v1 implements ChangeTypeImplicitOwnership_v1 {
+  provider: String!
+  jsonPathSelector: String!
+}
+
 type ChangeTypeChangeDetectorJsonPathProvider_v1 implements ChangeTypeChangeDetector_v1 {
   provider: String!
   changeSchema: String
   jsonPathSelectors: [String!]!
   context: ChangeTypeChangeDetectorContextSelector_v1
+}
+
+type ChangeTypeChangeDetectorChangeTypeProvider_v1 implements ChangeTypeChangeDetector_v1 {
+  provider: String!
+  changeSchema: String
+  changeTypes: [ChangeType_v1!]!
+  context: ChangeTypeChangeDetectorContextSelector_v1!
 }
