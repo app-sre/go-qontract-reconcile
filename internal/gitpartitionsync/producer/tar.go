@@ -36,7 +36,6 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 	tw := tar.NewWriter(gzw)
 	defer tw.Close()
 
-	// credit: https://medium.com/@skdomino/taring-untaring-files-in-go-6b07cf56bc07
 	err = filepath.Walk(repoPath, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
