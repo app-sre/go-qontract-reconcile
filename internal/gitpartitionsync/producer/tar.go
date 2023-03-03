@@ -24,7 +24,7 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 	}
 
 	tarPath := fmt.Sprintf("%s/%s/%s.tar", g.config.Workdir, TAR_DIRECTORY, sync.SourceProjectName)
-	f, err := os.Create(tarPath)
+	f, err := os.Create(filepath.Clean(tarPath))
 	if err != nil {
 		return "", err
 	}
@@ -36,7 +36,6 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 	tw := tar.NewWriter(gzw)
 	defer tw.Close()
 
-	// credit: https://medium.com/@skdomino/taring-untaring-files-in-go-6b07cf56bc07
 	err = filepath.Walk(repoPath, func(file string, fi os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -61,19 +60,22 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 		}
 
 		// open files for taring
-		f, err := os.Open(file)
+		f, err := os.Open(filepath.Clean(file))
 		if err != nil {
 			return err
 		}
+		// Closing a healthy file twice yields a syscall.EINVAL
+		// error which is safe to discard in this case.
+		defer f.Close()
 
 		// copy file data into tar writer
 		if _, err := io.Copy(tw, f); err != nil {
 			return err
 		}
 
-		// manually close here after each file operation; defering would cause each file close
-		// to wait until all operations have completed.
-		f.Close()
+		if err := f.Close(); err != nil {
+			return err
+		}
 
 		return nil
 	})
