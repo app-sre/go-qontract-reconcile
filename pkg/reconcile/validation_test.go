@@ -63,6 +63,8 @@ func (t *TestValidation) Validate(ctx context.Context) ([]ValidationError, error
 	return []ValidationError{}, nil
 }
 
+var _ Validation = &TestValidation{}
+
 func TestValidationRunner(t *testing.T) {
 	tv := TestValidation{
 		SetupRun:    false,
