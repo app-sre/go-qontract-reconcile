@@ -66,7 +66,7 @@ func (g *GitPartitionSyncProducer) tarRepos(repoPath string, sync syncConfig) (s
 		}
 		// Closing a healthy file twice yields a syscall.EINVAL
 		// error which is safe to discard in this case.
-		defer func() { _ = f.Close() }()
+		defer f.Close()
 
 		// copy file data into tar writer
 		if _, err := io.Copy(tw, f); err != nil {
