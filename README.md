@@ -36,6 +36,14 @@ user_validator:
 github:
   timeout: Timeout in seconds for Github request (default: 60s)
 
+git_partition_sync_producer:
+  glBaseURL: GitLab instance base url
+  glUsername: GitLab username associated with token
+  glToken: Token to access GitLab. Must have repository read permission
+  bucket: s3 bucket to reconcile against
+  publicKey: value of x25519 format public key. See https://github.com/FiloSottile/age
+  workdir: local dir where git clones and encryption will occur
+
 unleash:
   timeout: Timeout in seconds for Github request (default: 60s)
   apiurl: Address to access Unleash REQUIRED
@@ -80,7 +88,13 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * UNLEASH_CLIENT_ACCESS_TOKEN
  * GITHUB_API
  * GITHUB_API_TIMEOUT
+ * GITLAB_BASE_URL
+ * GITLAB_USERNAME
+ * GITLAB_TOKEN
+ * PUBLIC_KEY
  * AWS_REGION
+ * AWS_GIT_SYNC_BUCKET
+ * WORKDIR
 
 
 ## New Integration

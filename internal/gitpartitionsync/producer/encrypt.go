@@ -2,8 +2,10 @@ package producer
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"filippo.io/age"
 )
@@ -23,14 +25,14 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConf
 	}
 
 	encryptPath := fmt.Sprintf("%s/%s/%s.tar.age", g.config.Workdir, ENCRYPT_DIRECTORY, sync.SourceProjectName)
-	f, err := os.Create(encryptPath)
+	f, err := os.Create(filepath.Clean(encryptPath))
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
 	// read in tar data
-	tarBytes, err := os.ReadFile(tarPath)
+	tarFile, err := os.Open(filepath.Clean(tarPath))
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +42,10 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConf
 	if err != nil {
 		return "", err
 	}
-	encWriter.Write(tarBytes)
+
+	if _, err := io.Copy(encWriter, tarFile); err != nil {
+		return "", err
+	}
 
 	if err := encWriter.Close(); err != nil {
 		return "", err
