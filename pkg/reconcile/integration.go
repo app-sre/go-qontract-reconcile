@@ -12,9 +12,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-type IntegrationNameKey string
+type integrationNameKey string
 
-var ContextIngetrationNameKey IntegrationNameKey = "integrationName"
+// ContextIngetrationNameKey is the key used to store the integration name in the context
+var ContextIngetrationNameKey integrationNameKey = "integrationName"
 
 // Integration describes the set of methods Integrations must implement
 type Integration interface {
@@ -30,23 +31,30 @@ type ResourceInventory struct {
 	State map[string]*ResourceState
 }
 
+// NewResourceInventory creates a new ResourceInventory
 func NewResourceInventory() *ResourceInventory {
 	return &ResourceInventory{
 		State: map[string]*ResourceState{},
 	}
 }
 
+// AddResourceState adds a ResourceState to the ResourceInventory
 func (ri *ResourceInventory) AddResourceState(target string, rs *ResourceState) {
 	ri.State[target] = rs
 }
 
+// GetResourceState returns a ResourceState from the ResourceInventory
 func (ri *ResourceInventory) GetResourceState(target string) *ResourceState {
 	return ri.State[target]
 }
 
+// ResourceState describes the state of a resource
 type ResourceState struct {
-	Config  interface{}
+	// Config is the configuration of the resource, usually the GraphQL response object
+	Config interface{}
+	// Current state of the resource
 	Current interface{}
+	// Desired state of the resource
 	Desired interface{}
 }
 
@@ -138,6 +146,7 @@ func (i *IntegrationRunner) runIntegration() {
 	}
 }
 
+// Run runs the integration
 func (i *IntegrationRunner) Run() {
 	go func(i *IntegrationRunner) {
 		http.Handle("/metrics", promhttp.HandlerFor(i.registry, promhttp.HandlerOpts{Registry: i.registry}))
@@ -158,6 +167,7 @@ func (i *IntegrationRunner) Run() {
 	}
 }
 
+// Exiter exits the integration
 func (i *IntegrationRunner) Exiter(exitCode int) {
 	i.metrics.status.Set(float64(exitCode))
 	if i.config.RunOnce {

@@ -1,3 +1,4 @@
+// Package reconcile contains code to run Integrations and Validations
 package reconcile
 
 import (
@@ -25,7 +26,7 @@ type runnerConfig struct {
 	SleepDurationSecs int
 }
 
-// NewRunnerConfig creates a new IntegationConfig from viper, v can be nil
+// newRunnerConfig creates a new IntegationConfig from viper, v can be nil
 func newRunnerConfig() *runnerConfig {
 	v := viper.GetViper()
 	var ic runnerConfig
