@@ -133,10 +133,10 @@ are a couple of states the code could be in.
 Status        Vault   State   PGP     Notification    Test name
 ------------- ------- ------- ------- --------------- --------------------
 Reencrypt     Import  None    Valid   Yes             TestReencryptOkay
-              Export
+	                  Updated
 Reencrypt     Import  Update  Invalid No              TestReencryptInvalid
 Reencrypt     Import  Delete  Updated Yes             TestReencryptUpdated
-              Export
+					  Update
 NotifyExpired Import  Updated Invalid Yes             TestNotifyExpired
 Skip          Import  Read    Invalid No              TestSKip
 
@@ -160,6 +160,8 @@ func TestReencryptOkay(t *testing.T) {
 	mockClient := mock.NewMockClient(ctrl)
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
+	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
+
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	mailSent := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
@@ -238,10 +240,12 @@ func TestReencryptUpdated(t *testing.T) {
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, nil).MaxTimes(2)
 	mockClient.EXPECT().GetObject(ctx, gomock.Any()).Return(&s3.GetObjectOutput{
-		Body: io.NopCloser(bytes.NewReader([]byte(`
-publicpgpkey: oldone
-`))),
+		Body: io.NopCloser(bytes.NewReader([]byte(`{
+"publicpgpkey": "oldone"
+}`))),
 	}, nil)
+
+	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
 
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	stateRemoved := false
@@ -296,10 +300,10 @@ func TestNotifySkip(t *testing.T) {
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, nil).MaxTimes(2)
 	mockClient.EXPECT().GetObject(ctx, gomock.Any()).Return(&s3.GetObjectOutput{
-		Body: io.NopCloser(bytes.NewReader([]byte(fmt.Sprintf(`
-publicpgpkey: Invalid key
-lastnotifiedat: %s
-`, string(dateByte))))),
+		Body: io.NopCloser(bytes.NewReader([]byte(fmt.Sprintf(`{
+"publicpgpkey": "Invalid key",
+"lastnotifiedat": %s
+}`, string(dateByte))))),
 	}, nil)
 
 	a := createTestNotifier(ctx, t, v, mockClient, users)
@@ -337,10 +341,10 @@ func TestNotifyExpired(t *testing.T) {
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, nil).MaxTimes(2)
 	mockClient.EXPECT().GetObject(ctx, gomock.Any()).Return(&s3.GetObjectOutput{
-		Body: io.NopCloser(bytes.NewReader([]byte(fmt.Sprintf(`
-publicpgpkey: Invalid key
-lastnotifiedat: %s
-`, string(dateByte))))),
+		Body: io.NopCloser(bytes.NewReader([]byte(fmt.Sprintf(`{
+"publicpgpkey": "Invalid key",
+"lastnotifiedat": %s
+}`, string(dateByte))))),
 	}, nil)
 
 	a := createTestNotifier(ctx, t, v, mockClient, users)

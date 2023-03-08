@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/github"
-	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
@@ -37,7 +36,6 @@ func newValidateUserConfig() *ValidateUserConfig {
 	sub := util.EnsureViperSub(viper.GetViper(), "user_validator")
 	sub.SetDefault("concurrency", 10)
 	sub.BindEnv("concurrency", "USER_VALIDATOR_CONCURRENCY")
-	sub.BindEnv("invalidusers", "USER_VALIDATOR_INVALID_USERS")
 	if err := sub.Unmarshal(&vuc); err != nil {
 		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
@@ -85,36 +83,6 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 		return err
 	}
 	return nil
-}
-
-func (i *ValidateUser) validatePgpKeys(users UsersResponse) []reconcile.ValidationError {
-	validUsers := i.removeInvalidUsers(&users)
-
-	validationErrors := make([]reconcile.ValidationError, 0)
-	for _, user := range validUsers.GetUsers_v1() {
-		pgpKey := user.GetPublic_gpg_key()
-		if len(pgpKey) > 0 {
-			path := user.GetPath()
-			entity, err := pgp.DecodePgpKey(pgpKey, path)
-			if err != nil {
-				validationErrors = append(validationErrors, reconcile.ValidationError{
-					Path:       path,
-					Validation: "validatePgpKeys",
-					Error:      err,
-				})
-				continue
-			}
-			err = pgp.TestEncrypt(entity)
-			if err != nil {
-				validationErrors = append(validationErrors, reconcile.ValidationError{
-					Path:       user.GetPath(),
-					Validation: "validatePgpKeys",
-					Error:      err,
-				})
-			}
-		}
-	}
-	return validationErrors
 }
 
 func (i *ValidateUser) validateUsersSinglePath(users UsersResponse) []reconcile.ValidationError {
@@ -240,7 +208,6 @@ func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationErro
 	}
 
 	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(*users))
-	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validatePgpKeys(*users))
 	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, *users))
 
 	return allValidationErrors, nil

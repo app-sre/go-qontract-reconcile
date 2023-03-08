@@ -27,35 +27,6 @@ func readKeyFile(t *testing.T, fileName string) []byte {
 	return key
 }
 
-func TestValidatePgpKeysValid(t *testing.T) {
-	v := ValidateUser{}
-	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Public_gpg_key: string(readKeyFile(t, publicFile)),
-		}},
-	}
-	validationErrors := v.validatePgpKeys(userResponse)
-	assert.Len(t, validationErrors, 0)
-}
-
-func TestValidatePgpKeysInValid(t *testing.T) {
-	// Todo add fixture for expired key
-	v := ValidateUser{}
-	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:           "/foo/bar",
-			Public_gpg_key: "a",
-		}},
-	}
-	validationErrors := v.validatePgpKeys(userResponse)
-	assert.Len(t, validationErrors, 1)
-	assert.Equal(t, "validatePgpKeys", validationErrors[0].Validation)
-	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
-	assert.EqualError(t, validationErrors[0].Error, "error decoding given PGP key: illegal base64 data at input byte 0")
-}
-
 func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
