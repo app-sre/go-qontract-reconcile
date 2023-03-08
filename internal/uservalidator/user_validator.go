@@ -1,3 +1,4 @@
+// Package uservalidator contains code used by the user-validator
 package uservalidator
 
 import (
@@ -18,7 +19,7 @@ type githubValidateFunc func(ctx context.Context, user UsersUsers_v1User_v1) *re
 // ValidateUser is a Validationa s described in github.com/app-sre/go-qontract-reconcile/pkg/integration.go
 type ValidateUser struct {
 	AuthenticatedGithubClient *github.AuthenticatedGithubClient
-	Vc                        *vault.VaultClient
+	Vc                        *vault.Client
 	ValidateUserConfig        *ValidateUserConfig
 
 	// Used for mocking

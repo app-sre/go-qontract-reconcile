@@ -1,3 +1,4 @@
+// Package github provides a client to interact with Github API
 package github
 
 import (
@@ -15,17 +16,17 @@ import (
 // AuthenticatedGithubClient is an oauth2 using Github API client
 type AuthenticatedGithubClient struct {
 	GithubClient *github.Client
-	config       *GithubClientConfig
+	config       *clientConfig
 }
 
-// GithubClientConfig holds configuration GithubClient
-type GithubClientConfig struct {
+// clientConfig holds configuration GithubClient
+type clientConfig struct {
 	Timeout int
 	BaseURL string
 }
 
-func newGithubClientConfig() *GithubClientConfig {
-	var qc GithubClientConfig
+func newGithubClientConfig() *clientConfig {
+	var qc clientConfig
 	sub := util.EnsureViperSub(viper.GetViper(), "github")
 	sub.SetDefault("timeout", 60)
 	sub.BindEnv("baseurl", "GITHUB_API")
@@ -47,16 +48,16 @@ func NewAuthenticatedGithubClient(ctx context.Context, token string) (*Authentic
 
 	client := github.NewClient(tc)
 	if strings.Compare(config.BaseURL, "") != 0 {
-		actualBaseUrl := config.BaseURL
+		actualBaseURL := config.BaseURL
 		if !strings.HasSuffix(config.BaseURL, "/") {
 			util.Log().Debugw("Github Base Url has no / suffix, addding it", "url", config.BaseURL)
-			actualBaseUrl = config.BaseURL + "/"
+			actualBaseURL = config.BaseURL + "/"
 		}
-		baseUrl, err := url.Parse(actualBaseUrl)
+		baseURL, err := url.Parse(actualBaseURL)
 		if err != nil {
 			return nil, err
 		}
-		client.BaseURL = baseUrl
+		client.BaseURL = baseURL
 	}
 
 	return &AuthenticatedGithubClient{
@@ -65,6 +66,7 @@ func NewAuthenticatedGithubClient(ctx context.Context, token string) (*Authentic
 	}, nil
 }
 
+// GetUsers uses authenticated client to get user information
 func (c *AuthenticatedGithubClient) GetUsers(ctx context.Context, user string) (*github.User, error) {
 	ghUser, _, err := c.GithubClient.Users.Get(ctx, user)
 	return ghUser, err

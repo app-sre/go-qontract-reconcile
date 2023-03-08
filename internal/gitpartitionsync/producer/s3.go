@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// concurrently deletes objects from s3 sync bucket that are no longer needed
+// deletes objects from s3 sync bucket that are no longer needed
 func (g *GitPartitionSyncProducer) removeOutdated(ctx context.Context, keyToDelete *string) error {
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
@@ -29,12 +29,12 @@ func (g *GitPartitionSyncProducer) removeOutdated(ctx context.Context, keyToDele
 	return nil
 }
 
-// cocurrently uploads latest encrypted tars to target s3 bucket
+// uploads latest encrypted tars to target s3 bucket
 func (g *GitPartitionSyncProducer) uploadLatest(ctx context.Context, encryptPath, commitSha string, sync syncConfig) error {
 	ctxTimeout, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	jsonStruct := &DecodedKey{
+	jsonStruct := &decodedKey{
 		Group:        sync.DestinationProjectGroup,
 		ProjectName:  sync.DestinationProjectName,
 		CommitSHA:    commitSha,
@@ -47,8 +47,8 @@ func (g *GitPartitionSyncProducer) uploadLatest(ctx context.Context, encryptPath
 		return err
 	}
 
-	encodedJsonStr := base64.StdEncoding.EncodeToString(jsonBytes)
-	objKey := fmt.Sprintf("%s.tar.age", encodedJsonStr)
+	encodedJSONStr := base64.StdEncoding.EncodeToString(jsonBytes)
+	objKey := fmt.Sprintf("%s.tar.age", encodedJSONStr)
 
 	f, err := os.Open(encryptPath)
 	if err != nil {

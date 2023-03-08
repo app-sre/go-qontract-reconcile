@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Credentials holds the AWS credentials that can be used with awsclient.NewClient
 type Credentials struct {
 	AccessKeyID     string
 	SecretAccessKey string
@@ -26,7 +27,7 @@ func getCredentialsFromEnv() *Credentials {
 	return nil
 }
 
-func getCredentialsFromVault(ctx context.Context, vc *vault.VaultClient, accountResponse *getAccountsResponse) (*Credentials, error) {
+func getCredentialsFromVault(ctx context.Context, vc *vault.Client, accountResponse *getAccountsResponse) (*Credentials, error) {
 	accounts := accountResponse.GetAwsaccounts_v1()
 	if len(accounts) != 1 {
 		return nil, fmt.Errorf("expected one AWS account, got %d", len(accounts))
@@ -37,18 +38,19 @@ func getCredentialsFromVault(ctx context.Context, vc *vault.VaultClient, account
 	if err != nil {
 		return nil, errors.Wrap(err, "Error reading automation token")
 	}
-	aws_access_key_id := secret.Data["aws_access_key_id"].(string)
-	aws_secret_access_key := secret.Data["aws_secret_access_key"].(string)
+	awsAccessKeyID := secret.Data["aws_access_key_id"].(string)
+	awsSecretAccessKey := secret.Data["aws_secret_access_key"].(string)
 
 	return &Credentials{
-		AccessKeyID:     aws_access_key_id,
-		SecretAccessKey: aws_secret_access_key,
+		AccessKeyID:     awsAccessKeyID,
+		SecretAccessKey: awsSecretAccessKey,
 		DefaultRegion:   accounts[0].GetResourcesDefaultRegion(),
 	}, nil
 
 }
 
-func GetAwsCredentials(ctx context.Context, vc *vault.VaultClient) (*Credentials, error) {
+// GetAwsCredentials returns AWS credentials from the environment or from vault
+func GetAwsCredentials(ctx context.Context, vc *vault.Client) (*Credentials, error) {
 	secretsFromEnv := getCredentialsFromEnv()
 	if secretsFromEnv != nil {
 		return secretsFromEnv, nil

@@ -1,3 +1,4 @@
+// Package pgp provides functions to work with PGP keys.
 package pgp
 
 import (
@@ -16,6 +17,7 @@ import (
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 )
 
+// TestEncrypt tests if an opengpg.Entity can be used for encryption
 func TestEncrypt(entity *openpgp.Entity) error {
 	ctBuf := bytes.NewBuffer(nil)
 	pt, e := openpgp.Encrypt(ctBuf, []*openpgp.Entity{entity}, nil, nil, nil)
@@ -58,6 +60,7 @@ func crc24(bytes []byte) uint32 {
 	return crc & mask
 }
 
+// DecodePgpKey tests if the passed in pgpKey is a base64 encoded pgp Public Key.
 func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 	pgpKey = strings.TrimRight(pgpKey, " \n\r")
 	pgpKey = strings.TrimSpace(pgpKey)
@@ -133,6 +136,7 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 	return entity, nil
 }
 
+// DecodeAndArmorBase64Entity decodes a base64 encoded entity and armors it.
 func DecodeAndArmorBase64Entity(encodedEntity string, armorType string) (string, error) {
 	decodedEntity, err := base64.StdEncoding.DecodeString(encodedEntity)
 	if err != nil {

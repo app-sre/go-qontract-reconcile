@@ -9,10 +9,10 @@ import (
 	"strings"
 )
 
-const CLONE_DIRECTORY = "glrepos"
+const cloneDirectory = "glrepos"
 
 func (g *GitPartitionSyncProducer) cloneRepos(sync syncConfig) (string, error) {
-	err := g.clean(CLONE_DIRECTORY)
+	err := g.clean(cloneDirectory)
 	if err != nil {
 		return "", err
 	}
@@ -24,7 +24,7 @@ func (g *GitPartitionSyncProducer) cloneRepos(sync syncConfig) (string, error) {
 
 	args := []string{"-c", fmt.Sprintf("git clone %s", authURL)}
 	cmd := exec.Command("/bin/sh", args...)
-	cmd.Dir = fmt.Sprintf("%s/%s", g.config.Workdir, CLONE_DIRECTORY)
+	cmd.Dir = fmt.Sprintf("%s/%s", g.config.Workdir, cloneDirectory)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	err = cmd.Run()
@@ -32,7 +32,7 @@ func (g *GitPartitionSyncProducer) cloneRepos(sync syncConfig) (string, error) {
 		return "", errors.New(strings.ReplaceAll(stderr.String(), g.config.GlToken, "[REDACTED]"))
 	}
 
-	return fmt.Sprintf("%s/%s/%s", g.config.Workdir, CLONE_DIRECTORY, sync.SourceProjectName), nil
+	return fmt.Sprintf("%s/%s/%s", g.config.Workdir, cloneDirectory, sync.SourceProjectName), nil
 }
 
 // returns git user-auth format of remote url
