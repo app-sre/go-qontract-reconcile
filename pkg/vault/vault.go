@@ -20,15 +20,15 @@ type VaultClient struct {
 }
 
 type vaultConfig struct {
-	Server        string
-	AuthType      string
-	Token         string
-	Role_ID       string
-	Secret_ID     string
-	KubeRole      string
-	KubeMount     string
-	KubeTokenPath string
-	Timeout       int
+	Server             string
+	AuthType           string
+	Token              string
+	Role_ID            string
+	Secret_ID          string
+	Kube_Auth_Role     string
+	Kube_Auth_Mount    string
+	Kube_SA_Token_Path string
+	Timeout            int
 }
 
 func newVaultConfig() *vaultConfig {
@@ -42,8 +42,9 @@ func newVaultConfig() *vaultConfig {
 	sub.BindEnv("token", "VAULT_TOKEN")
 	sub.BindEnv("role_id", "VAULT_ROLE_ID")
 	sub.BindEnv("secret_id", "VAULT_SECRET_ID")
-	sub.BindEnv("kube_auth_role", "VAULT_KUBE_ROLE")
-	sub.BindEnv("kube_auth_mount", "VAULT_KUBE_MOUNT")
+	sub.BindEnv("kube_auth_role", "VAULT_KUBE_AUTH_ROLE")
+	sub.BindEnv("kube_auth_mount", "VAULT_KUBE_AUTH_MOUNT")
+	sub.BindEnv("kube_sa_token_path", "VAULT_KUBE_SA_TOKEN_PATH")
 	sub.BindEnv("timeout", "VAULT_TIMEOUT")
 	if err := sub.Unmarshal(&vc); err != nil {
 		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
@@ -86,9 +87,9 @@ func NewVaultClient() (*VaultClient, error) {
 
 	case "kubernetes":
 		kubeAuth, err := kubernetes.NewKubernetesAuth(
-			vc.KubeRole,
-			kubernetes.WithServiceAccountTokenPath(vc.KubeTokenPath),
-			kubernetes.WithMountPath(vc.KubeMount),
+			vc.Kube_Auth_Role,
+			kubernetes.WithServiceAccountTokenPath(vc.Kube_SA_Token_Path),
+			kubernetes.WithMountPath(vc.Kube_Auth_Mount),
 		)
 
 		if err != nil {
