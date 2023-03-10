@@ -68,12 +68,20 @@ objects:
             mountPath: /etc/pki/
           - name: qontract-reconcile-toml
             mountPath: /config
+          - name: go-qontract-reconcile-sa-token
+            mountPath: ${KUBE_SA_TOKEN_PATH}
         volumes:
         - name: internal-certificates
           emptyDir: {}
         - name: qontract-reconcile-toml
           secret:
             secretName: ${QONTRACT_RECONCILE_TOML}
+        - name: go-qontract-reconcile-sa-token
+          projected: 
+            sources:
+            - serviceAccountToken:
+                expirationSeconds: 1800
+                path: token
 parameters:
 - name: IMAGE
   value: quay.io/app-sre/go-qontract-reconcile
@@ -108,3 +116,5 @@ parameters:
   value: 100m
 - name: CPU_LIMIT
   value: 150m
+- name: KUBE_SA_TOKEN_PATH
+  value: '/var/run/secrets/kubernetes.io/serviceaccount'
