@@ -23,10 +23,13 @@ graphql:
 
 vault:
   server: Address to access Vault REQUIRED
-  authtype: Authentication type either token or approle REQUIRED
+  authtype: Authentication type token, approle, or kubernetes REQUIRED
   token: Token to access Vault, requires setting authtype to token
   role_id: Role ID to use for authentication, requires setting authtype to approle 
   secret_id: Secret ID to use for authentication, requires setting authtype to approle
+  kube_auth_role: Name of role within specific kube auth config, requires setting authtype to kubernetes
+  kube_auth_mount: Name of specific kubernetes type auth mount, requires setting authtype to kubernetes
+  kube_sa_token_path: Absolute path to kubernetes service account token
   timeout: Timeout for vault requests. (default: 60s) 
 
 user_validator:
@@ -79,6 +82,9 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * VAULT_TOKEN
  * VAULT_ROLE_ID
  * VAULT_SECRET_ID
+ * VAULT_KUBE_AUTH_ROLE
+ * VAULT_KUBE_AUTH_MOUNT
+ * VAULT_KUBE_SA_TOKEN_PATH
  * VAULT_TIMEOUT
  * USER_VALIDATOR_CONCURRENCY
  * UNLEASH_TIMEOUT
