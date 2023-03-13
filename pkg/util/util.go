@@ -1,3 +1,4 @@
+// Package util has code that does not fit anywhere else
 package util
 
 import (
@@ -31,6 +32,7 @@ func EnsureViperSub(viper *viper.Viper, key string) *viper.Viper {
 	return viper.Sub(key)
 }
 
+// Contains checks if a string is in a slice
 func Contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -40,10 +42,12 @@ func Contains(s []string, e string) bool {
 	return false
 }
 
+// StrPointer returns a pointer to a string
 func StrPointer(s string) *string {
 	return &s
 }
 
+// ReadKeyFile reads a key file and returns the content
 func ReadKeyFile(t *testing.T, fileName string) []byte {
 	key, err := os.ReadFile(fileName)
 	if err != nil {
@@ -52,16 +56,19 @@ func ReadKeyFile(t *testing.T, fileName string) []byte {
 	return key
 }
 
+// AuthedTransport is a http.RoundTripper that adds an Authorization header
 type AuthedTransport struct {
 	Key     string
 	Wrapped http.RoundTripper
 }
 
+// RoundTrip implements http.RoundTripper and sets Authorization header
 func (t *AuthedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", t.Key)
 	return t.Wrapped.RoundTrip(req)
 }
 
-func NewHttpTestServer(handlerFunc func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
+// NewHTTPTestServer returns a new httptest.Server with a given handlerFunc
+func NewHTTPTestServer(handlerFunc func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(handlerFunc))
 }

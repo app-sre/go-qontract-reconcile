@@ -1,3 +1,4 @@
+// Package accountnotifier is used for Pgp Reencryption
 package accountnotifier
 
 import (
@@ -21,37 +22,42 @@ import (
 	phelper "github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
-var ACCOUNT_NOTIFIER_NAME = "account-notifier"
+// IntegrationName is the name of the integration
+var IntegrationName = "account-notifier"
 
 type status int
 
 const (
-	REENCRYPT status = iota
-	SKIP
-	NOTIFY_EXPIRED
+	// reencrypt is the status for reencrypting the pgp key
+	reencrypt status = iota
+	// skip is the status for skipping the pgp key
+	skip
+	// notifyExpired is the status for notifying the pgp key is expired
+	notifyExpired
 )
 
-type GetUsers func(context.Context) (*UsersResponse, error)
-type GetPgpReencryptSettings func(context.Context) (*PgpReencryptSettingsResponse, error)
-type GetSmtpSettings func(context.Context) (*SmtpSettingsResponse, error)
-type SendEmail func(context.Context, *notify.Notify, string, string) error
-type SetFailedState func(context.Context, state.Persistence, string, notification) error
-type RmFailedState func(context.Context, state.Persistence, string) error
+type getUsers func(context.Context) (*UsersResponse, error)
+type getPgpReencryptSettings func(context.Context) (*PgpReencryptSettingsResponse, error)
+type getSMTPSettings func(context.Context) (*SmtpSettingsResponse, error)
+type sendEmail func(context.Context, *notify.Notify, string, string) error
+type setFailedState func(context.Context, state.Persistence, string, notification) error
+type rmFailedState func(context.Context, state.Persistence, string) error
 
+// AccountNotifier is the account notifier integration used for pgp reencryption
 type AccountNotifier struct {
 	state            state.Persistence
-	vault            *vault.VaultClient
+	vault            *vault.Client
 	appSrePGPKeyPath string
 	vaultImportPath  string
 	vaultExportPath  string
 
 	smtpauth            smtpAuth
-	getuserFunc         GetUsers
-	getReencryptFunc    GetPgpReencryptSettings
-	getSmtpSettingsFunc GetSmtpSettings
-	sendEmailFunc       SendEmail
-	setFailedStateFunc  SetFailedState
-	rmFailedStateFunc   RmFailedState
+	getuserFunc         getUsers
+	getReencryptFunc    getPgpReencryptSettings
+	getSMTPSettingsFunc getSMTPSettings
+	sendEmailFunc       sendEmail
+	setFailedStateFunc  setFailedState
+	rmFailedStateFunc   rmFailedState
 }
 
 type smtpAuth struct {
@@ -62,6 +68,7 @@ type smtpAuth struct {
 	port        string
 }
 
+// NewAccountNotifier create a new account notifier
 func NewAccountNotifier() *AccountNotifier {
 	notifier := AccountNotifier{
 		getuserFunc: func(ctx context.Context) (*UsersResponse, error) {
@@ -70,7 +77,7 @@ func NewAccountNotifier() *AccountNotifier {
 		getReencryptFunc: func(ctx context.Context) (*PgpReencryptSettingsResponse, error) {
 			return PgpReencryptSettings(ctx)
 		},
-		getSmtpSettingsFunc: func(ctx context.Context) (*SmtpSettingsResponse, error) {
+		getSMTPSettingsFunc: func(ctx context.Context) (*SmtpSettingsResponse, error) {
 			return SmtpSettings(ctx)
 		},
 		sendEmailFunc: func(ctx context.Context, notifier *notify.Notify, subject, body string) error {
@@ -117,25 +124,21 @@ type userSecret struct {
 	Username         string
 }
 
-type Secret struct {
-	EncyptedPassword string
-	ConsoleURL       string
-	Username         string
-}
-
+// LogDiff specifies the logging for the account notifier
 func (n *AccountNotifier) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		current := ri.State[target].Current.(notification)
-		if current.Status == SKIP {
+		if current.Status == skip {
 			util.Log().Infow("Skipping notification for", "account", current.Secret.Account, "username", current.Secret.Username)
-		} else if current.Status == REENCRYPT {
+		} else if current.Status == reencrypt {
 			util.Log().Infow("Reencrypting", "account", current.Secret.Account, "username", current.Secret.Username)
-		} else if current.Status == NOTIFY_EXPIRED {
+		} else if current.Status == notifyExpired {
 			util.Log().Infow("PGP Key expired, notifying", "account", current.Secret.Account, "username", current.Secret.Username)
 		}
 	}
 }
 
+// CurrentState lists the secrets from the vault import path and adds them to the resource inventory as current state
 func (n *AccountNotifier) CurrentState(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	s, err := n.vault.ListSecrets(n.vaultImportPath)
 	if err != nil {
@@ -151,7 +154,7 @@ func (n *AccountNotifier) CurrentState(ctx context.Context, ri *reconcile.Resour
 		}
 		ri.AddResourceState(secret.Data["user_name"].(string), &reconcile.ResourceState{
 			Current: notification{
-				Status:     REENCRYPT,
+				Status:     reencrypt,
 				SecretPath: secretPath,
 				Secret: userSecret{
 					Username:         secret.Data["user_name"].(string),
@@ -169,6 +172,7 @@ func (n *AccountNotifier) getEmailAddress(username string) string {
 	return fmt.Sprintf("%s@%s", username, n.smtpauth.mailAddress)
 }
 
+// DesiredState lists the users from the QontractServer and adds them to the resource inventory as desired state
 func (n *AccountNotifier) DesiredState(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	users, err := n.getuserFunc(ctx)
 	if err != nil {
@@ -185,7 +189,7 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *reconcile.Resour
 		if !ok {
 			util.Log().Errorf("User %s was delete, got stale password. Manual fix required", user.GetName())
 		}
-		err, exists := n.state.Exists(ctx, target)
+		exists, err := n.state.Exists(ctx, target)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Error during state.Exists on target %s", target))
 		}
@@ -199,19 +203,19 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *reconcile.Resour
 				util.Log().Debug("Key is stale")
 				if lastNotification.LastNotifiedAt.Add(24 * time.Hour).Before(time.Now()) {
 					c := state.Current.(notification)
-					state.Desired = *c.newNotificationFromCurrent(NOTIFY_EXPIRED, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
+					state.Desired = *c.newNotificationFromCurrent(notifyExpired, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 				} else {
 					util.Log().Debug("Key is stale, but was notified recently")
 					c := state.Current.(notification)
-					state.Desired = *c.newNotificationFromCurrent(SKIP, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
+					state.Desired = *c.newNotificationFromCurrent(skip, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 				}
 			} else {
 				c := state.Current.(notification)
-				state.Desired = *c.newNotificationFromCurrent(REENCRYPT, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
+				state.Desired = *c.newNotificationFromCurrent(reencrypt, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 			}
 		} else {
 			c := state.Current.(notification)
-			state.Desired = *c.newNotificationFromCurrent(REENCRYPT, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
+			state.Desired = *c.newNotificationFromCurrent(reencrypt, user.GetPublic_gpg_key(), n.getEmailAddress(user.GetOrg_username()))
 		}
 	}
 
@@ -229,7 +233,7 @@ func (n *AccountNotifier) newNotifier(receipt string) *notify.Notify {
 	return notifier
 }
 
-func generateEmail(consoleUrl, username, password string) string {
+func generateEmail(consoleURL, username, password string) string {
 	return fmt.Sprintf(
 		`
 You have been invited to join an AWS account!
@@ -252,7 +256,7 @@ Encrypted password: %s
 
 [1] https://console.aws.amazon.com/iam/home#security_credential
 [2] https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html
-`, consoleUrl, username, password)
+`, consoleURL, username, password)
 }
 
 func generateEmailExpired(path string) string {
@@ -268,11 +272,11 @@ Link to userfile: https://gitlab.cee.redhat.com/service/app-interface/-/blob/mas
 `, path)
 }
 
-// Sent notifications and add them to the state
+// Reconcile loop over state and reconcile depending on it.
 func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	for _, state := range ri.State {
 		desired := state.Desired.(notification)
-		if desired.Status == REENCRYPT {
+		if desired.Status == reencrypt {
 			appsrekey, err := n.vault.ReadSecret(n.appSrePGPKeyPath)
 			if err != nil {
 				return errors.Wrap(err, "Error while reading secret from vault")
@@ -316,12 +320,17 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 
 			encodedReencryptedPassword := base64.StdEncoding.EncodeToString(unarmoredReencryptedPassword)
 
+			// Disable linting for var-naming because we need to be consistent with qontract-reconcile
+			//
+			//revive:disable:var-naming
 			type outputSecret struct {
 				Console_url        string `json:"console_url"`
 				Encrypted_password string `json:"encrypted_password"`
 				Acount             string `json:"account"`
 				User_name          string `json:"user_name"`
 			}
+			//revive:enable:var-naming
+
 			output := outputSecret{
 				Console_url:        desired.Secret.ConsoleURL,
 				Encrypted_password: encodedReencryptedPassword,
@@ -339,7 +348,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 				return errors.Wrap(err, "Error while deleting initial password from vault")
 			}
 
-			err, exists := n.state.Exists(ctx, desired.Secret.Username)
+			exists, err := n.state.Exists(ctx, desired.Secret.Username)
 			if err != nil {
 				return errors.Wrap(err, "Error while checking state for stale PGP Key existence")
 			}
@@ -356,7 +365,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 			}
 
 		}
-		if desired.Status == NOTIFY_EXPIRED {
+		if desired.Status == notifyExpired {
 			util.Log().Info("Notification of expired keys to be done")
 			err := n.sendEmailFunc(ctx, n.newNotifier(desired.Email), "Action required: Update PGP key", generateEmailExpired(desired.Secret.Username))
 			if err != nil {
@@ -372,6 +381,7 @@ func (n *AccountNotifier) Reconcile(ctx context.Context, ri *reconcile.ResourceI
 	return nil
 }
 
+// Setup the account notifier
 func (n *AccountNotifier) Setup(ctx context.Context) error {
 	var err error
 
@@ -390,7 +400,7 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 		return errors.Wrapf(err, "Error getting AWS client")
 	}
 
-	n.state = state.NewS3State(ctx, "state", ACCOUNT_NOTIFIER_NAME, awsclient)
+	n.state = state.NewS3State(ctx, "state", IntegrationName, awsclient)
 
 	settings, err := n.getReencryptFunc(ctx)
 	if err != nil {
@@ -401,12 +411,12 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 	n.vaultImportPath = settings.GetPgp_reencrypt_settings_v1()[0].GetReencrypt_vault_path()
 	n.vaultExportPath = settings.GetPgp_reencrypt_settings_v1()[0].GetAws_account_output_vault_path()
 
-	allSmtpSettings, err := n.getSmtpSettingsFunc(ctx)
+	allSMTPSettings, err := n.getSMTPSettingsFunc(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "Error gettoing smtp settings")
 	}
 
-	smtpSettings := allSmtpSettings.GetSettings()[0].GetSmtp()
+	smtpSettings := allSMTPSettings.GetSettings()[0].GetSmtp()
 	smtpSecret, err := n.vault.ReadSecret(smtpSettings.GetCredentials().Path)
 	if err != nil {
 		return errors.Wrapf(err, "Error while reading smtp credentials from vault")

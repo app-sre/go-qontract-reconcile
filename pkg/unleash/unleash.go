@@ -1,3 +1,4 @@
+// Package unleash contains a client for integrating with Unleash
 package unleash
 
 import (
@@ -19,11 +20,12 @@ import (
 
 type unleashConfig struct {
 	Timeout           int
-	ApiUrl            string
+	APIURL            string
 	ClientAccessToken string
 }
 
-type UnleashClient struct {
+// Client is a simple abstraction for the Unleash API
+type Client struct {
 	Client        *http.Client
 	unleashConfig *unleashConfig
 }
@@ -45,10 +47,11 @@ func newUnleasConfig() *unleashConfig {
 	return &c
 }
 
-func NewUnleashClient() (*UnleashClient, error) {
+// NewUnleashClient creates a new UnleashClient
+func NewUnleashClient() (*Client, error) {
 	c := newUnleasConfig()
 
-	return &UnleashClient{
+	return &Client{
 		Client: &http.Client{
 			Timeout: time.Duration(c.Timeout) * time.Second,
 			Transport: &util.AuthedTransport{
@@ -60,10 +63,11 @@ func NewUnleashClient() (*UnleashClient, error) {
 	}, nil
 }
 
+// GetFeature returns a feature from Unleash
 // Dept: split up this method if you add new URLs, do not just copy and paste it!
-func (c *UnleashClient) GetFeature(ctx context.Context, name string) (*Feature, error) {
+func (c *Client) GetFeature(ctx context.Context, name string) (*Feature, error) {
 	util.Log().Debugw("Checking if feature is enabled", "feature", name)
-	path := fmt.Sprintf("%s/client/features/%s", c.unleashConfig.ApiUrl, name)
+	path := fmt.Sprintf("%s/client/features/%s", c.unleashConfig.APIURL, name)
 	req, err := http.NewRequestWithContext(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err

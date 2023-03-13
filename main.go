@@ -1,3 +1,4 @@
+// main package for go-qontract-reconcile
 package main
 
 import "github.com/app-sre/go-qontract-reconcile/cmd"

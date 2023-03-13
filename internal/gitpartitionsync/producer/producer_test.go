@@ -18,10 +18,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var GH_TEST_TOKEN = "gh_test_token"
+var ghTestToken = "gh_test_token"
 
-func createTestProducer(awsClientMock *mock.MockClient, ghUrl string) *GitPartitionSyncProducer {
-	c, _ := gitlab.NewClient(GH_TEST_TOKEN, gitlab.WithBaseURL(ghUrl))
+func createTestProducer(awsClientMock *mock.MockClient, ghURL string) *GitPartitionSyncProducer {
+	c, _ := gitlab.NewClient(ghTestToken, gitlab.WithBaseURL(ghURL))
 
 	return &GitPartitionSyncProducer{
 		config:    gitPartitionSyncProducerConfig{},
@@ -31,7 +31,7 @@ func createTestProducer(awsClientMock *mock.MockClient, ghUrl string) *GitPartit
 }
 
 func setupGitlabMock(t *testing.T) *httptest.Server {
-	return util.NewHttpTestServer(func(w http.ResponseWriter, r *http.Request) {
+	return util.NewHTTPTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/api/v4/projects/test%2Fproject/repository/commits/main" && r.Method == "GET" {
 			fmt.Fprintf(w, `{"id": "test_sha"}`)
 		}
@@ -107,12 +107,12 @@ func TestCurrentStateOkay(t *testing.T) {
 	assert.NoError(t, err)
 
 	current := ri.GetResourceState("test/project")
-	assert.Equal(t, "a", current.Current.(*CurrentState).S3ObjectInfos[0].CommitSHA)
-	assert.Equal(t, util.StrPointer("eyJncm91cCI6InRlc3QiLCJwcm9qZWN0X25hbWUiOiJwcm9qZWN0IiwiY29tbWl0X3NoYSI6ImEiLCJsb2NhbF9icmFuY2giOiJtYWluIiwicmVtb3RlX2JyYW5jaCI6Im1haW4ifQo=.tar.age"), current.Current.(*CurrentState).S3ObjectInfos[0].Key)
-	assert.Len(t, current.Current.(*CurrentState).S3ObjectInfos, 1)
+	assert.Equal(t, "a", current.Current.(*currentState).S3ObjectInfos[0].CommitSHA)
+	assert.Equal(t, util.StrPointer("eyJncm91cCI6InRlc3QiLCJwcm9qZWN0X25hbWUiOiJwcm9qZWN0IiwiY29tbWl0X3NoYSI6ImEiLCJsb2NhbF9icmFuY2giOiJtYWluIiwicmVtb3RlX2JyYW5jaCI6Im1haW4ifQo=.tar.age"), current.Current.(*currentState).S3ObjectInfos[0].Key)
+	assert.Len(t, current.Current.(*currentState).S3ObjectInfos, 1)
 
 	current = ri.GetResourceState("test/foobar")
-	assert.Len(t, current.Current.(*CurrentState).S3ObjectInfos, 2)
+	assert.Len(t, current.Current.(*currentState).S3ObjectInfos, 2)
 }
 
 func TestDesiredState(t *testing.T) {
@@ -149,14 +149,14 @@ func TestDesiredState(t *testing.T) {
 
 	state := ri.GetResourceState("test/project")
 	assert.NotNil(t, state.Desired)
-	assert.Equal(t, "test_sha", state.Desired.(*S3ObjectInfo).CommitSHA)
+	assert.Equal(t, "test_sha", state.Desired.(*s3ObjectInfo).CommitSHA)
 }
 
 func TestNeedsUpdate(t *testing.T) {
 	type testCase struct {
 		description string
-		c           *CurrentState
-		d           *S3ObjectInfo
+		c           *currentState
+		d           *s3ObjectInfo
 		expected    bool
 	}
 
@@ -167,28 +167,28 @@ func TestNeedsUpdate(t *testing.T) {
 		},
 		{
 			description: "set but diff found",
-			c: &CurrentState{
-				S3ObjectInfos: []S3ObjectInfo{
+			c: &currentState{
+				S3ObjectInfos: []s3ObjectInfo{
 					{CommitSHA: "a"},
 				},
 			},
-			d:        &S3ObjectInfo{CommitSHA: "b"},
+			d:        &s3ObjectInfo{CommitSHA: "b"},
 			expected: true,
 		},
 		{
 			description: "multiple set no diff found",
-			c: &CurrentState{
-				S3ObjectInfos: []S3ObjectInfo{
+			c: &currentState{
+				S3ObjectInfos: []s3ObjectInfo{
 					{CommitSHA: "a"},
 					{CommitSHA: "b"},
 				},
 			},
-			d:        &S3ObjectInfo{CommitSHA: "b"},
+			d:        &s3ObjectInfo{CommitSHA: "b"},
 			expected: false,
 		},
 		{
 			description: "new item",
-			d:           &S3ObjectInfo{CommitSHA: "b"},
+			d:           &s3ObjectInfo{CommitSHA: "b"},
 			expected:    true,
 		},
 	} {

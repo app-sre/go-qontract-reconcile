@@ -1,3 +1,4 @@
+// Package vault adds a vault client implementation
 package vault
 
 import (
@@ -13,12 +14,15 @@ import (
 	"github.com/spf13/viper"
 )
 
-// VaultClient is an abstraction to github.com/hashicorp/vault/api
-type VaultClient struct {
+// Client is an abstraction to github.com/hashicorp/vault/api
+type Client struct {
 	client *api.Client
 	config *vaultConfig
 }
 
+// Disable lint, cause names should match Qontract Reconcile
+//
+//revive:disable:var-naming
 type vaultConfig struct {
 	Server             string
 	AuthType           string
@@ -30,6 +34,8 @@ type vaultConfig struct {
 	Kube_SA_Token_Path string
 	Timeout            int
 }
+
+//revive:enable:var-naming
 
 func newVaultConfig() *vaultConfig {
 	var vc vaultConfig
@@ -53,9 +59,9 @@ func newVaultConfig() *vaultConfig {
 }
 
 // NewVaultClient creates a new VaultClient from a VaultConfig
-func NewVaultClient() (*VaultClient, error) {
+func NewVaultClient() (*Client, error) {
 	vc := newVaultConfig()
-	vaultClient := &VaultClient{
+	vaultClient := &Client{
 		config: vc,
 	}
 	vaultCFG := api.DefaultConfig()
@@ -108,16 +114,17 @@ func NewVaultClient() (*VaultClient, error) {
 }
 
 // ReadSecret do a logical read on a given Secret Path
-func (v *VaultClient) ReadSecret(secretPath string) (*api.Secret, error) {
+func (v *Client) ReadSecret(secretPath string) (*api.Secret, error) {
 	return v.client.Logical().Read(secretPath)
 }
 
+// SecretList is a list of secrets
 type SecretList struct {
 	Keys []string
 }
 
 // ListSecrets list secrets on a given Secret Path
-func (v *VaultClient) ListSecrets(secretPath string) (*SecretList, error) {
+func (v *Client) ListSecrets(secretPath string) (*SecretList, error) {
 	secret, err := v.client.Logical().List(secretPath)
 	if err != nil {
 		return nil, err
@@ -140,10 +147,12 @@ func (v *VaultClient) ListSecrets(secretPath string) (*SecretList, error) {
 	}, nil
 }
 
-func (v *VaultClient) WriteSecret(secretPath string, secret map[string]interface{}) (*api.Secret, error) {
+// WriteSecret do a logical write on a given Secret Path
+func (v *Client) WriteSecret(secretPath string, secret map[string]interface{}) (*api.Secret, error) {
 	return v.client.Logical().Write(secretPath, secret)
 }
 
-func (v *VaultClient) DeleteSecret(secretPath string) (*api.Secret, error) {
+// DeleteSecret do a logical delete on a given Secret Path
+func (v *Client) DeleteSecret(secretPath string) (*api.Secret, error) {
 	return v.client.Logical().Delete(secretPath)
 }

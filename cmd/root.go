@@ -1,3 +1,4 @@
+// Package cmd contains the main entrypoint for the go-qontract-reconcile binary.
 package cmd
 
 import (

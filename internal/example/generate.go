@@ -1,3 +1,4 @@
+// Package example contains an example integration
 package example
 
 //go:generate go run github.com/Khan/genqlient
