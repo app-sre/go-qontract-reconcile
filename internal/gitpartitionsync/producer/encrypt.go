@@ -10,11 +10,11 @@ import (
 	"filippo.io/age"
 )
 
-const ENCRYPT_DIRECTORY = "encrypted"
+const encryptDirectory = "encrypted"
 
 // utilizes x25519 to output encrypted tars
 func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConfig) (string, error) {
-	err := g.clean(ENCRYPT_DIRECTORY)
+	err := g.clean(encryptDirectory)
 	if err != nil {
 		return "", err
 	}
@@ -24,7 +24,7 @@ func (g *GitPartitionSyncProducer) encryptRepoTars(tarPath string, sync syncConf
 		log.Fatalf("Failed to parse public key %q: %v", g.config.PublicKey, err)
 	}
 
-	encryptPath := fmt.Sprintf("%s/%s/%s.tar.age", g.config.Workdir, ENCRYPT_DIRECTORY, sync.SourceProjectName)
+	encryptPath := fmt.Sprintf("%s/%s/%s.tar.age", g.config.Workdir, encryptDirectory, sync.SourceProjectName)
 	f, err := os.Create(filepath.Clean(encryptPath))
 	if err != nil {
 		return "", err

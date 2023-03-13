@@ -1,3 +1,4 @@
+// Package producer contains the producer integration for the git partition sync
 package producer
 
 import (
@@ -18,7 +19,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-type GetGitlabSyncAppsFunc func(context.Context) (*GetGitlabSyncAppsResponse, error)
+type getGitlabSyncAppsFunc func(context.Context) (*GetGitlabSyncAppsResponse, error)
 
 type gitPartitionSyncProducerConfig struct {
 	AwsRegion  string
@@ -30,25 +31,26 @@ type gitPartitionSyncProducerConfig struct {
 	Workdir    string
 }
 
+// GitPartitionSyncProducer is the producer integration for the git partition sync
 type GitPartitionSyncProducer struct {
 	config gitPartitionSyncProducerConfig
 
 	glClient  *gitlab.Client
 	awsClient aws.Client
 
-	getGitlabSyncAppsFunc GetGitlabSyncAppsFunc
+	getGitlabSyncAppsFunc getGitlabSyncAppsFunc
 }
 
-type CurrentState struct {
-	S3ObjectInfos []S3ObjectInfo
+type currentState struct {
+	S3ObjectInfos []s3ObjectInfo
 }
 
-type S3ObjectInfo struct {
+type s3ObjectInfo struct {
 	Key       *string
 	CommitSHA string
 }
 
-type DecodedKey struct {
+type decodedKey struct {
 	Group        string `json:"group"`
 	ProjectName  string `json:"project_name"`
 	CommitSHA    string `json:"commit_sha"`
@@ -71,6 +73,7 @@ func newNewGitPartitionSyncProducerConfig() *gitPartitionSyncProducerConfig {
 	return &cfg
 }
 
+// NewGitPartitionSyncProducer returns a new GitPartitionSyncProducer
 func NewGitPartitionSyncProducer() *GitPartitionSyncProducer {
 	return &GitPartitionSyncProducer{
 		config: *newNewGitPartitionSyncProducerConfig(),
@@ -80,6 +83,7 @@ func NewGitPartitionSyncProducer() *GitPartitionSyncProducer {
 	}
 }
 
+// Setup required directories and clients for the producer integration
 func (g *GitPartitionSyncProducer) Setup(ctx context.Context) error {
 	cmd := exec.Command("mkdir", "-p", g.config.Workdir)
 	err := cmd.Run()
@@ -108,6 +112,7 @@ func (g *GitPartitionSyncProducer) Setup(ctx context.Context) error {
 	return nil
 }
 
+// CurrentState gets all the currently synced repos from s3 and adds them as currentState to the ResourceInventory
 func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	ctxTimeout, cancel := context.WithTimeout(ctx, time.Second*5)
 	defer cancel()
@@ -119,7 +124,7 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 		return errors.Wrap(err, "error listing objects in s3")
 	}
 
-	var commitShas map[string][]S3ObjectInfo = make(map[string][]S3ObjectInfo)
+	var commitShas = make(map[string][]s3ObjectInfo)
 
 	for _, obj := range res.Contents {
 		// remove file extension before attempting decode
@@ -129,16 +134,16 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 		if err != nil {
 			return errors.Wrap(err, "error decoding key")
 		}
-		var jsonKey DecodedKey
+		var jsonKey decodedKey
 		err = json.Unmarshal(decodedBytes, &jsonKey)
 		if err != nil {
 			return errors.Wrap(err, "error unmarshalling json key")
 		}
 		targetPid := fmt.Sprintf("%s/%s", jsonKey.Group, jsonKey.ProjectName)
 		if _, ok := commitShas[targetPid]; !ok {
-			commitShas[targetPid] = []S3ObjectInfo{}
+			commitShas[targetPid] = []s3ObjectInfo{}
 		}
-		commitShas[targetPid] = append(commitShas[targetPid], S3ObjectInfo{
+		commitShas[targetPid] = append(commitShas[targetPid], s3ObjectInfo{
 			Key:       obj.Key,
 			CommitSHA: jsonKey.CommitSHA,
 		})
@@ -146,7 +151,7 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 
 	for pid, objectInfos := range commitShas {
 		ri.AddResourceState(pid, &reconcile.ResourceState{
-			Current: &CurrentState{
+			Current: &currentState{
 				S3ObjectInfos: objectInfos,
 			},
 		})
@@ -155,6 +160,7 @@ func (g *GitPartitionSyncProducer) CurrentState(ctx context.Context, ri *reconci
 	return nil
 }
 
+// DesiredState gets the current commitID from Gitlab and adds it to the ResourceInventory
 func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	apps, err := g.getGitlabSyncAppsFunc(ctx)
 	if err != nil {
@@ -176,14 +182,14 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 					ri.AddResourceState(targetPid, &reconcile.ResourceState{
 						Config:  sync,
 						Current: state.Current,
-						Desired: &S3ObjectInfo{
+						Desired: &s3ObjectInfo{
 							CommitSHA: commit.ID,
 						},
 					})
 				} else {
 					ri.AddResourceState(targetPid, &reconcile.ResourceState{
 						Config: sync,
-						Desired: &S3ObjectInfo{
+						Desired: &s3ObjectInfo{
 							CommitSHA: commit.ID,
 						},
 					})
@@ -195,7 +201,7 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 	return nil
 }
 
-func needsUpdate(current *CurrentState, desired *S3ObjectInfo) bool {
+func needsUpdate(current *currentState, desired *s3ObjectInfo) bool {
 	if current != nil && desired != nil {
 		for _, s3ObjectInfo := range current.S3ObjectInfos {
 			// Current commit (from desired) is already in S3, thus exit
@@ -216,6 +222,7 @@ type syncConfig struct {
 	DestinationBranch       string
 }
 
+// Reconcile syncs the repositories to S3 that have changed since the last run
 func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.ResourceInventory) error {
 	defer g.clear()
 
@@ -231,13 +238,13 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 			DestinationProjectGroup: sync.DestinationProject.Group,
 			DestinationBranch:       sync.DestinationProject.Branch,
 		}
-		var current *CurrentState
-		var desired *S3ObjectInfo
+		var current *currentState
+		var desired *s3ObjectInfo
 		if state.Current != nil {
-			current = state.Current.(*CurrentState)
+			current = state.Current.(*currentState)
 		}
 		if state.Desired != nil {
-			desired = state.Desired.(*S3ObjectInfo)
+			desired = state.Desired.(*s3ObjectInfo)
 		}
 		if needsUpdate(current, desired) {
 			util.Log().Infow("Updating repo", "repo", targetPid)
@@ -284,17 +291,18 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 	return nil
 }
 
+// LogDiff logs the diff between the current and desired state
 func (g *GitPartitionSyncProducer) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		state := ri.GetResourceState(target)
-		var current *CurrentState
-		var desired *S3ObjectInfo
+		var current *currentState
+		var desired *s3ObjectInfo
 
 		if state.Current != nil {
-			current = state.Current.(*CurrentState)
+			current = state.Current.(*currentState)
 		}
 		if state.Desired != nil {
-			desired = state.Desired.(*S3ObjectInfo)
+			desired = state.Desired.(*s3ObjectInfo)
 		}
 		if needsUpdate(current, desired) {
 			util.Log().Infof("Resource %s has changed", target)
@@ -320,7 +328,7 @@ func (g *GitPartitionSyncProducer) clean(directory string) error {
 
 // clear all items in working directory
 func (g *GitPartitionSyncProducer) clear() error {
-	cmd := exec.Command("rm", "-rf", ENCRYPT_DIRECTORY, TAR_DIRECTORY, CLONE_DIRECTORY)
+	cmd := exec.Command("rm", "-rf", encryptDirectory, tarDirectory, cloneDirectory)
 	cmd.Dir = g.config.Workdir
 	err := cmd.Run()
 	if err != nil {

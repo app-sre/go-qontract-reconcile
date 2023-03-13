@@ -1,5 +1,5 @@
-// inspired by https://github.com/openshift/aws-account-operator/blob/master/pkg/awsclient/client.go
-
+// Package aws provides a mockable client for interacting with AWS.
+// revive:disable:unexported-return
 package aws
 
 import (
@@ -80,6 +80,7 @@ func newAwsClientConfig() *awsClientConfig {
 	return &cfg
 }
 
+// NewClient returns a new AWS client, that implements the Client interface.
 func NewClient(ctx context.Context, creds *Credentials) (*awsClient, error) {
 	awsCfg := newAwsClientConfig()
 

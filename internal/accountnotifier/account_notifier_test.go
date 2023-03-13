@@ -29,10 +29,6 @@ var (
 	testData   = "../../test/data/notifier_test_data.b64"
 )
 
-func NewHttpTestServer(handlerFunc func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(handlerFunc))
-}
-
 func SetupVaultEnv(url string) {
 	os.Setenv("VAULT_TOKEN", "token")
 	os.Setenv("VAULT_AUTHTYPE", "token")
@@ -44,7 +40,7 @@ func SetupGqlEnv(url string) {
 }
 
 func TestANCurrentState(t *testing.T) {
-	vaultMock := NewHttpTestServer(func(w http.ResponseWriter, r *http.Request) {
+	vaultMock := util.NewHTTPTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/v1?list=true" {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
 		}
@@ -85,7 +81,7 @@ func jsonEscape(i string) string {
 }
 
 func setupVaultMock(t *testing.T) *httptest.Server {
-	return NewHttpTestServer(func(w http.ResponseWriter, r *http.Request) {
+	return util.NewHTTPTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/v1/import?list=true" {
 			fmt.Fprintf(w, `{"data": {"keys": ["%s"]}}`, "pgpKey")
 		} else if r.URL.String() == "/v1/import/pgpKey" {
@@ -113,7 +109,7 @@ func createUserMock(pgpKey string) *UsersResponse {
 	}
 }
 
-func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.VaultClient, awsClientMock *mock.MockClient, users *UsersResponse) AccountNotifier {
+func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.Client, awsClientMock *mock.MockClient, users *UsersResponse) AccountNotifier {
 	return AccountNotifier{
 		vault: vaultMock,
 		state: state.NewS3State(ctx, "state", "test", awsClientMock),
@@ -155,7 +151,7 @@ func TestReencryptOkay(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, IntegrationName)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -197,7 +193,7 @@ func TestReencryptInvalid(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, IntegrationName)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -234,7 +230,7 @@ func TestReencryptUpdated(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, IntegrationName)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -291,7 +287,7 @@ func TestNotifySkip(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, IntegrationName)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -316,7 +312,7 @@ func TestNotifySkip(t *testing.T) {
 	assert.NoError(t, err)
 
 	desiredState := ri.GetResourceState("foobar").Desired.(notification)
-	assert.Equal(t, SKIP, desiredState.Status)
+	assert.Equal(t, skip, desiredState.Status)
 }
 
 func TestNotifyExpired(t *testing.T) {
@@ -332,7 +328,7 @@ func TestNotifyExpired(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, ACCOUNT_NOTIFIER_NAME)
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, IntegrationName)
 
 	mockClient := mock.NewMockClient(ctrl)
 
@@ -372,7 +368,7 @@ func TestNotifyExpired(t *testing.T) {
 	assert.NoError(t, err)
 
 	desiredState := ri.GetResourceState("foobar").Desired.(notification)
-	assert.Equal(t, NOTIFY_EXPIRED, desiredState.Status)
+	assert.Equal(t, notifyExpired, desiredState.Status)
 
 	err = a.Reconcile(ctx, ri)
 	assert.NoError(t, err)

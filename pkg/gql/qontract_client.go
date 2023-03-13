@@ -1,3 +1,4 @@
+// Package gql adds a client to integration with Qontract-Server
 package gql
 
 import (
@@ -26,8 +27,9 @@ var _ = `# @genqlient
     }
 }`
 
-//go:generate go run github.com/Khan/genqlient
 // QontractClient abstraction for generated GraphQL client
+//
+//go:generate go run github.com/Khan/genqlient
 type QontractClient struct {
 	Client graphql.Client
 	config *qontractConfig
@@ -58,7 +60,7 @@ func newQontractConfig() *qontractConfig {
 // NewQontractClient creates a new QontractClient
 func NewQontractClient(ctx context.Context) (*QontractClient, error) {
 	config := newQontractConfig()
-	retryClient := NewRetryableHttpWrapper()
+	retryClient := newRetryableHTTPWrapper()
 
 	retryClient.SetTimeout(config.Timeout)
 	retryClient.SetRetries(config.Retries)
@@ -96,6 +98,7 @@ func (c *QontractClient) ensureSchema(integrationName string, resp *graphql.Resp
 	return nil
 }
 
+// MakeRequest makes a request to graphql server, ensuring schema usage is allowed
 func (c *QontractClient) MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error {
 	err := c.Client.MakeRequest(ctx, req, resp)
 	if err != nil {
@@ -130,12 +133,13 @@ func (z zapLog) Warn(msg string, param ...interface{}) {
 	z.z.Warnw(msg, param...)
 }
 
-type retryableHttpWrapper struct {
+type retryableHTTPWrapper struct {
 	Client *retryablehttp.Client
 }
 
-func NewRetryableHttpWrapper() *retryableHttpWrapper {
-	r := &retryableHttpWrapper{
+// newRetryableHTTPWrapper creates a new retryableHttpWrapper
+func newRetryableHTTPWrapper() *retryableHTTPWrapper {
+	r := &retryableHTTPWrapper{
 		Client: retryablehttp.NewClient(),
 	}
 	var zapLog retryablehttp.LeveledLogger = zapLog{
@@ -146,7 +150,7 @@ func NewRetryableHttpWrapper() *retryableHttpWrapper {
 
 }
 
-func (r *retryableHttpWrapper) Do(req *http.Request) (*http.Response, error) {
+func (r *retryableHTTPWrapper) Do(req *http.Request) (*http.Response, error) {
 	reqRetryable, err := retryablehttp.NewRequest(req.Method, req.URL.String(), req.Body)
 	reqRetryable.Header.Set("Content-Type", "application/json")
 	if err != nil {
@@ -155,14 +159,14 @@ func (r *retryableHttpWrapper) Do(req *http.Request) (*http.Response, error) {
 	return r.Client.Do(reqRetryable)
 }
 
-func (r *retryableHttpWrapper) SetAuthTransport(transport *util.AuthedTransport) {
+func (r *retryableHTTPWrapper) SetAuthTransport(transport *util.AuthedTransport) {
 	r.Client.HTTPClient.Transport = transport
 }
 
-func (r *retryableHttpWrapper) SetTimeout(timeout int) {
+func (r *retryableHTTPWrapper) SetTimeout(timeout int) {
 	r.Client.HTTPClient.Timeout = time.Duration(timeout) * time.Second
 }
 
-func (r *retryableHttpWrapper) SetRetries(retries int) {
+func (r *retryableHTTPWrapper) SetRetries(retries int) {
 	r.Client.RetryMax = retries
 }

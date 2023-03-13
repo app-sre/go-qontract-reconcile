@@ -26,7 +26,7 @@ func TestNewUnleashClient(t *testing.T) {
 
 	client, err := NewUnleashClient()
 	assert.Nil(t, err)
-	assert.Equal(t, "http://conf.example", client.unleashConfig.ApiUrl)
+	assert.Equal(t, "http://conf.example", client.unleashConfig.APIURL)
 	assert.NotNil(t, client.Client)
 	assert.NotNil(t, client)
 }

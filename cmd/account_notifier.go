@@ -7,6 +7,6 @@ import (
 
 func accountNotifier() {
 	notifier := accountnotifier.NewAccountNotifier()
-	runner := reconcile.NewIntegrationRunner(notifier, accountnotifier.ACCOUNT_NOTIFIER_NAME)
+	runner := reconcile.NewIntegrationRunner(notifier, accountnotifier.IntegrationName)
 	runner.Run()
 }

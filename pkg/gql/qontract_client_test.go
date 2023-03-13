@@ -121,7 +121,7 @@ func TestBrokenExtensions(t *testing.T) {
 }
 
 func TestIntegrationsCalled(t *testing.T) {
-	var expected_queries = []string{
+	var expectedQueries = []string{
 		`{"query":"","operationName":""}`,
 		`{"query":"\nquery integrations {\n\tintegrations: integrations_v1 {\n\t\tname\n\t\tdescription\n\t\tschemas\n\t}\n}\n","operationName":"integrations"}`,
 	}
@@ -129,7 +129,7 @@ func TestIntegrationsCalled(t *testing.T) {
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			b, _ := io.ReadAll(r.Body)
-			if util.Contains(expected_queries, string(b)) {
+			if util.Contains(expectedQueries, string(b)) {
 				extensionsQueried = true
 			}
 			w.Write([]byte(`{"data":{}, "extensions": {"schemas": []}}`))

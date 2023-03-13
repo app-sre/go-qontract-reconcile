@@ -1,3 +1,4 @@
+// Package state implements state capabilties for integrations
 package state
 
 import (
@@ -14,8 +15,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Persistence is an interface for state management
 type Persistence interface {
-	Exists(context.Context, string) (error, bool)
+	Exists(context.Context, string) (bool, error)
 	Add(context.Context, string, interface{}) error
 	Rm(context.Context, string) error
 	Get(context.Context, string, interface{}) error
@@ -23,12 +25,13 @@ type Persistence interface {
 
 var _ Persistence = &S3State{}
 
+// S3State implements Persistence using AWS S3 as a backend
 type S3State struct {
-	state     map[string]interface{}
-	base_path string
-	infix     string
-	config    s3StateConfig
-	client    aws.Client
+	state    map[string]interface{}
+	basePath string
+	infix    string
+	config   s3StateConfig
+	client   aws.Client
 }
 
 type s3StateConfig struct {
@@ -45,23 +48,25 @@ func newS3StateConfig() *s3StateConfig {
 	return &s3c
 }
 
-func NewS3State(ctx context.Context, base_path, infix string, client aws.Client) *S3State {
+// NewS3State creates a new S3State Persistence object
+func NewS3State(ctx context.Context, basePath, infix string, client aws.Client) *S3State {
 	config := *newS3StateConfig()
 	state := &S3State{
-		state:     make(map[string]interface{}),
-		base_path: base_path,
-		infix:     infix,
-		client:    client,
-		config:    config,
+		state:    make(map[string]interface{}),
+		basePath: basePath,
+		infix:    infix,
+		client:   client,
+		config:   config,
 	}
 	return state
 }
 
 func (s *S3State) keyPath(key string) *string {
-	return util.StrPointer(fmt.Sprintf("%s/%s/%s", s.base_path, s.infix, key))
+	return util.StrPointer(fmt.Sprintf("%s/%s/%s", s.basePath, s.infix, key))
 }
 
-func (s *S3State) Exists(ctx context.Context, key string) (error, bool) {
+// Exists checks if a given state exists in S3
+func (s *S3State) Exists(ctx context.Context, key string) (bool, error) {
 	util.Log().Debugw("Check key existence in bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: &s.config.Bucket,
@@ -69,13 +74,14 @@ func (s *S3State) Exists(ctx context.Context, key string) (error, bool) {
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "api error NotFound: Not Found") {
-			return nil, false
+			return false, nil
 		}
-		return err, false
+		return false, err
 	}
-	return nil, true
+	return true, nil
 }
 
+// Add adds a given state to S3
 func (s *S3State) Add(ctx context.Context, key string, value interface{}) error {
 	util.Log().Debugw("Putting key to bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	bytesOut, err := json.Marshal(value)
@@ -92,6 +98,7 @@ func (s *S3State) Add(ctx context.Context, key string, value interface{}) error 
 	return err
 }
 
+// Get retrieves a state from S3
 func (s *S3State) Get(ctx context.Context, key string, value interface{}) error {
 	util.Log().Debugw("Getting key from bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	resp, err := s.client.GetObject(ctx, &s3.GetObjectInput{
@@ -110,6 +117,7 @@ func (s *S3State) Get(ctx context.Context, key string, value interface{}) error 
 	return json.Unmarshal(bodyBytes, value)
 }
 
+// Rm removes a state from S3
 func (s *S3State) Rm(ctx context.Context, key string) error {
 	util.Log().Debugw("Deleting key from bucket", "key", s.keyPath(key), "bucket", s.config.Bucket)
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
