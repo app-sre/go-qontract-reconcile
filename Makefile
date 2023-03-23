@@ -16,8 +16,8 @@ GOOS := $(shell go env GOOS)
 TMP_COVERAGE := $(shell mktemp)
 
 golint:
-	go install github.com/mgechev/revive@latest
-	go run github.com/mgechev/revive@latest -set_exit_status ./...
+	go install github.com/mgechev/revive@v1.2.5
+	go run github.com/mgechev/revive@v1.2.5 -set_exit_status ./...
 
 gotest:
 	CGO_ENABLED=0 GOOS=$(GOOS) go test ./...
