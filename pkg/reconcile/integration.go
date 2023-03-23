@@ -144,6 +144,7 @@ func (i *IntegrationRunner) runIntegration() {
 	} else {
 		util.Log().Debugw("DryRun is enabled, not running Reconcile")
 	}
+	i.metrics.status.Set(float64(0))
 }
 
 // Run runs the integration
