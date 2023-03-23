@@ -144,7 +144,9 @@ func (i *IntegrationRunner) runIntegration() {
 	} else {
 		util.Log().Debugw("DryRun is enabled, not running Reconcile")
 	}
-	i.metrics.status.Set(float64(0))
+	if i.metrics != nil {
+		i.metrics.status.Set(float64(0))
+	}
 }
 
 // Run runs the integration
@@ -170,7 +172,9 @@ func (i *IntegrationRunner) Run() {
 
 // Exiter exits the integration
 func (i *IntegrationRunner) Exiter(exitCode int) {
-	i.metrics.status.Set(float64(exitCode))
+	if i.metrics != nil {
+		i.metrics.status.Set(float64(exitCode))
+	}
 	if i.config.RunOnce {
 		os.Exit(exitCode)
 	} else {
