@@ -41,6 +41,13 @@ objects:
           volumeMounts:
           - name: internal-certificates
             mountPath: /tmp/etc-pki/
+          resources:
+            requests:
+              memory: 10Mi
+              cpu: 15m
+            limits:
+              memory: 20Mi
+              cpu: 25m
         containers:
         - image: ${IMAGE}:${IMAGE_TAG}
           imagePullPolicy: Always
