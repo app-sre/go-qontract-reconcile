@@ -69,7 +69,7 @@ func newVaultConfig() *vaultConfig {
 	sub.BindEnv("kube_sa_token_path", "VAULT_KUBE_SA_TOKEN_PATH")
 	sub.BindEnv("timeout", "VAULT_TIMEOUT")
 	if err := sub.Unmarshal(&vc); err != nil {
-		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration: %s", err.Error())
 	}
 	return &vc
 }
@@ -106,7 +106,7 @@ func NewVaultClient() (*Client, error) {
 	case "token":
 		vaultClient.client.SetToken(vc.Token)
 	default:
-		return nil, fmt.Errorf("unsupported auth type \"%s\"", vc.AuthType)
+		return nil, fmt.Errorf("unsupported authentication type %q", vc.AuthType)
 	}
 
 	return vaultClient, nil
@@ -136,7 +136,7 @@ func (v *Client) ListSecrets(secretPath string) (*SecretList, error) {
 			case string:
 				keyList = append(keyList, key)
 			default:
-				return nil, fmt.Errorf("unexpected return type for secret %s, this is a bug", secretPath)
+				return nil, fmt.Errorf("unexpected type for secret %q: %T", secretPath, key)
 			}
 		}
 	}

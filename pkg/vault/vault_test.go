@@ -156,7 +156,7 @@ func TestNewVaultClientUnsuportedAuthType(t *testing.T) {
 
 	_, err := NewVaultClient()
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "unsupported auth type \"jkjisdf\"")
+	assert.EqualError(t, err, "unsupported authentication type \"jkjisdf\"")
 }
 
 func TestVaultClientTimeout(t *testing.T) {
