@@ -96,12 +96,12 @@ func NewVaultClient() (*Client, error) {
 		if err := approleAuthLogin(ctxTimeout, vaultClient); err != nil {
 			return nil, fmt.Errorf("unable to login with AppRole credentials: %w", err)
 		}
-	case "token":
-		vaultClient.client.SetToken(vc.Token)
 	case "kubernetes":
 		if err := kubernetesAuthLogin(ctxTimeout, vaultClient); err != nil {
 			return nil, fmt.Errorf("unable to login with Kubernetes credentials: %w", err)
 		}
+	case "token":
+		vaultClient.client.SetToken(vc.Token)
 	default:
 		return nil, fmt.Errorf("unsupported auth type \"%s\"", vc.AuthType)
 	}
