@@ -70,6 +70,7 @@ func TestGetCredentialsFromVault(t *testing.T) {
 }
 
 func TestGuessAccountName(t *testing.T) {
+	t.Setenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT", "")
 	assert.Equal(t, "", guessAccountName())
 
 	t.Setenv("APP_INTERFACE_STATE_BUCKET_ACCOUNT", "foo")

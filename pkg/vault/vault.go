@@ -4,6 +4,7 @@ package vault
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
@@ -12,6 +13,21 @@ import (
 	"github.com/hashicorp/vault/api/auth/kubernetes"
 
 	"github.com/spf13/viper"
+)
+
+const (
+	// How long before client requests to Vault are timed out.
+	defaultClientTimeout = 60 // Seconds.
+
+	// How long before a client login attempt to Vault is timed out.
+	defaultClientLoginTimeout = 5 * time.Second
+
+	// How many times attempt to retry when failing
+	// to retrieve a valid client token.
+	defaultTokenRetryAttempts = 5
+
+	// How long to sleep in between each retry attempt.
+	defaultTokenRetrySleep = 250 * time.Millisecond
 )
 
 // Client is an abstraction to github.com/hashicorp/vault/api
@@ -40,7 +56,7 @@ type vaultConfig struct {
 func newVaultConfig() *vaultConfig {
 	var vc vaultConfig
 	sub := util.EnsureViperSub(viper.GetViper(), "vault")
-	sub.SetDefault("timeout", 60)
+	sub.SetDefault("timeout", defaultClientTimeout)
 	sub.SetDefault("authtype", "approle")
 	sub.SetDefault("kube_sa_token_path", "/var/run/secrets/kubernetes.io/serviceaccount/token")
 	sub.BindEnv("server", "VAULT_SERVER")
@@ -53,7 +69,7 @@ func newVaultConfig() *vaultConfig {
 	sub.BindEnv("kube_sa_token_path", "VAULT_KUBE_SA_TOKEN_PATH")
 	sub.BindEnv("timeout", "VAULT_TIMEOUT")
 	if err := sub.Unmarshal(&vc); err != nil {
-		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
+		util.Log().Fatalw("Error while unmarshalling configuration: %s", err.Error())
 	}
 	return &vc
 }
@@ -74,40 +90,23 @@ func NewVaultClient() (*Client, error) {
 	}
 	vaultClient.client = tmpClient
 
+	// This timeout will override the default one set for all client requests.
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), defaultClientLoginTimeout)
+	defer cancel()
+
 	switch vc.AuthType {
 	case "approle":
-		appRoleAuth, err := approle.NewAppRoleAuth(
-			vc.Role_ID,
-			&approle.SecretID{FromString: vc.Secret_ID})
-
-		if err != nil {
-			return nil, err
+		if err := approleAuthLogin(ctxTimeout, vaultClient); err != nil {
+			return nil, fmt.Errorf("unable to login with AppRole credentials: %w", err)
 		}
-		_, err = vaultClient.client.Auth().Login(context.Background(), appRoleAuth)
-		if err != nil {
-			return nil, err
+	case "kubernetes":
+		if err := kubernetesAuthLogin(ctxTimeout, vaultClient); err != nil {
+			return nil, fmt.Errorf("unable to login with Kubernetes credentials: %w", err)
 		}
-
 	case "token":
 		vaultClient.client.SetToken(vc.Token)
-
-	case "kubernetes":
-		kubeAuth, err := kubernetes.NewKubernetesAuth(
-			vc.Kube_Auth_Role,
-			kubernetes.WithServiceAccountTokenPath(vc.Kube_SA_Token_Path),
-			kubernetes.WithMountPath(vc.Kube_Auth_Mount),
-		)
-
-		if err != nil {
-			return nil, err
-		}
-		_, err = vaultClient.client.Auth().Login(context.Background(), kubeAuth)
-		if err != nil {
-			return nil, err
-		}
-
 	default:
-		return nil, fmt.Errorf("unsupported auth type \"%s\"", vc.AuthType)
+		return nil, fmt.Errorf("unsupported authentication type %q", vc.AuthType)
 	}
 
 	return vaultClient, nil
@@ -137,7 +136,7 @@ func (v *Client) ListSecrets(secretPath string) (*SecretList, error) {
 			case string:
 				keyList = append(keyList, key)
 			default:
-				return nil, fmt.Errorf("unexpected return type for secret %s, this is a bug", secretPath)
+				return nil, fmt.Errorf("unexpected type for secret %q: %T", secretPath, key)
 			}
 		}
 	}
@@ -155,4 +154,55 @@ func (v *Client) WriteSecret(secretPath string, secret map[string]interface{}) (
 // DeleteSecret do a logical delete on a given Secret Path
 func (v *Client) DeleteSecret(secretPath string) (*api.Secret, error) {
 	return v.client.Logical().Delete(secretPath)
+}
+
+func approleAuthLogin(ctx context.Context, client *Client) error {
+	auth, err := approle.NewAppRoleAuth(
+		client.config.Role_ID,
+		&approle.SecretID{FromString: client.config.Secret_ID},
+	)
+	if err != nil {
+		return err
+	}
+
+	return login(ctx, client.client, auth)
+}
+
+func kubernetesAuthLogin(ctx context.Context, client *Client) error {
+	auth, err := kubernetes.NewKubernetesAuth(
+		client.config.Kube_Auth_Role,
+		kubernetes.WithServiceAccountTokenPath(client.config.Kube_SA_Token_Path),
+		kubernetes.WithMountPath(client.config.Kube_Auth_Mount),
+	)
+	if err != nil {
+		return err
+	}
+
+	return login(ctx, client.client, auth)
+}
+
+func login(ctx context.Context, client *api.Client, auth api.AuthMethod) error {
+	err := util.Retry(defaultTokenRetryAttempts, defaultTokenRetrySleep, func() error {
+		_, err := client.Auth().Login(ctx, auth)
+		if err != nil {
+			const clientTokenError = `client token not set`
+			// The high-level client API also issues a write to the AppRole
+			// mount endpoint to "login" to obtain a new token. The request
+			// might return an empty response without necessarily failing.
+			// As such, the high-level API checks for the presence of the
+			// client token and returns an error if there is none. We then
+			// attempt to retry the login attempt.
+			if strings.Contains(err.Error(), clientTokenError) {
+				util.Log().Warn("Received empty authentication information. Retrying...")
+				return err
+			}
+			return util.RetryStop(err)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

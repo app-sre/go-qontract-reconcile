@@ -27,43 +27,43 @@ func setupViperAll() {
 	viper.GetViper().Set("vault", vaultCfg)
 }
 
-func setupViperEnv() {
-	os.Setenv("VAULT_TOKEN", "fooToken")
-	os.Setenv("VAULT_ROLE_ID", "fooRoleID")
-	os.Setenv("VAULT_SECRET_ID", "fooSecretID")
-	os.Setenv("VAULT_KUBE_AUTH_ROLE", "fooKubeRole")
-	os.Setenv("VAULT_KUBE_AUTH_MOUNT", "fooKubeMount")
-	os.Setenv("VAULT_KUBE_SA_TOKEN_PATH", "fooKubeTokenPath")
+func setupViperEnv(t *testing.T) {
+	t.Setenv("VAULT_TOKEN", "fooToken")
+	t.Setenv("VAULT_ROLE_ID", "fooRoleID")
+	t.Setenv("VAULT_SECRET_ID", "fooSecretID")
+	t.Setenv("VAULT_KUBE_AUTH_ROLE", "fooKubeRole")
+	t.Setenv("VAULT_KUBE_AUTH_MOUNT", "fooKubeMount")
+	t.Setenv("VAULT_KUBE_SA_TOKEN_PATH", "fooKubeTokenPath")
 
 	vaultCfg := make(map[string]interface{})
 	viper.GetViper().Set("vault", vaultCfg)
 }
 
-func setupViperToken() {
-	os.Setenv("VAULT_TOKEN", "token")
-	os.Setenv("VAULT_ADDR", "http://foo.example")
-	os.Setenv("VAULT_AUTHTYPE", "token")
+func setupViperToken(t *testing.T) {
+	t.Setenv("VAULT_TOKEN", "token")
+	t.Setenv("VAULT_ADDR", "http://foo.example")
+	t.Setenv("VAULT_AUTHTYPE", "token")
 
 	vaultCfg := make(map[string]interface{})
 	viper.GetViper().Set("vault", vaultCfg)
 }
 
-func setupViperAppRole() {
-	os.Setenv("VAULT_ROLE_ID", "bar")
-	os.Setenv("VAULT_SECRET_ID", "foo")
-	os.Setenv("VAULT_AUTHTYPE", "approle")
+func setupViperAppRole(t *testing.T) {
+	t.Setenv("VAULT_ROLE_ID", "bar")
+	t.Setenv("VAULT_SECRET_ID", "foo")
+	t.Setenv("VAULT_AUTHTYPE", "approle")
 
 	vaultCfg := make(map[string]interface{})
 	viper.GetViper().Set("vault", vaultCfg)
 }
 
-func setupViperKube() string {
-	os.Setenv("VAULT_AUTHTYPE", "kubernetes")
-	os.Setenv("VAULT_KUBE_AUTH_ROLE", "foo")
-	os.Setenv("VAULT_KUBE_AUTH_MOUNT", "kubernetes")
+func setupViperKube(t *testing.T) string {
+	t.Setenv("VAULT_AUTHTYPE", "kubernetes")
+	t.Setenv("VAULT_KUBE_AUTH_ROLE", "foo")
+	t.Setenv("VAULT_KUBE_AUTH_MOUNT", "kubernetes")
 
 	path := "./k8s-test-token"
-	os.Setenv("VAULT_KUBE_SA_TOKEN_PATH", path)
+	t.Setenv("VAULT_KUBE_SA_TOKEN_PATH", path)
 	os.WriteFile(path, []byte("base64jwt"), 0644)
 
 	vaultCfg := make(map[string]interface{})
@@ -87,7 +87,7 @@ func TestNewVaultConfigAll(t *testing.T) {
 }
 
 func TestNewVaultConfigEnv(t *testing.T) {
-	setupViperEnv()
+	setupViperEnv(t)
 	vc := newVaultConfig()
 
 	assert.Equal(t, vc.Token, "fooToken")
@@ -99,7 +99,7 @@ func TestNewVaultConfigEnv(t *testing.T) {
 }
 
 func TestNewVaultClientToken(t *testing.T) {
-	setupViperToken()
+	setupViperToken(t)
 	v, err := NewVaultClient()
 
 	assert.Nil(t, err)
@@ -107,7 +107,7 @@ func TestNewVaultClientToken(t *testing.T) {
 }
 
 func TestNewVaultClientAppRole(t *testing.T) {
-	setupViperAppRole()
+	setupViperAppRole(t)
 	mockedToken := "65b74ffd-842c-fd43-1386-f7d7006e520a"
 	vaultMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "auth/approle/login")
@@ -116,11 +116,10 @@ func TestNewVaultClientAppRole(t *testing.T) {
 		assert.Equal(t, `{"role_id":"bar","secret_id":"foo"}`, string(sentBody))
 
 		fmt.Fprintf(w, `{"auth": {"client_token": "%s"}}`, mockedToken)
-
 	}))
 	defer vaultMock.Close()
 
-	os.Setenv("VAULT_SERVER", vaultMock.URL)
+	t.Setenv("VAULT_SERVER", vaultMock.URL)
 
 	v, err := NewVaultClient()
 	assert.Nil(t, err)
@@ -129,7 +128,7 @@ func TestNewVaultClientAppRole(t *testing.T) {
 }
 
 func TestNewVaultClientKube(t *testing.T) {
-	path := setupViperKube()
+	path := setupViperKube(t)
 	defer os.Remove(path)
 
 	mockedToken := "65b74ffd-842c-fd43-1386-f7d7006e520a"
@@ -143,7 +142,7 @@ func TestNewVaultClientKube(t *testing.T) {
 	}))
 	defer vaultMock.Close()
 
-	os.Setenv("VAULT_SERVER", vaultMock.URL)
+	t.Setenv("VAULT_SERVER", vaultMock.URL)
 
 	v, err := NewVaultClient()
 	assert.Nil(t, err)
@@ -152,11 +151,11 @@ func TestNewVaultClientKube(t *testing.T) {
 }
 
 func TestNewVaultClientUnsuportedAuthType(t *testing.T) {
-	os.Setenv("VAULT_AUTHTYPE", "jkjisdf")
+	t.Setenv("VAULT_AUTHTYPE", "jkjisdf")
 
 	_, err := NewVaultClient()
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "unsupported auth type \"jkjisdf\"")
+	assert.EqualError(t, err, "unsupported authentication type \"jkjisdf\"")
 }
 
 func TestVaultClientTimeout(t *testing.T) {
@@ -164,9 +163,9 @@ func TestVaultClientTimeout(t *testing.T) {
 		func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(2 * time.Second)
 		}))
-	setupViperToken()
-	os.Setenv("VAULT_SERVER", vaultMock.URL)
-	os.Setenv("VAULT_TIMEOUT", "1")
+	setupViperToken(t)
+	t.Setenv("VAULT_SERVER", vaultMock.URL)
+	t.Setenv("VAULT_TIMEOUT", "1")
 
 	client, err := NewVaultClient()
 	assert.NotNil(t, client)
