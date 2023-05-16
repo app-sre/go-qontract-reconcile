@@ -16,6 +16,9 @@ import (
 )
 
 const (
+	// How long before client requests to Vault are timed out.
+	defaultClientTimeout = 60 // Seconds.
+
 	// How long before a client login attempt to Vault is timed out.
 	defaultClientLoginTimeout = 5 * time.Second
 
@@ -53,7 +56,7 @@ type vaultConfig struct {
 func newVaultConfig() *vaultConfig {
 	var vc vaultConfig
 	sub := util.EnsureViperSub(viper.GetViper(), "vault")
-	sub.SetDefault("timeout", 60)
+	sub.SetDefault("timeout", defaultClientTimeout)
 	sub.SetDefault("authtype", "approle")
 	sub.SetDefault("kube_sa_token_path", "/var/run/secrets/kubernetes.io/serviceaccount/token")
 	sub.BindEnv("server", "VAULT_SERVER")
