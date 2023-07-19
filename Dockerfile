@@ -3,7 +3,7 @@ WORKDIR /build
 COPY . .
 RUN make gobuild
 
-FROM registry.access.redhat.com/ubi8-minimal
+FROM registry.access.redhat.com/ubi8-minimal:8.8
 COPY --from=builder /build/go-qontract-reconcile /
 RUN microdnf update -y && microdnf install -y ca-certificates && microdnf clean all \
     && microdnf install -y git \
