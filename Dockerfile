@@ -1,4 +1,4 @@
-FROM quay.io/app-sre/golang:1.18.7 as builder
+FROM quay.io/app-sre/golang:1.20.7 as builder
 WORKDIR /build
 COPY . .
 RUN make gobuild
