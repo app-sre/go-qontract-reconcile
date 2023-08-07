@@ -73,7 +73,7 @@ func (s *S3State) Exists(ctx context.Context, key string) (bool, error) {
 		Key:    s.keyPath(key),
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "api error NotFound: Not Found") {
+		if strings.Contains(err.Error(), "https response error StatusCode: 404") {
 			return false, nil
 		}
 		return false, err
