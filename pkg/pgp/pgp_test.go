@@ -96,7 +96,7 @@ func TestTestEncryptNoEncryptionKey(t *testing.T) {
 	assert.Nil(t, err)
 	err = TestEncrypt(entity)
 	assert.NotNil(t, err)
-	assert.Regexp(t, `cannot encrypt a message .+ no encryption keys`, err)
+	assert.Regexp(t, `error setting up encryption for PGP message: openpgp: invalid argument: cannot encrypt a message to key id .+ because it has no valid encryption keys`, err)
 }
 
 func TestTestEncryptFailExpired(t *testing.T) {
