@@ -155,7 +155,7 @@ func TestReencryptOkay(t *testing.T) {
 
 	mockClient := mock.NewMockClient(ctrl)
 
-	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
+	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("https response error StatusCode: 404")).MaxTimes(2)
 	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
 
 	a := createTestNotifier(ctx, t, v, mockClient, users)
@@ -197,7 +197,7 @@ func TestReencryptInvalid(t *testing.T) {
 
 	mockClient := mock.NewMockClient(ctrl)
 
-	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("api error NotFound: Not Found")).MaxTimes(2)
+	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("https response error StatusCode: 404")).MaxTimes(2)
 
 	a := createTestNotifier(ctx, t, v, mockClient, users)
 	a.setFailedStateFunc = func(ctx context.Context, p state.Persistence, s string, n notification) error {
