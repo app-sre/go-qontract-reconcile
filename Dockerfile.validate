@@ -1,4 +1,4 @@
-FROM quay.io/app-sre/golang:1.20.7 as validator
+FROM quay.io/app-sre/golang:1.21.3 as validator
 WORKDIR /build
 COPY . .
 RUN go install github.com/golang/mock/mockgen && \
