@@ -1,5 +1,5 @@
 // Package example contains an example integration
-package acs
+package rbac
 
 //go:generate go run github.com/Khan/genqlient
 

@@ -1,8 +1,8 @@
-schema: ../../schema.graphql
+schema: ../../../schema.graphql
 operations:
 - generate.go
 generated: generated.go
-package: acs
+package: rbac
 client_getter: github.com/app-sre/go-qontract-reconcile/pkg/gql.NewQontractClient
 bindings:
   JSON:
