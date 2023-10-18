@@ -49,6 +49,15 @@ var (
 			gitPartitionSyncProducer()
 		},
 	}
+
+	exampleCmd = &cobra.Command{
+		Use:   "example",
+		Short: "Example integration",
+		Long:  "Example integration",
+		Run: func(cmd *cobra.Command, args []string) {
+			exampleIntegration()
+		},
+	}
 )
 
 // Execute executes the rootCmd
@@ -60,10 +69,12 @@ func init() {
 	rootCmd.AddCommand(userValidatorCmd)
 	rootCmd.AddCommand(accountNotifierCmd)
 	rootCmd.AddCommand(gitPartitionSyncProducerCmd)
+	rootCmd.AddCommand(exampleCmd)
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info", "Log level")
 	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 	accountNotifierCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 	gitPartitionSyncProducerCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
+	exampleCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 
 	cobra.OnInitialize(initConfig)
 	cobra.OnInitialize(configureLogging)
