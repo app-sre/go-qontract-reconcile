@@ -1,4 +1,4 @@
-// Package uservalidator contains code used by the user-validator
+// Package keyvalidator contains code used by the key-validator
 package keyvalidator
 
 import (
@@ -14,16 +14,16 @@ import (
 
 // KeyValidator is a Validation as described in github.com/app-sre/go-qontract-reconcile/pkg/integration.go
 type KeyValidator struct {
-	KeyValidatorConfig *KeyValidatorConfig
+	KeyValidatorConfig *Config
 }
 
-// KeyValidatorConfig is used to unmarshal yaml configuration for the user validator
-type KeyValidatorConfig struct {
+// Config is used to unmarshal yaml configuration for the key validator
+type Config struct {
 	Userfile string
 }
 
-func newKeyValidatorConfig() *KeyValidatorConfig {
-	var vuc KeyValidatorConfig
+func newKeyValidatorConfig() *Config {
+	var vuc Config
 	sub := util.EnsureViperSub(viper.GetViper(), "key_validator")
 	sub.BindEnv("userfile", "KEY_VALIDATOR_USERFILE")
 	if err := sub.Unmarshal(&vuc); err != nil {
@@ -46,13 +46,9 @@ func (i *KeyValidator) Setup(ctx context.Context) error {
 }
 
 type userV1 struct {
-	Path               string `json:"path"`
-	Name               string `json:"name"`
-	Org_username       string `json:"org_username"`
-	Github_username    string `json:"github_username"`
-	Slack_username     string `json:"slack_username"`
-	Pagerduty_username string `json:"pagerduty_username"`
-	Public_gpg_key     string `json:"public_gpg_key"`
+	Path        string `json:"path"`
+	OrgUsername string `json:"org_username"`
+	GpgKey      string `json:"public_gpg_key"`
 }
 
 // Validate run user validation
@@ -67,7 +63,7 @@ func (i *KeyValidator) Validate(ctx context.Context) ([]reconcile.ValidationErro
 	user := userV1{}
 	yaml.Unmarshal(userfile, &user)
 
-	pgpKey := user.Public_gpg_key
+	pgpKey := user.GpgKey
 	if len(pgpKey) > 0 {
 		path := user.Path
 		entity, err := pgp.DecodePgpKey(pgpKey, path)
@@ -89,7 +85,7 @@ func (i *KeyValidator) Validate(ctx context.Context) ([]reconcile.ValidationErro
 		}
 	}
 	if len(validationErrors) == 0 {
-		util.Log().Infof("Key provided for user %s is valid", user.Org_username)
+		util.Log().Infof("Key provided for user %s is valid", user.OrgUsername)
 	}
 
 	return validationErrors, nil
