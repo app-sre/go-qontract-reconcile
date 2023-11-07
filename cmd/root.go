@@ -49,6 +49,15 @@ var (
 			gitPartitionSyncProducer()
 		},
 	}
+
+	validateKeyCmd = &cobra.Command{
+		Use:   "validate-key",
+		Short: "Validates a key in a given user file",
+		Long:  "Can be used to validate the gpg key configured",
+		Run: func(cmd *cobra.Command, args []string) {
+			validateKey()
+		},
+	}
 )
 
 // Execute executes the rootCmd
@@ -60,10 +69,12 @@ func init() {
 	rootCmd.AddCommand(userValidatorCmd)
 	rootCmd.AddCommand(accountNotifierCmd)
 	rootCmd.AddCommand(gitPartitionSyncProducerCmd)
+	rootCmd.AddCommand(validateKeyCmd)
 	rootCmd.PersistentFlags().StringVarP(&logLevel, "logLevel", "l", "info", "Log level")
 	userValidatorCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 	accountNotifierCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 	gitPartitionSyncProducerCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
+	validateKeyCmd.Flags().StringVarP(&cfgFile, "cfgFile", "c", "", "Configuration File")
 
 	cobra.OnInitialize(initConfig)
 	cobra.OnInitialize(configureLogging)
