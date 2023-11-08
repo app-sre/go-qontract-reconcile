@@ -64,26 +64,25 @@ func (i *KeyValidator) Validate(ctx context.Context) ([]reconcile.ValidationErro
 
 	pgpKey := user.GpgKey
 
-	if len(pgpKey) > 0 {
-		entity, err := pgp.DecodePgpKey(pgpKey, i.KeyValidatorConfig.Userfile)
-		if err != nil {
-			return []reconcile.ValidationError{{
-				Path:       i.KeyValidatorConfig.Userfile,
-				Validation: "validatePgpKeys",
-				Error:      err,
-			}}, nil
-		}
-		err = pgp.TestEncrypt(entity)
-		if err != nil {
-			return []reconcile.ValidationError{{
-				Path:       i.KeyValidatorConfig.Userfile,
-				Validation: "validatePgpKeys",
-				Error:      err,
-			}}, nil
-		}
-	} else {
+	if len(pgpKey) == 0 {
 		util.Log().Infof("Key for user %s not provided", user.OrgUsername)
 		return []reconcile.ValidationError{}, nil
+	}
+	entity, err := pgp.DecodePgpKey(pgpKey, i.KeyValidatorConfig.Userfile)
+	if err != nil {
+		return []reconcile.ValidationError{{
+			Path:       i.KeyValidatorConfig.Userfile,
+			Validation: "validatePgpKeys",
+			Error:      err,
+		}}, nil
+	}
+	err = pgp.TestEncrypt(entity)
+	if err != nil {
+		return []reconcile.ValidationError{{
+			Path:       i.KeyValidatorConfig.Userfile,
+			Validation: "validatePgpKeys",
+			Error:      err,
+		}}, nil
 	}
 
 	util.Log().Infof("Key provided for user %s is valid", user.OrgUsername)
