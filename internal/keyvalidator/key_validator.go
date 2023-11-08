@@ -46,47 +46,47 @@ func (i *KeyValidator) Setup(ctx context.Context) error {
 }
 
 type userV1 struct {
-	Path        string `json:"path"`
-	OrgUsername string `json:"org_username"`
-	GpgKey      string `json:"public_gpg_key"`
+	OrgUsername string `yaml:"org_username"`
+	GpgKey      string `yaml:"public_gpg_key"`
 }
 
 // Validate run user validation
 func (i *KeyValidator) Validate(ctx context.Context) ([]reconcile.ValidationError, error) {
-	validationErrors := make([]reconcile.ValidationError, 0)
-
 	userfile, err := os.ReadFile(i.KeyValidatorConfig.Userfile)
 	if err != nil {
 		return nil, err
 	}
-
-	user := userV1{}
-	yaml.Unmarshal(userfile, &user)
+	var user userV1
+	err = yaml.Unmarshal(userfile, &user)
+	if err != nil {
+		return nil, err
+	}
 
 	pgpKey := user.GpgKey
+
 	if len(pgpKey) > 0 {
-		path := user.Path
-		entity, err := pgp.DecodePgpKey(pgpKey, path)
+		entity, err := pgp.DecodePgpKey(pgpKey, i.KeyValidatorConfig.Userfile)
 		if err != nil {
-			validationErrors = append(validationErrors, reconcile.ValidationError{
-				Path:       path,
+			return []reconcile.ValidationError{{
+				Path:       i.KeyValidatorConfig.Userfile,
 				Validation: "validatePgpKeys",
 				Error:      err,
-			})
-			return validationErrors, nil
+			}}, nil
 		}
 		err = pgp.TestEncrypt(entity)
 		if err != nil {
-			validationErrors = append(validationErrors, reconcile.ValidationError{
-				Path:       user.Path,
+			return []reconcile.ValidationError{{
+				Path:       i.KeyValidatorConfig.Userfile,
 				Validation: "validatePgpKeys",
 				Error:      err,
-			})
+			}}, nil
 		}
-	}
-	if len(validationErrors) == 0 {
-		util.Log().Infof("Key provided for user %s is valid", user.OrgUsername)
+	} else {
+		util.Log().Infof("Key for user %s not provided", user.OrgUsername)
+		return []reconcile.ValidationError{}, nil
+
 	}
 
-	return validationErrors, nil
+	util.Log().Infof("Key provided for user %s is valid", user.OrgUsername)
+	return []reconcile.ValidationError{}, nil
 }
