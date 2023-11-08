@@ -84,7 +84,6 @@ func (i *KeyValidator) Validate(ctx context.Context) ([]reconcile.ValidationErro
 	} else {
 		util.Log().Infof("Key for user %s not provided", user.OrgUsername)
 		return []reconcile.ValidationError{}, nil
-
 	}
 
 	util.Log().Infof("Key provided for user %s is valid", user.OrgUsername)
