@@ -1,6 +1,6 @@
 # Git Partition Sync - Producer
 
-Uploads encrypted archive of latest versions of target GitLab projects to s3 bucket.  
+Uploads an encrypted archive of latest versions of target GitLab projects to s3 bucket.  
 This works in tandem with [git-partition-sync-consumer](https://github.com/app-sre/git-partition-sync-consumer) to sync GitLab instances in isolated environments.
 Utilizes the AWS SDK to communicate to the desired s3 buckets.
 
