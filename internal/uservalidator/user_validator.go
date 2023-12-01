@@ -4,10 +4,12 @@ package uservalidator
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"sync"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/github"
+	"github.com/app-sre/go-qontract-reconcile/pkg/gql"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
@@ -86,11 +88,11 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 	return nil
 }
 
-func (i *ValidateUser) validateUsersSinglePath(users UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validateUsersSinglePath(users []UsersUsers_v1User_v1) []reconcile.ValidationError {
 	validationErrors := make([]reconcile.ValidationError, 0)
 	usersPaths := make(map[string][]string)
 
-	for _, u := range users.GetUsers_v1() {
+	for _, u := range users {
 		if usersPaths[u.GetOrg_username()] == nil {
 			usersPaths[u.GetOrg_username()] = make([]string, 0)
 		}
@@ -132,7 +134,7 @@ func (i *ValidateUser) getAndValidateUser(ctx context.Context, user UsersUsers_v
 	return nil
 }
 
-func (i *ValidateUser) validateUsersGithub(ctx context.Context, users UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validateUsersGithub(ctx context.Context, users []UsersUsers_v1User_v1) []reconcile.ValidationError {
 	validationErrors := make([]reconcile.ValidationError, 0)
 	validateWg := sync.WaitGroup{}
 	gatherWg := sync.WaitGroup{}
@@ -164,7 +166,7 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users UsersRespo
 
 	go func() {
 		defer close(userChan)
-		for _, user := range users.GetUsers_v1() {
+		for _, user := range users {
 			userChan <- user
 		}
 	}()
@@ -208,8 +210,39 @@ func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationErro
 		return nil, err
 	}
 
-	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(*users))
-	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, *users))
+	// fmt.Println("users", users)
+
+	compare_users, err := Users(context.WithValue(ctx, gql.UseCompareClientKey, true))
+	if err != nil {
+		return nil, err
+	}
+
+	user_map := make(map[string]UsersUsers_v1User_v1)
+	for _, user := range users.GetUsers_v1() {
+		user_map[user.GetPath()] = user
+	}
+
+	compare_users_map := make(map[string]UsersUsers_v1User_v1)
+	for _, user := range compare_users.GetUsers_v1() {
+		compare_users_map[user.GetPath()] = user
+	}
+
+	var usersToValidate = make([]UsersUsers_v1User_v1, 0)
+
+	for k, v := range user_map {
+		if _, ok := compare_users_map[k]; ok {
+			if !reflect.DeepEqual(v, compare_users_map[k]) {
+				usersToValidate = append(usersToValidate, v)
+			}
+		} else {
+			usersToValidate = append(usersToValidate, v)
+		}
+	}
+
+	fmt.Println("usersToValidate", usersToValidate)
+
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(usersToValidate))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, usersToValidate))
 
 	return allValidationErrors, nil
 }
