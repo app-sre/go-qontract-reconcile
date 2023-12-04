@@ -140,7 +140,14 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 func DecodeAndArmorBase64Entity(encodedEntity string, armorType string) (string, error) {
 	decodedEntity, err := base64.StdEncoding.DecodeString(encodedEntity)
 	if err != nil {
-		return "", err
+		// check if keys is encoded using OpenPGP's Radix-64 encoding consisting
+		// base64 encoded key + '=' + 4 character checksum
+		//save the actual error
+		decodeErr := err
+		// verify key by removing checksum(last 4 characters with '=' sign )
+		if decodedEntity, err = base64.StdEncoding.DecodeString(encodedEntity[:len(encodedEntity)-5]); err != nil {
+			return "", decodeErr
+		}
 	}
 	return parmor.ArmorWithType([]byte(decodedEntity), armorType)
 }
