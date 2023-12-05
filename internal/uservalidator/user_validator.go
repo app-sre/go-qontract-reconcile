@@ -202,6 +202,32 @@ func (i *ValidateUser) removeInvalidUsers(users *UsersResponse) *UsersResponse {
 	return returnUsers
 }
 
+func findUsersToValidate(users *UsersResponse, compareUsers *UsersResponse) []UsersUsers_v1User_v1 {
+	userMap := make(map[string]UsersUsers_v1User_v1)
+	for _, user := range users.GetUsers_v1() {
+		userMap[user.GetPath()] = user
+	}
+	fmt.Println(userMap)
+	compareUserMap := make(map[string]UsersUsers_v1User_v1)
+	for _, user := range compareUsers.GetUsers_v1() {
+		compareUserMap[user.GetPath()] = user
+	}
+	fmt.Println(compareUserMap)
+
+	var usersToValidate = make([]UsersUsers_v1User_v1, 0)
+
+	for k, v := range userMap {
+		if _, ok := compareUserMap[k]; ok {
+			if !reflect.DeepEqual(v, compareUserMap[k]) {
+				usersToValidate = append(usersToValidate, v)
+			}
+		} else {
+			usersToValidate = append(usersToValidate, v)
+		}
+	}
+	return usersToValidate
+}
+
 // Validate run user validation
 func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationError, error) {
 	allValidationErrors := make([]reconcile.ValidationError, 0)
@@ -210,36 +236,16 @@ func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationErro
 		return nil, err
 	}
 
-	// fmt.Println("users", users)
-
-	compare_users, err := Users(context.WithValue(ctx, gql.UseCompareClientKey, true))
+	compareUsers, err := Users(context.WithValue(ctx, gql.UseCompareClientKey, true))
 	if err != nil {
 		return nil, err
 	}
 
-	user_map := make(map[string]UsersUsers_v1User_v1)
-	for _, user := range users.GetUsers_v1() {
-		user_map[user.GetPath()] = user
+	if users == nil || compareUsers == nil {
+		return nil, fmt.Errorf("No users found")
 	}
 
-	compare_users_map := make(map[string]UsersUsers_v1User_v1)
-	for _, user := range compare_users.GetUsers_v1() {
-		compare_users_map[user.GetPath()] = user
-	}
-
-	var usersToValidate = make([]UsersUsers_v1User_v1, 0)
-
-	for k, v := range user_map {
-		if _, ok := compare_users_map[k]; ok {
-			if !reflect.DeepEqual(v, compare_users_map[k]) {
-				usersToValidate = append(usersToValidate, v)
-			}
-		} else {
-			usersToValidate = append(usersToValidate, v)
-		}
-	}
-
-	fmt.Println("usersToValidate", usersToValidate)
+	usersToValidate := findUsersToValidate(users, compareUsers)
 
 	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(usersToValidate))
 	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, usersToValidate))
