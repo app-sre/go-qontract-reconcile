@@ -2,7 +2,6 @@ package unleash
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -36,7 +35,7 @@ func TestGetFeature(t *testing.T) {
 	ctx := context.Background()
 	mock := httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, fmt.Sprintf("Bearer %s", token), r.Header.Get("Authorization"))
+			assert.Equal(t, token, r.Header.Get("Authorization"))
 			assert.Equal(t, r.URL.Path, "/client/features/test")
 			w.Write([]byte(`{"enabled":true,"name":"test","project":"default","type":"release"}`))
 		}))
