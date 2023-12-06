@@ -31,16 +31,14 @@ func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:         "/foo/bar",
-			Org_username: "foo",
-		}, {
-			Path:         "/foo/rab",
-			Org_username: "foo",
-		}},
-	}
-	validationErrors := v.validateUsersSinglePath(userResponse)
+	users := []UsersUsers_v1User_v1{{
+		Path:         "/foo/bar",
+		Org_username: "foo",
+	}, {
+		Path:         "/foo/rab",
+		Org_username: "foo",
+	}}
+	validationErrors := v.validateUsersSinglePath(users)
 	assert.Len(t, validationErrors, 2)
 	assert.Equal(t, "validateUsersSinglePath", validationErrors[0].Validation)
 	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
@@ -52,16 +50,14 @@ func TestValidateValidateUsersSinglePathValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:         "/foo/bar",
-			Org_username: "foo",
-		}, {
-			Path:         "/foo/rab",
-			Org_username: "rab",
-		}},
-	}
-	validationErrors := v.validateUsersSinglePath(userResponse)
+	users := []UsersUsers_v1User_v1{{
+		Path:         "/foo/bar",
+		Org_username: "foo",
+	}, {
+		Path:         "/foo/rab",
+		Org_username: "rab",
+	}}
+	validationErrors := v.validateUsersSinglePath(users)
 	assert.Len(t, validationErrors, 0)
 }
 
@@ -169,12 +165,10 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 		GithubClient: gh,
 	}
 
-	validationErrors := v.validateUsersGithub(context.Background(), UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:            "/foo/bar",
-			Github_username: "Bar",
-		}},
-	})
+	validationErrors := v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+		Path:            "/foo/bar",
+		Github_username: "Bar",
+	}})
 	assert.NotNil(t, validationErrors)
 	assert.Len(t, validationErrors, 1)
 }
@@ -190,12 +184,10 @@ func TestValidateUsersGithubCallingValidate(t *testing.T) {
 		return nil
 	}
 
-	v.validateUsersGithub(context.Background(), UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:            "/foo/bar",
-			Github_username: "bar",
-		}},
-	})
+	v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	}})
 	assert.True(t, validated)
 }
 
@@ -208,15 +200,13 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 		return &reconcile.ValidationError{}
 	}
 
-	v.validateUsersGithub(context.Background(), UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:            "/foo/bar",
-			Github_username: "bar",
-		}, {
-			Path:            "/foo/bar",
-			Github_username: "bar",
-		}},
-	})
+	v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	}, {
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	}})
 }
 
 func TestRemoveInvalidUsers(t *testing.T) {
@@ -238,4 +228,60 @@ func TestRemoveInvalidUsers(t *testing.T) {
 	validUser := v.removeInvalidUsers(&users)
 	assert.Len(t, validUser.GetUsers_v1(), 1)
 	assert.Equal(t, validUser.GetUsers_v1()[0].Path, "/bar/foo")
+}
+
+func TestFindUsersToValidateAdded(t *testing.T) {
+	users := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path: "/foo/bar",
+		}, {
+			Path: "/bar/foo",
+		}}}
+
+	compareUsers := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path: "/foo/bar",
+		}},
+	}
+
+	toValidate := findUsersToValidate(&users, &compareUsers)
+	assert.Len(t, toValidate, 1)
+	assert.Equal(t, toValidate[0].Path, "/bar/foo")
+}
+
+func TestFindUsersToValidateChanged(t *testing.T) {
+	users := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}}}
+
+	compareUsers := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "bar",
+		}},
+	}
+
+	toValidate := findUsersToValidate(&users, &compareUsers)
+	assert.Len(t, toValidate, 1)
+	assert.Equal(t, toValidate[0].Path, "/foo/bar")
+}
+
+func TestFindUsersToValidateEqual(t *testing.T) {
+	users := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}}}
+
+	compareUsers := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}},
+	}
+
+	toValidate := findUsersToValidate(&users, &compareUsers)
+	assert.Len(t, toValidate, 0)
 }

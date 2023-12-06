@@ -27,19 +27,26 @@ var _ = `# @genqlient
     }
 }`
 
+type useCompareClient string
+
+// UseCompareClientKey is the key used to store the useCompareClient value in the context
+var UseCompareClientKey useCompareClient = "useCompareClient"
+
 // QontractClient abstraction for generated GraphQL client
 //
 //go:generate go run github.com/Khan/genqlient
 type QontractClient struct {
-	Client graphql.Client
-	config *qontractConfig
+	Client        graphql.Client
+	CompareClinet *graphql.Client
+	config        *qontractConfig
 }
 
 type qontractConfig struct {
-	Server  string
-	Timeout int
-	Token   string
-	Retries int
+	Server     string
+	Timeout    int
+	Token      string
+	Retries    int
+	CompareSha string
 }
 
 func newQontractConfig() *qontractConfig {
@@ -47,10 +54,12 @@ func newQontractConfig() *qontractConfig {
 	sub := util.EnsureViperSub(viper.GetViper(), "graphql")
 	sub.SetDefault("timeout", 60)
 	sub.SetDefault("retries", 5)
+	sub.SetDefault("CompareSha", "")
 	sub.BindEnv("server", "GRAPHQL_SERVER")
 	sub.BindEnv("timeout", "GRAPHQL_TIMEOUT")
 	sub.BindEnv("token", "GRAPHQL_TOKEN")
 	sub.BindEnv("retries", "GRAPHQL_RETRIES")
+	sub.BindEnv("comparesha", "COMPARE_SHA")
 	if err := sub.Unmarshal(&qc); err != nil {
 		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
 	}
@@ -75,6 +84,13 @@ func NewQontractClient(ctx context.Context) (*QontractClient, error) {
 		Client: graphql.NewClient(config.Server, retryClient),
 		config: config,
 	}
+
+	if len(config.CompareSha) > 0 {
+		path := fmt.Sprintf("/graphqlsha/%s", config.CompareSha)
+		compareClient := graphql.NewClient(strings.ReplaceAll(config.Server, "/graphql", path), retryClient)
+		client.CompareClinet = &compareClient
+	}
+
 	return client, nil
 }
 
@@ -100,7 +116,17 @@ func (c *QontractClient) ensureSchema(integrationName string, resp *graphql.Resp
 
 // MakeRequest makes a request to graphql server, ensuring schema usage is allowed
 func (c *QontractClient) MakeRequest(ctx context.Context, req *graphql.Request, resp *graphql.Response) error {
-	err := c.Client.MakeRequest(ctx, req, resp)
+	var client graphql.Client
+	useCompare := ctx.Value(UseCompareClientKey)
+	if useCompare != nil && useCompare.(bool) == true {
+		client = *c.CompareClinet
+		if client == nil {
+			return fmt.Errorf("compare client not initialized")
+		}
+	} else {
+		client = c.Client
+	}
+	err := client.MakeRequest(ctx, req, resp)
 	if err != nil {
 		return err
 	}
