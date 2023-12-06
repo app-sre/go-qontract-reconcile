@@ -10,6 +10,7 @@ import (
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/github"
 	"github.com/app-sre/go-qontract-reconcile/pkg/gql"
+	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
@@ -86,6 +87,34 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (i *ValidateUser) validatePgpKeys(users []UsersUsers_v1User_v1) []reconcile.ValidationError {
+	validationErrors := make([]reconcile.ValidationError, 0)
+	for _, user := range users {
+		pgpKey := user.GetPublic_gpg_key()
+		if len(pgpKey) > 0 {
+			path := user.GetPath()
+			entity, err := pgp.DecodePgpKey(pgpKey, path)
+			if err != nil {
+				validationErrors = append(validationErrors, reconcile.ValidationError{
+					Path:       path,
+					Validation: "validatePgpKeys",
+					Error:      err,
+				})
+				continue
+			}
+			err = pgp.TestEncrypt(entity)
+			if err != nil {
+				validationErrors = append(validationErrors, reconcile.ValidationError{
+					Path:       user.GetPath(),
+					Validation: "validatePgpKeys",
+					Error:      err,
+				})
+			}
+		}
+	}
+	return validationErrors
 }
 
 func (i *ValidateUser) validateUsersSinglePath(users []UsersUsers_v1User_v1) []reconcile.ValidationError {
@@ -246,6 +275,7 @@ func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationErro
 	usersToValidate := findUsersToValidate(users, compareUsers)
 
 	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(usersToValidate))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validatePgpKeys(usersToValidate))
 	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, usersToValidate))
 
 	return allValidationErrors, nil

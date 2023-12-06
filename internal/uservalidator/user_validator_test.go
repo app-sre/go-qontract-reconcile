@@ -285,3 +285,26 @@ func TestFindUsersToValidateEqual(t *testing.T) {
 	toValidate := findUsersToValidate(&users, &compareUsers)
 	assert.Len(t, toValidate, 0)
 }
+
+func TestValidatePgpKeysValid(t *testing.T) {
+	v := ValidateUser{}
+	users := []UsersUsers_v1User_v1{{
+		Public_gpg_key: string(readKeyFile(t, publicFile)),
+	}}
+	validationErrors := v.validatePgpKeys(users)
+	assert.Len(t, validationErrors, 0)
+}
+
+func TestValidatePgpKeysInValid(t *testing.T) {
+	// Todo add fixture for expired key
+	v := ValidateUser{}
+	users := []UsersUsers_v1User_v1{{
+		Path:           "/foo/bar",
+		Public_gpg_key: "a",
+	}}
+	validationErrors := v.validatePgpKeys(users)
+	assert.Len(t, validationErrors, 1)
+	assert.Equal(t, "validatePgpKeys", validationErrors[0].Validation)
+	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
+	assert.EqualError(t, validationErrors[0].Error, "error decoding given PGP key: illegal base64 data at input byte 0")
+}
