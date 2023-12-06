@@ -85,7 +85,6 @@ func NewQontractClient(ctx context.Context) (*QontractClient, error) {
 		config: config,
 	}
 
-	fmt.Println(config.CompareSha)
 	if len(config.CompareSha) > 0 {
 		path := fmt.Sprintf("/graphqlsha/%s", config.CompareSha)
 		compareClient := graphql.NewClient(strings.ReplaceAll(config.Server, "/graphql", path), retryClient)

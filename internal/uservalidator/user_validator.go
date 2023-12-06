@@ -207,12 +207,10 @@ func findUsersToValidate(users *UsersResponse, compareUsers *UsersResponse) []Us
 	for _, user := range users.GetUsers_v1() {
 		userMap[user.GetPath()] = user
 	}
-	fmt.Println(userMap)
 	compareUserMap := make(map[string]UsersUsers_v1User_v1)
 	for _, user := range compareUsers.GetUsers_v1() {
 		compareUserMap[user.GetPath()] = user
 	}
-	fmt.Println(compareUserMap)
 
 	var usersToValidate = make([]UsersUsers_v1User_v1, 0)
 
