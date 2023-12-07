@@ -209,27 +209,6 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 	}})
 }
 
-func TestRemoveInvalidUsers(t *testing.T) {
-	v := ValidateUser{}
-	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:  1,
-		InvalidUsers: "/foo/bar",
-	}
-
-	users := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path: "/foo/bar",
-		}, {
-			Path: "/bar/foo",
-		},
-		},
-	}
-
-	validUser := v.removeInvalidUsers(&users)
-	assert.Len(t, validUser.GetUsers_v1(), 1)
-	assert.Equal(t, validUser.GetUsers_v1()[0].Path, "/bar/foo")
-}
-
 func TestFindUsersToValidateAdded(t *testing.T) {
 	users := UsersResponse{
 		Users_v1: []UsersUsers_v1User_v1{{

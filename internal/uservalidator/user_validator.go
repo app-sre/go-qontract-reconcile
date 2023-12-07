@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/github"
@@ -206,29 +205,6 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users []UsersUse
 	gatherWg.Wait()
 
 	return validationErrors
-}
-
-// TODO: This is just a hack, really we should remove the invalid keys from app-interface
-//
-//	and mange invalid keys stateful
-func (i *ValidateUser) removeInvalidUsers(users *UsersResponse) *UsersResponse {
-	returnUsers := &UsersResponse{
-		Users_v1: make([]UsersUsers_v1User_v1, 0),
-	}
-
-	invalidPaths := make(map[string]bool)
-	for _, user := range strings.Split(i.ValidateUserConfig.InvalidUsers, ",") {
-		invalidPaths[user] = true
-	}
-
-	for _, user := range users.GetUsers_v1() {
-		if _, ok := invalidPaths[user.GetPath()]; !ok {
-			returnUsers.Users_v1 = append(returnUsers.GetUsers_v1(), user)
-		} else {
-			util.Log().Debugw("Skipping invalid user key", "path", user.GetPath())
-		}
-	}
-	return returnUsers
 }
 
 func findUsersToValidate(users *UsersResponse, compareUsers *UsersResponse) []UsersUsers_v1User_v1 {
