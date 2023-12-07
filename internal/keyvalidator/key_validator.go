@@ -41,7 +41,7 @@ func NewKeyValidator() *KeyValidator {
 }
 
 // Setup runs setup for key validator
-func (i *KeyValidator) Setup(ctx context.Context) error {
+func (i *KeyValidator) Setup(_ context.Context) error {
 	return nil
 }
 
@@ -51,7 +51,7 @@ type userV1 struct {
 }
 
 // Validate run user validation
-func (i *KeyValidator) Validate(ctx context.Context) ([]reconcile.ValidationError, error) {
+func (i *KeyValidator) Validate(_ context.Context) ([]reconcile.ValidationError, error) {
 	userfile, err := os.ReadFile(i.KeyValidatorConfig.Userfile)
 	if err != nil {
 		return nil, err

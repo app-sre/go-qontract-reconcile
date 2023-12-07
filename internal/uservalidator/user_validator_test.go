@@ -61,7 +61,7 @@ func TestValidateValidateUsersSinglePathValid(t *testing.T) {
 	assert.Len(t, validationErrors, 0)
 }
 
-func createGithubUsersMock(t *testing.T, retBody string, retCode int) *httptest.Server {
+func createGithubUsersMock(t *testing.T, retBody string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "/api/v3/users")
 		_, err := io.ReadAll(r.Body)
@@ -79,7 +79,7 @@ func TestGetAndValidateUserOK(t *testing.T) {
 		Concurrency: 1,
 	}
 
-	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -102,7 +102,7 @@ func TestGetAndValidateUserFailed(t *testing.T) {
 		Concurrency: 1,
 	}
 
-	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -127,7 +127,7 @@ func TestGetAndValidateUserApiFailed(t *testing.T) {
 	v.ValidateUserConfig = &ValidateUserConfig{
 		Concurrency: 1,
 	}
-	githubMock := createGithubUsersMock(t, `{}`, 500)
+	githubMock := createGithubUsersMock(t, `{}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -156,7 +156,7 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 
 	v.githubValidateFunc = v.getAndValidateUser
 
-	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -200,13 +200,14 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 		return &reconcile.ValidationError{}
 	}
 
-	v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+	errors := v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
 		Path:            "/foo/bar",
 		Github_username: "bar",
 	}, {
 		Path:            "/foo/bar",
 		Github_username: "bar",
 	}})
+	assert.Len(t, errors, 2)
 }
 
 func TestFindUsersToValidateAdded(t *testing.T) {

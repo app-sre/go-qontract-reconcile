@@ -139,7 +139,7 @@ func (n *AccountNotifier) LogDiff(ri *reconcile.ResourceInventory) {
 }
 
 // CurrentState lists the secrets from the vault import path and adds them to the resource inventory as current state
-func (n *AccountNotifier) CurrentState(ctx context.Context, ri *reconcile.ResourceInventory) error {
+func (n *AccountNotifier) CurrentState(_ context.Context, ri *reconcile.ResourceInventory) error {
 	s, err := n.vault.ListSecrets(n.vaultImportPath)
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while getting list of secrets from import path %s", n.vaultImportPath))
@@ -400,7 +400,7 @@ func (n *AccountNotifier) Setup(ctx context.Context) error {
 		return errors.Wrapf(err, "Error getting AWS client")
 	}
 
-	n.state = state.NewS3State(ctx, "state", IntegrationName, awsclient)
+	n.state = state.NewS3State("state", IntegrationName, awsclient)
 
 	settings, err := n.getReencryptFunc(ctx)
 	if err != nil {

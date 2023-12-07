@@ -49,7 +49,7 @@ func newS3StateConfig() *s3StateConfig {
 }
 
 // NewS3State creates a new S3State Persistence object
-func NewS3State(ctx context.Context, basePath, infix string, client aws.Client) *S3State {
+func NewS3State(basePath, infix string, client aws.Client) *S3State {
 	config := *newS3StateConfig()
 	state := &S3State{
 		state:    make(map[string]interface{}),
