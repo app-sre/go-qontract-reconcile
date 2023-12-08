@@ -109,10 +109,10 @@ func createUserMock(pgpKey string) *UsersResponse {
 	}
 }
 
-func createTestNotifier(ctx context.Context, t *testing.T, vaultMock *vault.Client, awsClientMock *mock.MockClient, users *UsersResponse) AccountNotifier {
+func createTestNotifier(vaultMock *vault.Client, awsClientMock *mock.MockClient, users *UsersResponse) AccountNotifier {
 	return AccountNotifier{
 		vault: vaultMock,
-		state: state.NewS3State(ctx, "state", "test", awsClientMock),
+		state: state.NewS3State("state", "test", awsClientMock),
 		getuserFunc: func(ctx context.Context) (*UsersResponse, error) {
 			return users, nil
 		},
@@ -158,7 +158,7 @@ func TestReencryptOkay(t *testing.T) {
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("https response error StatusCode: 404")).MaxTimes(2)
 	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
 
-	a := createTestNotifier(ctx, t, v, mockClient, users)
+	a := createTestNotifier(v, mockClient, users)
 	mailSent := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
 		assert.Contains(t, subject, "provisioned")
@@ -199,7 +199,7 @@ func TestReencryptInvalid(t *testing.T) {
 
 	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("https response error StatusCode: 404")).MaxTimes(2)
 
-	a := createTestNotifier(ctx, t, v, mockClient, users)
+	a := createTestNotifier(v, mockClient, users)
 	a.setFailedStateFunc = func(ctx context.Context, p state.Persistence, s string, n notification) error {
 		assert.Equal(t, "foobar", s)
 		assert.Equal(t, "Invalid key", n.PublicPgpKey)
@@ -243,7 +243,7 @@ func TestReencryptUpdated(t *testing.T) {
 
 	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
 
-	a := createTestNotifier(ctx, t, v, mockClient, users)
+	a := createTestNotifier(v, mockClient, users)
 	stateRemoved := false
 	mailSent := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
@@ -302,7 +302,7 @@ func TestNotifySkip(t *testing.T) {
 }`, string(dateByte))))),
 	}, nil)
 
-	a := createTestNotifier(ctx, t, v, mockClient, users)
+	a := createTestNotifier(v, mockClient, users)
 	ri := reconcile.NewResourceInventory()
 
 	err = a.CurrentState(ctx, ri)
@@ -343,7 +343,7 @@ func TestNotifyExpired(t *testing.T) {
 }`, string(dateByte))))),
 	}, nil)
 
-	a := createTestNotifier(ctx, t, v, mockClient, users)
+	a := createTestNotifier(v, mockClient, users)
 	mailSent := false
 	statePersisted := false
 	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {

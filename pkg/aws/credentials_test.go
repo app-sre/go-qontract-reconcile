@@ -1,7 +1,6 @@
 package aws
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +26,7 @@ func TestGetCredentialsFromEnv(t *testing.T) {
 	assert.Equal(t, "us-east-1", c.DefaultRegion)
 }
 
-func setupVaultMock(t *testing.T) *httptest.Server {
+func setupVaultMock() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/v1/token" {
 			fmt.Fprintf(w, `{"Data": {"aws_access_key_id":"foo", "aws_secret_access_key": "bar"}}`)
@@ -36,14 +35,13 @@ func setupVaultMock(t *testing.T) *httptest.Server {
 }
 
 func TestGetCredentialsFromVault(t *testing.T) {
-	ctx := context.Background()
 	toManyAccounts := getAccountsResponse{[]getAccountsAwsaccounts_v1AWSAccount_v1{{}, {}}}
 
-	c, e := getCredentialsFromVault(ctx, nil, &toManyAccounts)
+	c, e := getCredentialsFromVault(nil, &toManyAccounts)
 	assert.Nil(t, c)
 	assert.NotNil(t, e)
 
-	vaultMock := setupVaultMock(t)
+	vaultMock := setupVaultMock()
 
 	accounts := getAccountsResponse{
 		[]getAccountsAwsaccounts_v1AWSAccount_v1{
@@ -60,7 +58,7 @@ func TestGetCredentialsFromVault(t *testing.T) {
 	v, err := vault.NewVaultClient()
 
 	assert.NoError(t, err)
-	c, e = getCredentialsFromVault(ctx, v, &accounts)
+	c, e = getCredentialsFromVault(v, &accounts)
 	assert.NotNil(t, c)
 	assert.Nil(t, e)
 

@@ -67,7 +67,7 @@ func newQontractConfig() *qontractConfig {
 }
 
 // NewQontractClient creates a new QontractClient
-func NewQontractClient(ctx context.Context) (*QontractClient, error) {
+func NewQontractClient(_ context.Context) (*QontractClient, error) {
 	config := newQontractConfig()
 	retryClient := newRetryableHTTPWrapper()
 

@@ -27,7 +27,7 @@ func getCredentialsFromEnv() *Credentials {
 	return nil
 }
 
-func getCredentialsFromVault(ctx context.Context, vc *vault.Client, accountResponse *getAccountsResponse) (*Credentials, error) {
+func getCredentialsFromVault(vc *vault.Client, accountResponse *getAccountsResponse) (*Credentials, error) {
 	accounts := accountResponse.GetAwsaccounts_v1()
 	if len(accounts) != 1 {
 		return nil, fmt.Errorf("expected one AWS account, got %d", len(accounts))
@@ -66,7 +66,7 @@ func GetAwsCredentials(ctx context.Context, vc *vault.Client) (*Credentials, err
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting AWS account info")
 	}
-	return getCredentialsFromVault(ctx, vc, accounts)
+	return getCredentialsFromVault(vc, accounts)
 }
 
 func guessAccountName() string {
