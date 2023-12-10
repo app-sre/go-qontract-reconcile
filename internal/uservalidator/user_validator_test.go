@@ -31,16 +31,14 @@ func TestValidateValidateUsersSinglePathInValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:         "/foo/bar",
-			Org_username: "foo",
-		}, {
-			Path:         "/foo/rab",
-			Org_username: "foo",
-		}},
-	}
-	validationErrors := v.validateUsersSinglePath(userResponse)
+	users := []UsersUsers_v1User_v1{{
+		Path:         "/foo/bar",
+		Org_username: "foo",
+	}, {
+		Path:         "/foo/rab",
+		Org_username: "foo",
+	}}
+	validationErrors := v.validateUsersSinglePath(users)
 	assert.Len(t, validationErrors, 2)
 	assert.Equal(t, "validateUsersSinglePath", validationErrors[0].Validation)
 	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
@@ -52,20 +50,18 @@ func TestValidateValidateUsersSinglePathValid(t *testing.T) {
 	// Todo add fixture for expired key
 	v := ValidateUser{}
 	v.ValidateUserConfig = &ValidateUserConfig{}
-	userResponse := UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:         "/foo/bar",
-			Org_username: "foo",
-		}, {
-			Path:         "/foo/rab",
-			Org_username: "rab",
-		}},
-	}
-	validationErrors := v.validateUsersSinglePath(userResponse)
+	users := []UsersUsers_v1User_v1{{
+		Path:         "/foo/bar",
+		Org_username: "foo",
+	}, {
+		Path:         "/foo/rab",
+		Org_username: "rab",
+	}}
+	validationErrors := v.validateUsersSinglePath(users)
 	assert.Len(t, validationErrors, 0)
 }
 
-func createGithubUsersMock(t *testing.T, retBody string, retCode int) *httptest.Server {
+func createGithubUsersMock(t *testing.T, retBody string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Contains(t, r.URL.Path, "/api/v3/users")
 		_, err := io.ReadAll(r.Body)
@@ -83,7 +79,7 @@ func TestGetAndValidateUserOK(t *testing.T) {
 		Concurrency: 1,
 	}
 
-	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -106,7 +102,7 @@ func TestGetAndValidateUserFailed(t *testing.T) {
 		Concurrency: 1,
 	}
 
-	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -131,7 +127,7 @@ func TestGetAndValidateUserApiFailed(t *testing.T) {
 	v.ValidateUserConfig = &ValidateUserConfig{
 		Concurrency: 1,
 	}
-	githubMock := createGithubUsersMock(t, `{}`, 500)
+	githubMock := createGithubUsersMock(t, `{}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -160,7 +156,7 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 
 	v.githubValidateFunc = v.getAndValidateUser
 
-	githubMock := createGithubUsersMock(t, `{"login": "bar"}`, 200)
+	githubMock := createGithubUsersMock(t, `{"login": "bar"}`)
 
 	gh, err := github.NewEnterpriseClient(githubMock.URL, githubMock.URL, http.DefaultClient)
 	assert.Nil(t, err)
@@ -169,12 +165,10 @@ func TestValidateUsersGithubErrorsReturned(t *testing.T) {
 		GithubClient: gh,
 	}
 
-	validationErrors := v.validateUsersGithub(context.Background(), UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:            "/foo/bar",
-			Github_username: "Bar",
-		}},
-	})
+	validationErrors := v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+		Path:            "/foo/bar",
+		Github_username: "Bar",
+	}})
 	assert.NotNil(t, validationErrors)
 	assert.Len(t, validationErrors, 1)
 }
@@ -190,12 +184,10 @@ func TestValidateUsersGithubCallingValidate(t *testing.T) {
 		return nil
 	}
 
-	v.validateUsersGithub(context.Background(), UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:            "/foo/bar",
-			Github_username: "bar",
-		}},
-	})
+	v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	}})
 	assert.True(t, validated)
 }
 
@@ -208,34 +200,91 @@ func TestValidateUsersGithubValidateError(t *testing.T) {
 		return &reconcile.ValidationError{}
 	}
 
-	v.validateUsersGithub(context.Background(), UsersResponse{
-		Users_v1: []UsersUsers_v1User_v1{{
-			Path:            "/foo/bar",
-			Github_username: "bar",
-		}, {
-			Path:            "/foo/bar",
-			Github_username: "bar",
-		}},
-	})
+	errors := v.validateUsersGithub(context.Background(), []UsersUsers_v1User_v1{{
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	}, {
+		Path:            "/foo/bar",
+		Github_username: "bar",
+	}})
+	assert.Len(t, errors, 2)
 }
 
-func TestRemoveInvalidUsers(t *testing.T) {
-	v := ValidateUser{}
-	v.ValidateUserConfig = &ValidateUserConfig{
-		Concurrency:  1,
-		InvalidUsers: "/foo/bar",
-	}
-
+func TestFindUsersToValidateAdded(t *testing.T) {
 	users := UsersResponse{
 		Users_v1: []UsersUsers_v1User_v1{{
 			Path: "/foo/bar",
 		}, {
 			Path: "/bar/foo",
-		},
-		},
+		}}}
+
+	compareUsers := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path: "/foo/bar",
+		}},
 	}
 
-	validUser := v.removeInvalidUsers(&users)
-	assert.Len(t, validUser.GetUsers_v1(), 1)
-	assert.Equal(t, validUser.GetUsers_v1()[0].Path, "/bar/foo")
+	toValidate := findUsersToValidate(&users, &compareUsers)
+	assert.Len(t, toValidate, 1)
+	assert.Equal(t, toValidate[0].Path, "/bar/foo")
+}
+
+func TestFindUsersToValidateChanged(t *testing.T) {
+	users := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}}}
+
+	compareUsers := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "bar",
+		}},
+	}
+
+	toValidate := findUsersToValidate(&users, &compareUsers)
+	assert.Len(t, toValidate, 1)
+	assert.Equal(t, toValidate[0].Path, "/foo/bar")
+}
+
+func TestFindUsersToValidateEqual(t *testing.T) {
+	users := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}}}
+
+	compareUsers := UsersResponse{
+		Users_v1: []UsersUsers_v1User_v1{{
+			Path:         "/foo/bar",
+			Org_username: "foo",
+		}},
+	}
+
+	toValidate := findUsersToValidate(&users, &compareUsers)
+	assert.Len(t, toValidate, 0)
+}
+
+func TestValidatePgpKeysValid(t *testing.T) {
+	v := ValidateUser{}
+	users := []UsersUsers_v1User_v1{{
+		Public_gpg_key: string(readKeyFile(t, publicFile)),
+	}}
+	validationErrors := v.validatePgpKeys(users)
+	assert.Len(t, validationErrors, 0)
+}
+
+func TestValidatePgpKeysInValid(t *testing.T) {
+	// Todo add fixture for expired key
+	v := ValidateUser{}
+	users := []UsersUsers_v1User_v1{{
+		Path:           "/foo/bar",
+		Public_gpg_key: "a",
+	}}
+	validationErrors := v.validatePgpKeys(users)
+	assert.Len(t, validationErrors, 1)
+	assert.Equal(t, "validatePgpKeys", validationErrors[0].Validation)
+	assert.Equal(t, "/foo/bar", validationErrors[0].Path)
+	assert.EqualError(t, validationErrors[0].Error, "error decoding given PGP key: illegal base64 data at input byte 0")
 }

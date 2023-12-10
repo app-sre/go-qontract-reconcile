@@ -4,10 +4,12 @@ package uservalidator
 import (
 	"context"
 	"fmt"
-	"strings"
+	"reflect"
 	"sync"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/github"
+	"github.com/app-sre/go-qontract-reconcile/pkg/gql"
+	"github.com/app-sre/go-qontract-reconcile/pkg/pgp"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/app-sre/go-qontract-reconcile/pkg/vault"
@@ -86,11 +88,39 @@ func (i *ValidateUser) Setup(ctx context.Context) error {
 	return nil
 }
 
-func (i *ValidateUser) validateUsersSinglePath(users UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validatePgpKeys(users []UsersUsers_v1User_v1) []reconcile.ValidationError {
+	validationErrors := make([]reconcile.ValidationError, 0)
+	for _, user := range users {
+		pgpKey := user.GetPublic_gpg_key()
+		if len(pgpKey) > 0 {
+			path := user.GetPath()
+			entity, err := pgp.DecodePgpKey(pgpKey, path)
+			if err != nil {
+				validationErrors = append(validationErrors, reconcile.ValidationError{
+					Path:       path,
+					Validation: "validatePgpKeys",
+					Error:      err,
+				})
+				continue
+			}
+			err = pgp.TestEncrypt(entity)
+			if err != nil {
+				validationErrors = append(validationErrors, reconcile.ValidationError{
+					Path:       user.GetPath(),
+					Validation: "validatePgpKeys",
+					Error:      err,
+				})
+			}
+		}
+	}
+	return validationErrors
+}
+
+func (i *ValidateUser) validateUsersSinglePath(users []UsersUsers_v1User_v1) []reconcile.ValidationError {
 	validationErrors := make([]reconcile.ValidationError, 0)
 	usersPaths := make(map[string][]string)
 
-	for _, u := range users.GetUsers_v1() {
+	for _, u := range users {
 		if usersPaths[u.GetOrg_username()] == nil {
 			usersPaths[u.GetOrg_username()] = make([]string, 0)
 		}
@@ -132,7 +162,7 @@ func (i *ValidateUser) getAndValidateUser(ctx context.Context, user UsersUsers_v
 	return nil
 }
 
-func (i *ValidateUser) validateUsersGithub(ctx context.Context, users UsersResponse) []reconcile.ValidationError {
+func (i *ValidateUser) validateUsersGithub(ctx context.Context, users []UsersUsers_v1User_v1) []reconcile.ValidationError {
 	validationErrors := make([]reconcile.ValidationError, 0)
 	validateWg := sync.WaitGroup{}
 	gatherWg := sync.WaitGroup{}
@@ -164,7 +194,7 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users UsersRespo
 
 	go func() {
 		defer close(userChan)
-		for _, user := range users.GetUsers_v1() {
+		for _, user := range users {
 			userChan <- user
 		}
 	}()
@@ -177,27 +207,28 @@ func (i *ValidateUser) validateUsersGithub(ctx context.Context, users UsersRespo
 	return validationErrors
 }
 
-// TODO: This is just a hack, really we should remove the invalid keys from app-interface
-//
-//	and mange invalid keys stateful
-func (i *ValidateUser) removeInvalidUsers(users *UsersResponse) *UsersResponse {
-	returnUsers := &UsersResponse{
-		Users_v1: make([]UsersUsers_v1User_v1, 0),
-	}
-
-	invalidPaths := make(map[string]bool)
-	for _, user := range strings.Split(i.ValidateUserConfig.InvalidUsers, ",") {
-		invalidPaths[user] = true
-	}
-
+func findUsersToValidate(users *UsersResponse, compareUsers *UsersResponse) []UsersUsers_v1User_v1 {
+	userMap := make(map[string]UsersUsers_v1User_v1)
 	for _, user := range users.GetUsers_v1() {
-		if _, ok := invalidPaths[user.GetPath()]; !ok {
-			returnUsers.Users_v1 = append(returnUsers.GetUsers_v1(), user)
+		userMap[user.GetPath()] = user
+	}
+	compareUserMap := make(map[string]UsersUsers_v1User_v1)
+	for _, user := range compareUsers.GetUsers_v1() {
+		compareUserMap[user.GetPath()] = user
+	}
+
+	var usersToValidate = make([]UsersUsers_v1User_v1, 0)
+
+	for k, v := range userMap {
+		if _, ok := compareUserMap[k]; ok {
+			if !reflect.DeepEqual(v, compareUserMap[k]) {
+				usersToValidate = append(usersToValidate, v)
+			}
 		} else {
-			util.Log().Debugw("Skipping invalid user key", "path", user.GetPath())
+			usersToValidate = append(usersToValidate, v)
 		}
 	}
-	return returnUsers
+	return usersToValidate
 }
 
 // Validate run user validation
@@ -208,8 +239,20 @@ func (i *ValidateUser) Validate(ctx context.Context) ([]reconcile.ValidationErro
 		return nil, err
 	}
 
-	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(*users))
-	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, *users))
+	compareUsers, err := Users(context.WithValue(ctx, gql.UseCompareClientKey, true))
+	if err != nil {
+		return nil, err
+	}
+
+	if users == nil || compareUsers == nil {
+		return nil, fmt.Errorf("No users found")
+	}
+
+	usersToValidate := findUsersToValidate(users, compareUsers)
+
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersSinglePath(usersToValidate))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validatePgpKeys(usersToValidate))
+	allValidationErrors = reconcile.ConcatValidationErrors(allValidationErrors, i.validateUsersGithub(ctx, usersToValidate))
 
 	return allValidationErrors, nil
 }

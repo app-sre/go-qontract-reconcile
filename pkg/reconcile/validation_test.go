@@ -23,7 +23,7 @@ type TestValidation struct {
 	SleepDuration     int
 }
 
-func (t *TestValidation) Setup(ctx context.Context) error {
+func (t *TestValidation) Setup(_ context.Context) error {
 	if t.SetupError {
 		return fmt.Errorf("Error during setup")
 	}

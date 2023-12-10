@@ -55,7 +55,7 @@ func NewUnleashClient() (*Client, error) {
 		Client: &http.Client{
 			Timeout: time.Duration(c.Timeout) * time.Second,
 			Transport: &util.AuthedTransport{
-				Key:     fmt.Sprintf("Bearer %s", c.ClientAccessToken),
+				Key:     c.ClientAccessToken,
 				Wrapped: http.DefaultTransport,
 			},
 		},

@@ -30,7 +30,7 @@ func createTestProducer(awsClientMock *mock.MockClient, ghURL string) *GitPartit
 	}
 }
 
-func setupGitlabMock(t *testing.T) *httptest.Server {
+func setupGitlabMock() *httptest.Server {
 	return util.NewHTTPTestServer(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.String() == "/api/v4/projects/test%2Fproject/repository/commits/main" && r.Method == "GET" {
 			fmt.Fprintf(w, `{"id": "test_sha"}`)
@@ -119,7 +119,7 @@ func TestDesiredState(t *testing.T) {
 	ctx := context.Background()
 	ri := reconcile.NewResourceInventory()
 
-	glMock := setupGitlabMock(t)
+	glMock := setupGitlabMock()
 
 	producer := createTestProducer(nil, glMock.URL)
 	producer.getGitlabSyncAppsFunc = func(ctx context.Context) (*GetGitlabSyncAppsResponse, error) {
