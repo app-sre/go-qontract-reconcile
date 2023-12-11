@@ -94,7 +94,7 @@ func (i *ValidateUser) validatePgpKeys(users []UsersUsers_v1User_v1) []reconcile
 		pgpKey := user.GetPublic_gpg_key()
 		if len(pgpKey) > 0 {
 			path := user.GetPath()
-			entity, err := pgp.DecodePgpKey(pgpKey, path)
+			entity, err := pgp.DecodePgpKey(pgpKey)
 			if err != nil {
 				validationErrors = append(validationErrors, reconcile.ValidationError{
 					Path:       path,

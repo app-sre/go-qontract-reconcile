@@ -32,37 +32,12 @@ func TestEncrypt(entity *openpgp.Entity) error {
 	return nil
 }
 
-// crc24 calculates the CRC24 checksum OpenPGP variant for a given byte array.
-//
-// See the RFC 4880, "OpenPGP Message Format", Section 6.1, for source of this implementation.
-func crc24(bytes []byte) uint32 {
-	const (
-		seed = 0xb704ce
-		poly = 0x1864cfb
-		mask = 0xffffff
-	)
-
-	var crc uint32 = seed
-
-	for _, b := range bytes {
-		crc ^= uint32(b) << 16
-		for i := 0; i < 8; i++ {
-			crc <<= 1
-			if crc&0x1000000 != 0 {
-				crc ^= poly
-			}
-		}
-	}
-
-	return crc & mask
-}
-
 func keyArmor(anchor string) string {
 	return fmt.Sprintf("-----%s %s-----", anchor, openpgp.PublicKeyType)
 }
 
 // DecodePgpKey tests if the passed in pgpKey is a base64 encoded pgp Public Key.
-func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
+func DecodePgpKey(pgpKey string) (*openpgp.Entity, error) {
 	pgpKey = strings.TrimRight(pgpKey, " \n\r")
 	pgpKey = strings.TrimSpace(pgpKey)
 
@@ -77,7 +52,7 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 	}
 
 	// decodeAndValidatePGPkey supports ASCII armored gpg keys and return key in case key+checksum provided
-	data, err := decodeAndValidatePGPkey(pgpKey)
+	data, err := decodePGPkey(pgpKey)
 	if err != nil {
 		return nil, err
 	}
@@ -103,17 +78,17 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 
 // DecodeAndArmorBase64Entity decodes a base64 encoded entity and armors it.
 func DecodeAndArmorBase64Entity(encodedEntity string, armorType string) (string, error) {
-	decodedEntity, err := decodeAndValidatePGPkey(encodedEntity)
+	decodedEntity, err := decodePGPkey(encodedEntity)
 	if err != nil {
 		return "", err
 	}
 	return parmor.ArmorWithType([]byte(decodedEntity), armorType)
 }
 
-// decodeAndValidatePGPkey PGP key is a wrapper function
+// decodePGPkey PGP key is a wrapper function
 // around golang standard base64 package
-// which will validate keys with checksum as well as non checksum and return decoded bytes from key part
-func decodeAndValidatePGPkey(encodedKeyData string) ([]byte, error) {
+// which will decode keys with checksum as well as non checksum and return  bytes from key part
+func decodePGPkey(encodedKeyData string) ([]byte, error) {
 	// check if the string is standard PGP key with base64 encoding WITHOUT checksum
 	decodedKeyData, err := base64.StdEncoding.DecodeString(encodedKeyData)
 	if err != nil {
