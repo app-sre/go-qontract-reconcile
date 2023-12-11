@@ -126,20 +126,65 @@ func createTestNotifier(vaultMock *vault.Client, awsClientMock *mock.MockClient,
 This table should help understanding the need for the various tests. There
 are a couple of states the code could be in.
 
-Status        Vault   State   PGP     Notification    Test name
-------------- ------- ------- ------- --------------- --------------------
-Reencrypt     Import  None    Valid   Yes             TestReencryptOkay
+Status        Vault   State       PGP         Notification    Test name
+------------- ------- -------     -------     --------------- --------------------
+Reencrypt     Import  None        Valid        Yes             TestReencryptOkay
 	                  Updated
-Reencrypt     Import  Update  Invalid No              TestReencryptInvalid
-Reencrypt     Import  Delete  Updated Yes             TestReencryptUpdated
+Reencrypt     Import  None        Valid        Yes             TestReencryptOkayWithChecksum
+							   (with checksum)
+
+Reencrypt     Import  Update     Invalid       No              TestReencryptInvalid
+Reencrypt     Import  Delete     Updated       Yes             TestReencryptUpdated
 					  Update
-NotifyExpired Import  Updated Invalid Yes             TestNotifyExpired
-Skip          Import  Read    Invalid No              TestSKip
+NotifyExpired Import  Updated    Invalid       Yes             TestNotifyExpired
+Skip          Import  Read       Invalid       No              TestSKip
 
 */
 
 func TestReencryptOkay(t *testing.T) {
 	users := createUserMock(string(util.ReadKeyFile(t, publicKey)))
+
+	vaultMock := setupVaultMock(t)
+	defer vaultMock.Close()
+	SetupVaultEnv(vaultMock.URL)
+
+	v, err := vault.NewVaultClient()
+
+	assert.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	ctx := context.WithValue(context.Background(), reconcile.ContextIngetrationNameKey, IntegrationName)
+
+	mockClient := mock.NewMockClient(ctrl)
+
+	mockClient.EXPECT().HeadObject(ctx, gomock.Any()).Return(nil, fmt.Errorf("https response error StatusCode: 404")).MaxTimes(2)
+	mockClient.EXPECT().PutObject(ctx, gomock.Any()).Return(nil, nil).MinTimes(1).MaxTimes(1)
+
+	a := createTestNotifier(v, mockClient, users)
+	mailSent := false
+	a.sendEmailFunc = func(ctx context.Context, n *notify.Notify, subject, body string) error {
+		assert.Contains(t, subject, "provisioned")
+		assert.Contains(t, body, "You have been invited to join an AWS account")
+		assert.NotNil(t, n)
+		mailSent = true
+		return nil
+	}
+	ri := reconcile.NewResourceInventory()
+
+	err = a.CurrentState(ctx, ri)
+	assert.NoError(t, err)
+
+	err = a.DesiredState(ctx, ri)
+	assert.NoError(t, err)
+
+	err = a.Reconcile(ctx, ri)
+	assert.NoError(t, err)
+	assert.True(t, mailSent)
+}
+
+func TestReencryptOkayWithChecksum(t *testing.T) {
+	users := createUserMock(string(util.ReadKeyFile(t, publicKey)) + "\n=gdg5\n") // added checksum
 
 	vaultMock := setupVaultMock(t)
 	defer vaultMock.Close()
