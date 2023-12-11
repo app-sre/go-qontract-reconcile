@@ -1,8 +1,11 @@
 package pgp
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/ProtonMail/gopenpgp/v2/constants"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,6 +17,7 @@ var (
 	privateFile            = "../../test/data/private_key.b64"
 	expiredFile            = "../../test/data/expired_key.b64"
 	eccFile                = "../../test/data/ecc_key.b64"
+	armoredKeyFile         = "../../test/data/armored_key.b64"
 )
 
 func TestDecodePgpKeyFailDecode(t *testing.T) {
@@ -50,14 +54,14 @@ func TestTestDecodeEccOkay(t *testing.T) {
 func TestDecodePgpKeyInvalidArmoredKey(t *testing.T) {
 	_, err := DecodePgpKey("-----BEGIN PGP PUBLIC KEY BLOCK-----", "/test/path/file.yml")
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "ASCII-armored PGP keys are not supported; please remove type headers and checksum")
+	assert.EqualError(t, err, "please remove type headers and add the key")
 
 	key := util.ReadKeyFile(t, publicFile)
 	// The CRC24 checksum for this public key is: 15b421 (encoded as =FbQh),
-	// add valid CRC at the end of the key to simulate a common mistake.
-	_, err = DecodePgpKey(string(key)+"\n=FbQh\n", "/test/path/file.yml")
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "ASCII-armored PGP keys are not supported; please remove checksum (encoded as =FbQh)")
+	// validate if DecodePgpKey supports key with checksum
+	keyData, err := DecodePgpKey(string(key)+"\n=FbQh\n", "/test/path/file.yml")
+	assert.Nil(t, err)
+	assert.NotNil(t, keyData)
 }
 
 func TestDecodePgpKeyInvalidArmoredKeyChecksum(t *testing.T) {
@@ -128,5 +132,38 @@ func TestCRC24(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.expected, crc24(tc.given))
 		})
+	}
+}
+
+func TestDecodeAndArmorBase64Entity(t *testing.T) {
+	cases := []struct {
+		description    string
+		input          string
+		expectedError  error
+		expectedOutput string
+	}{
+		{
+			description:    "test DecodeAndArmorBase64Entity postitive case(key without checksum)",
+			input:          string(util.ReadKeyFile(t, publicFile)),
+			expectedOutput: string(util.ReadKeyFile(t, armoredKeyFile)),
+		},
+		{
+			description:    "test DecodeAndArmorBase64Entity postitive case(key with checksum)",
+			input:          string(util.ReadKeyFile(t, publicFile)) + "=FbQh\n", // added checksum
+			expectedOutput: string(util.ReadKeyFile(t, armoredKeyFile)),
+		},
+		{
+			description:   "test DecodeAndArmorBase64Entity postitive decode error",
+			input:         "abc",
+			expectedError: fmt.Errorf("%v", errors.New("error decoding given PGP key: illegal base64 data at input byte 0")),
+		},
+	}
+	for _, testcase := range cases {
+		output, err := DecodeAndArmorBase64Entity(testcase.input, constants.PublicKeyHeader)
+		if err != nil {
+			assert.Equal(t, testcase.expectedError.Error(), err.Error())
+		} else {
+			assert.Contains(t, output, testcase.input)
+		}
 	}
 }
