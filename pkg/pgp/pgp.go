@@ -69,7 +69,7 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 	keyArmorStart := keyArmor("BEGIN")
 
 	if strings.HasPrefix(pgpKey, keyArmorStart[:strings.Index(keyArmorStart, " ")]) {
-		return nil, errors.New("please remove type headers and add the key")
+		return nil, errors.New("please remove type headers")
 	}
 
 	if strings.Contains(pgpKey, " ") {
