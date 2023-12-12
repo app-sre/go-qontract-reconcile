@@ -6,15 +6,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/ProtonMail/go-crypto/openpgp/armor"
 	pgperr "github.com/ProtonMail/go-crypto/openpgp/errors"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	parmor "github.com/ProtonMail/gopenpgp/v2/armor"
-	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 )
 
 // TestEncrypt tests if an opengpg.Entity can be used for encryption
@@ -35,86 +32,29 @@ func TestEncrypt(entity *openpgp.Entity) error {
 	return nil
 }
 
-// crc24 calculates the CRC24 checksum OpenPGP variant for a given byte array.
-//
-// See the RFC 4880, "OpenPGP Message Format", Section 6.1, for source of this implementation.
-func crc24(bytes []byte) uint32 {
-	const (
-		seed = 0xb704ce
-		poly = 0x1864cfb
-		mask = 0xffffff
-	)
-
-	var crc uint32 = seed
-
-	for _, b := range bytes {
-		crc ^= uint32(b) << 16
-		for i := 0; i < 8; i++ {
-			crc <<= 1
-			if crc&0x1000000 != 0 {
-				crc ^= poly
-			}
-		}
-	}
-
-	return crc & mask
+func keyArmor(anchor string) string {
+	return fmt.Sprintf("-----%s %s-----", anchor, openpgp.PublicKeyType)
 }
 
 // DecodePgpKey tests if the passed in pgpKey is a base64 encoded pgp Public Key.
-func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
+func DecodePgpKey(pgpKey string) (*openpgp.Entity, error) {
 	pgpKey = strings.TrimRight(pgpKey, " \n\r")
 	pgpKey = strings.TrimSpace(pgpKey)
 
-	keyArmor := func(anchor string) string {
-		return fmt.Sprintf("-----%s %s-----", anchor, openpgp.PublicKeyType)
-	}
 	keyArmorStart := keyArmor("BEGIN")
 
 	if strings.HasPrefix(pgpKey, keyArmorStart[:strings.Index(keyArmorStart, " ")]) {
-		return nil, errors.New("ASCII-armored PGP keys are not supported; please remove type headers and checksum")
+		return nil, errors.New("please remove type headers")
 	}
 
 	if strings.Contains(pgpKey, " ") {
 		return nil, fmt.Errorf("given PGP key cannot contain spaces")
 	}
 
-	data, err := base64.StdEncoding.DecodeString(pgpKey)
+	// decodeAndValidatePGPkey supports ASCII armored gpg keys and return key in case key+checksum provided
+	data, err := decodePGPkey(pgpKey)
 	if err != nil {
-		// Save the original Base64 decoder error,
-		// to return if an error is not related to
-		// ASCII armor parsing or validation.
-		decodeErr := err
-
-		pgpKey = fmt.Sprintf("%s\n\n%s\n%s", keyArmorStart, pgpKey, keyArmor("END"))
-		block, err := armor.Decode(strings.NewReader(pgpKey))
-		if err != nil {
-			return nil, fmt.Errorf("error decoding given ASCII-armored PGP key: %w", err)
-		}
-
-		var body bytes.Buffer
-
-		// Drain the Reader buffer, which causes the CRC24
-		// checksum to be computed for the given ASCII armor.
-		_, err = io.Copy(&body, block.Body)
-		if err != nil {
-			if _, ok := err.(pgperr.StructuralError); ok {
-				return nil, fmt.Errorf("error decoding given ASCII-armored PGP key: %w", err)
-			}
-			return nil, fmt.Errorf("error decoding given PGP key: %w", decodeErr)
-		}
-		crc := crc24(body.Bytes())
-
-		var crcBytes = []byte{0, 0, 0, 0}
-		base64.StdEncoding.Encode(crcBytes, []byte{byte(crc >> 16), byte(crc >> 8), byte(crc)})
-		crcBytesEncoded := fmt.Sprintf("=%s", string(crcBytes))
-
-		util.Log().Debugw("A valid ASCII-armored PGP key has been given",
-			"crc24_checksum", fmt.Sprintf("%x", crc),
-			"crc24_encoded", crcBytesEncoded,
-			"path", path,
-		)
-
-		return nil, fmt.Errorf("ASCII-armored PGP keys are not supported; please remove checksum (encoded as %s)", crcBytesEncoded)
+		return nil, err
 	}
 
 	packets := packet.NewReader(bytes.NewBuffer(data))
@@ -138,9 +78,40 @@ func DecodePgpKey(pgpKey, path string) (*openpgp.Entity, error) {
 
 // DecodeAndArmorBase64Entity decodes a base64 encoded entity and armors it.
 func DecodeAndArmorBase64Entity(encodedEntity string, armorType string) (string, error) {
-	decodedEntity, err := base64.StdEncoding.DecodeString(encodedEntity)
+	decodedEntity, err := decodePGPkey(encodedEntity)
 	if err != nil {
 		return "", err
 	}
 	return parmor.ArmorWithType([]byte(decodedEntity), armorType)
+}
+
+// decodePGPkey PGP key is a wrapper function
+// around golang standard base64 package
+// which will decode keys with checksum as well as non checksum and return  bytes from key part
+func decodePGPkey(encodedKeyData string) ([]byte, error) {
+	// check if the string is standard PGP key with base64 encoding WITHOUT checksum
+	decodedKeyData, err := base64.StdEncoding.DecodeString(encodedKeyData)
+	if err != nil {
+		// check if keys is encoded using OpenPGP's Radix-64 encoding
+		// save the actual error
+		decodeErr := err
+		// create ascii armored gpg key string by adding
+		// ------ BEGIN -------
+		// encodedKeyData (base64key + '=' + checksum)
+		// ------  END  -------
+
+		// remove trailing newLines if any
+		encodedKeyData = strings.Trim(encodedKeyData, "\n")
+		pgpKey := fmt.Sprintf("%s\n\n%s\n%s", keyArmor("BEGIN"), encodedKeyData, keyArmor("END"))
+		// unarmor the encodedKeyData to get the encoded pgp key part also checking if added checksum is valid
+		encodedBytes, err := parmor.Unarmor(pgpKey)
+		if err != nil {
+			if _, ok := err.(pgperr.StructuralError); ok {
+				return nil, fmt.Errorf("error decoding given ASCII-armored PGP key: %w", err)
+			}
+			return nil, fmt.Errorf("error decoding given PGP key: %w", decodeErr)
+		}
+		return encodedBytes, nil
+	}
+	return decodedKeyData, nil
 }

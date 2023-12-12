@@ -68,7 +68,7 @@ func (i *KeyValidator) Validate(_ context.Context) ([]reconcile.ValidationError,
 		util.Log().Infof("Key for user %s not provided", user.OrgUsername)
 		return []reconcile.ValidationError{}, nil
 	}
-	entity, err := pgp.DecodePgpKey(pgpKey, i.KeyValidatorConfig.Userfile)
+	entity, err := pgp.DecodePgpKey(pgpKey)
 	if err != nil {
 		return []reconcile.ValidationError{{
 			Path:       i.KeyValidatorConfig.Userfile,
