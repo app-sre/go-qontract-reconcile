@@ -1,0 +1,7 @@
+[allowlist]
+  description = "Global Allowlist"
+
+  paths = [
+    '''test/data/notifier_private_key.b64''',
+    '''test/data/private_key.b64''',
+  ]
