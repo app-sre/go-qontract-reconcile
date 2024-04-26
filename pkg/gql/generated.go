@@ -34,13 +34,8 @@ func (v *integrationsResponse) GetIntegrations() []integrationsIntegrationsInteg
 	return v.Integrations
 }
 
-func integrations(
-	ctx context.Context,
-	client graphql.Client,
-) (*integrationsResponse, error) {
-	req := &graphql.Request{
-		OpName: "integrations",
-		Query: `
+// The query or mutation executed by integrations.
+const integrations_Operation = `
 query integrations {
 	integrations: integrations_v1 {
 		name
@@ -48,18 +43,26 @@ query integrations {
 		schemas
 	}
 }
-`,
+`
+
+func integrations(
+	ctx_ context.Context,
+	client_ graphql.Client,
+) (*integrationsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "integrations",
+		Query:  integrations_Operation,
 	}
-	var err error
+	var err_ error
 
-	var data integrationsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ integrationsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

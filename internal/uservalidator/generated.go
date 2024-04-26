@@ -97,12 +97,8 @@ func (v *UsersUsers_v1User_v1) GetPagerduty_username() string { return v.Pagerdu
 // GetPublic_gpg_key returns UsersUsers_v1User_v1.Public_gpg_key, and is useful for accessing the field via an interface.
 func (v *UsersUsers_v1User_v1) GetPublic_gpg_key() string { return v.Public_gpg_key }
 
-func GithubOrgs(
-	ctx context.Context,
-) (*GithubOrgsResponse, error) {
-	req := &graphql.Request{
-		OpName: "GithubOrgs",
-		Query: `
+// The query or mutation executed by GithubOrgs.
+const GithubOrgs_Operation = `
 query GithubOrgs {
 	githuborg_v1 {
 		name
@@ -115,34 +111,37 @@ query GithubOrgs {
 		default
 	}
 }
-`,
+`
+
+func GithubOrgs(
+	ctx_ context.Context,
+) (*GithubOrgsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GithubOrgs",
+		Query:  GithubOrgs_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data GithubOrgsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ GithubOrgsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func Users(
-	ctx context.Context,
-) (*UsersResponse, error) {
-	req := &graphql.Request{
-		OpName: "Users",
-		Query: `
+// The query or mutation executed by Users.
+const Users_Operation = `
 query Users {
 	users_v1 {
 		path
@@ -154,24 +153,31 @@ query Users {
 		public_gpg_key
 	}
 }
-`,
+`
+
+func Users(
+	ctx_ context.Context,
+) (*UsersResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "Users",
+		Query:  Users_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data UsersResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ UsersResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

@@ -141,12 +141,8 @@ func (v *GetSaasResourceTemplateRefsSaas_filesSaasFile_v2ResourceTemplatesSaasRe
 	return v.Ref
 }
 
-func GetGitlabSyncApps(
-	ctx context.Context,
-) (*GetGitlabSyncAppsResponse, error) {
-	req := &graphql.Request{
-		OpName: "GetGitlabSyncApps",
-		Query: `
+// The query or mutation executed by GetGitlabSyncApps.
+const GetGitlabSyncApps_Operation = `
 query GetGitlabSyncApps {
 	apps_v1 {
 		codeComponents {
@@ -171,34 +167,37 @@ query GetGitlabSyncApps {
 		}
 	}
 }
-`,
+`
+
+func GetGitlabSyncApps(
+	ctx_ context.Context,
+) (*GetGitlabSyncAppsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetGitlabSyncApps",
+		Query:  GetGitlabSyncApps_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data GetGitlabSyncAppsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ GetGitlabSyncAppsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func GetSaasResourceTemplateRefs(
-	ctx context.Context,
-) (*GetSaasResourceTemplateRefsResponse, error) {
-	req := &graphql.Request{
-		OpName: "GetSaasResourceTemplateRefs",
-		Query: `
+// The query or mutation executed by GetSaasResourceTemplateRefs.
+const GetSaasResourceTemplateRefs_Operation = `
 query GetSaasResourceTemplateRefs {
 	saas_files: saas_files_v2 {
 		name
@@ -209,24 +208,31 @@ query GetSaasResourceTemplateRefs {
 		}
 	}
 }
-`,
+`
+
+func GetSaasResourceTemplateRefs(
+	ctx_ context.Context,
+) (*GetSaasResourceTemplateRefsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "GetSaasResourceTemplateRefs",
+		Query:  GetSaasResourceTemplateRefs_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data GetSaasResourceTemplateRefsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ GetSaasResourceTemplateRefsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

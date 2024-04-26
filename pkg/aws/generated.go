@@ -75,13 +75,8 @@ func (v *getAccountsResponse) GetAwsaccounts_v1() []getAccountsAwsaccounts_v1AWS
 	return v.Awsaccounts_v1
 }
 
-func getAccounts(
-	ctx context.Context,
-	name string,
-) (*getAccountsResponse, error) {
-	req := &graphql.Request{
-		OpName: "getAccounts",
-		Query: `
+// The query or mutation executed by getAccounts.
+const getAccounts_Operation = `
 query getAccounts ($name: String) {
 	awsaccounts_v1(name: $name) {
 		name
@@ -94,27 +89,35 @@ query getAccounts ($name: String) {
 		}
 	}
 }
-`,
+`
+
+func getAccounts(
+	ctx_ context.Context,
+	name string,
+) (*getAccountsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "getAccounts",
+		Query:  getAccounts_Operation,
 		Variables: &__getAccountsInput{
 			Name: name,
 		},
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data getAccountsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ getAccountsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
