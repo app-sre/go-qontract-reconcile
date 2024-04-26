@@ -151,12 +151,8 @@ func (v *UsersUsers_v1User_v1) GetPagerduty_username() string { return v.Pagerdu
 // GetPublic_gpg_key returns UsersUsers_v1User_v1.Public_gpg_key, and is useful for accessing the field via an interface.
 func (v *UsersUsers_v1User_v1) GetPublic_gpg_key() string { return v.Public_gpg_key }
 
-func PgpReencryptSettings(
-	ctx context.Context,
-) (*PgpReencryptSettingsResponse, error) {
-	req := &graphql.Request{
-		OpName: "PgpReencryptSettings",
-		Query: `
+// The query or mutation executed by PgpReencryptSettings.
+const PgpReencryptSettings_Operation = `
 query PgpReencryptSettings {
 	pgp_reencrypt_settings_v1 {
 		aws_account_output_vault_path
@@ -164,34 +160,37 @@ query PgpReencryptSettings {
 		private_pgp_key_vault_path
 	}
 }
-`,
+`
+
+func PgpReencryptSettings(
+	ctx_ context.Context,
+) (*PgpReencryptSettingsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "PgpReencryptSettings",
+		Query:  PgpReencryptSettings_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data PgpReencryptSettingsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ PgpReencryptSettingsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func SmtpSettings(
-	ctx context.Context,
-) (*SmtpSettingsResponse, error) {
-	req := &graphql.Request{
-		OpName: "SmtpSettings",
-		Query: `
+// The query or mutation executed by SmtpSettings.
+const SmtpSettings_Operation = `
 query SmtpSettings {
 	settings: app_interface_settings_v1 {
 		smtp {
@@ -206,34 +205,37 @@ query SmtpSettings {
 		}
 	}
 }
-`,
+`
+
+func SmtpSettings(
+	ctx_ context.Context,
+) (*SmtpSettingsResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "SmtpSettings",
+		Query:  SmtpSettings_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data SmtpSettingsResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ SmtpSettingsResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
-func Users(
-	ctx context.Context,
-) (*UsersResponse, error) {
-	req := &graphql.Request{
-		OpName: "Users",
-		Query: `
+// The query or mutation executed by Users.
+const Users_Operation = `
 query Users {
 	users_v1 {
 		path
@@ -245,24 +247,31 @@ query Users {
 		public_gpg_key
 	}
 }
-`,
+`
+
+func Users(
+	ctx_ context.Context,
+) (*UsersResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "Users",
+		Query:  Users_Operation,
 	}
-	var err error
-	var client graphql.Client
+	var err_ error
+	var client_ graphql.Client
 
-	client, err = gql.NewQontractClient(ctx)
-	if err != nil {
-		return nil, err
+	client_, err_ = gql.NewQontractClient(ctx_)
+	if err_ != nil {
+		return nil, err_
 	}
 
-	var data UsersResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ UsersResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
