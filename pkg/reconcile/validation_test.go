@@ -3,6 +3,7 @@ package reconcile
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"gopkg.in/square/go-jose.v2/json"
 )
 
 type TestValidation struct {
