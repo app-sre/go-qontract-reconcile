@@ -24,6 +24,7 @@ type runnerConfig struct {
 	DryRun            bool
 	RunOnce           bool
 	SleepDurationSecs int
+	PrometheusPort    int
 }
 
 // newRunnerConfig creates a new IntegationConfig from viper, v can be nil
@@ -35,12 +36,14 @@ func newRunnerConfig() *runnerConfig {
 	v.SetDefault("dryrun", true)
 	v.SetDefault("runonce", false)
 	v.SetDefault("sleepdurationsecs", 600)
+	v.SetDefault("prometheusport", 9090)
 
 	v.BindEnv("timeout", "RUNNER_TIMEOUT")
 	v.BindEnv("usefeaturetoggle", "RUNNER_USE_FEATURE_TOGGLE")
 	v.BindEnv("dryrun", "DRY_RUN")
 	v.BindEnv("runonce", "RUN_ONCE")
 	v.BindEnv("sleepdurationsecs", "SLEEP_DURATION_SECS")
+	v.BindEnv("prometheusport", "PROMETHEUS_PORT")
 
 	if err := v.Unmarshal(&ic); err != nil {
 		util.Log().Fatalw("Error while unmarshalling configuration %s", err.Error())
