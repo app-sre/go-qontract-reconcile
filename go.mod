@@ -28,7 +28,7 @@ require (
 require (
 	// We must use the same version as the Terraform provider.
 	github.com/ProtonMail/go-crypto v1.0.0
-	github.com/hashicorp/go-retryablehttp v0.7.5
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/vault/api/auth/approle v0.6.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -94,7 +94,7 @@ require (
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
