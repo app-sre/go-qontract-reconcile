@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -153,7 +154,7 @@ func (i *IntegrationRunner) runIntegration() {
 func (i *IntegrationRunner) Run() {
 	go func(i *IntegrationRunner) {
 		http.Handle("/metrics", promhttp.HandlerFor(i.registry, promhttp.HandlerOpts{Registry: i.registry}))
-		util.Log().Fatal(http.ListenAndServe(":9090", nil))
+		util.Log().Fatal(http.ListenAndServe(fmt.Sprintf(":%d", i.config.PrometheusPort), nil))
 	}(i)
 
 	for {
