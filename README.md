@@ -14,6 +14,7 @@ usefeaturetoggle: Weither to check for feature toggles
 dryrun: Run in dry run, do not apply resources (default: true)
 runonce: Run integration only once (default: false)
 sleepdurationsecs: Time to sleep between iterations (default: 600s)
+prometheusport: Prometheus metrics port (default: 9090)
 
 graphql: 
   server: URL to the GraphQL API REQUIRED
@@ -99,6 +100,7 @@ Instead of using a yaml file, all parameters can be set via environment variable
  * AWS_REGION
  * AWS_GIT_SYNC_BUCKET
  * WORKDIR
+ * PROMETHEUS_PORT
 
 
 ## New Integration
