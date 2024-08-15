@@ -114,14 +114,6 @@ func NewVaultClient() (*Client, error) {
 
 // ReadSecret do a logical read on a given Secret Path
 func (v *Client) ReadSecret(secretPath string) (*api.Secret, error) {
-	// return v.client.Logical().Read(secretPath)
-	// Attempt to read the secret as KV v1
-	secret, err := v.client.Logical().Read(secretPath)
-	if err == nil && secret != nil {
-		return secret, nil
-	}
-
-	// Fallback to KV v2 by modifying the path to include the "data/" prefix
 	parts := strings.SplitN(secretPath, "/", 2)
 	kv2Path := fmt.Sprintf("%s/data/%s", parts[0], parts[1])
 	return v.client.Logical().Read(kv2Path)
