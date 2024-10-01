@@ -1,9 +1,9 @@
-FROM quay.io/app-sre/golang:1.22.2 as builder
+FROM quay.io/app-sre/golang:1.22.7 as builder
 WORKDIR /build
 COPY . .
 RUN make gobuild
 
-FROM registry.access.redhat.com/ubi8-minimal
+FROM registry.access.redhat.com/ubi9-minimal:9.4
 COPY --from=builder /build/go-qontract-reconcile /
 RUN microdnf update -y && microdnf install -y ca-certificates && microdnf clean all \
     && microdnf install -y git \
