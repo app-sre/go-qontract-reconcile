@@ -1,6 +1,6 @@
-FROM quay.io/app-sre/golang:1.22.7 as builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.21.13-2.1729776560 as builder
 WORKDIR /build
-COPY . .
+COPY --chown=1001:0 . .
 RUN make gobuild
 
 FROM registry.access.redhat.com/ubi9-minimal:9.4
