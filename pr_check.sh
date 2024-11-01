@@ -12,4 +12,4 @@ make golint
 make build
 
 # verify if schema update causes issues
-make update-schema validate-schema
+make update-schema validate
