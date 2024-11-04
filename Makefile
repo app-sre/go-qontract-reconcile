@@ -36,11 +36,11 @@ else
 endif
 	@$(CONTAINER_ENGINE) tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG)
 
-validate-schema:
+validate:
 ifeq ($(CONTAINER_ENGINE), podman)
-	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile.validate . --progress=plain
+	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile . --progress=plain --target builder
 else
-	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) --config=$(DOCKER_CONF) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile.validate . --progress=plain
+	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) --config=$(DOCKER_CONF) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile . --progress=plain --target builder
 endif
 
 push:
