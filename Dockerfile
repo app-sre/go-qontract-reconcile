@@ -11,6 +11,7 @@ RUN make generate golint gobuild
 
 FROM registry.access.redhat.com/ubi9-minimal:9.4-1227.1726694542 as prod
 COPY --chown=1001:0 --from=builder /build/go-qontract-reconcile /
+COPY --chown=1001:0 --from=builder /build/licenses/LICENSE /licenses/LICENSE
 RUN microdnf update -y && microdnf install -y ca-certificates git && microdnf clean all
 USER 1001
 ENTRYPOINT ["/go-qontract-reconcile"]
