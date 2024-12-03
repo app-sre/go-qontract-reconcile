@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.21.13-2.1729776560 as builder
+FROM registry.access.redhat.com/ubi9/go-toolset:9.5-1733160835@sha256:e8e961aebb9d3acedcabb898129e03e6516b99244eb64330e5ca599af9c7aa3d as builder
 WORKDIR /build
 COPY --chown=1001:0 . .
 
