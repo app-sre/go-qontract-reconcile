@@ -1,6 +1,8 @@
 module github.com/app-sre/go-qontract-reconcile
 
-go 1.21
+go 1.22.0
+
+toolchain go1.22.9
 
 require (
 	filippo.io/age v1.1.1
@@ -10,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
 	github.com/golang/mock v1.6.0
-	github.com/google/go-github/v42 v42.0.0
+	github.com/google/go-github/v69 v69.2.0
 	github.com/hashicorp/vault/api v1.13.0
 	github.com/hashicorp/vault/api/auth/kubernetes v0.6.0
 	github.com/nikoksr/notify v0.41.0

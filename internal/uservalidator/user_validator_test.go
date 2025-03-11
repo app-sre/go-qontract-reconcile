@@ -11,7 +11,7 @@ import (
 
 	ghlocal "github.com/app-sre/go-qontract-reconcile/pkg/github"
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
-	"github.com/google/go-github/v42/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/stretchr/testify/assert"
 )
 

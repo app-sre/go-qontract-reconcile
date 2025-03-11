@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
-	"github.com/google/go-github/v42/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 )
