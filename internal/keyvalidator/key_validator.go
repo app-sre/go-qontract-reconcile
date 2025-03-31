@@ -9,7 +9,7 @@ import (
 	"github.com/app-sre/go-qontract-reconcile/pkg/reconcile"
 	"github.com/app-sre/go-qontract-reconcile/pkg/util"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // KeyValidator is a Validation as described in github.com/app-sre/go-qontract-reconcile/pkg/integration.go
