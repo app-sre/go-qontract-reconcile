@@ -13,7 +13,7 @@ require (
 	github.com/google/go-github/v42 v42.0.0
 	github.com/hashicorp/vault/api v1.13.0
 	github.com/hashicorp/vault/api/auth/kubernetes v0.6.0
-	github.com/nikoksr/notify v0.41.0
+	github.com/nikoksr/notify v1.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/spf13/cobra v1.8.0
