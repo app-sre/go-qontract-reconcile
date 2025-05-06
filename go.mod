@@ -90,7 +90,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.5.16 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
+	golang.org/x/exp ce4c2cf36ca6 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
