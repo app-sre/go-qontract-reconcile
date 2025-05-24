@@ -5,7 +5,7 @@ go 1.21
 require (
 	filippo.io/age v1.1.1
 	github.com/Khan/genqlient v0.7.0
-	github.com/ProtonMail/gopenpgp/v2 v2.7.5
+	github.com/ProtonMail/gopenpgp/v3 v3.3.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.11
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.11
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
