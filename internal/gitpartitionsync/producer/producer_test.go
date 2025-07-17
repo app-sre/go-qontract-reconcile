@@ -197,3 +197,22 @@ func TestNeedsUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestReconcileOrphanedObjects(t *testing.T) {
+	ctx := context.Background()
+	ri := reconcile.NewResourceInventory()
+	ri.AddResourceState("orphan/project", &reconcile.ResourceState{
+		Config: nil,
+		Current: &currentState{
+			S3ObjectInfos: []s3ObjectInfo{
+				{CommitSHA: "a", Key: util.StrPointer("orphan_project/a")},
+			},
+		},
+	})
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockClient := mock.NewMockClient(ctrl)
+	mockClient.EXPECT().DeleteObject(gomock.Any(), gomock.Any()).MaxTimes(1).MinTimes(1)
+	producer := createTestProducer(mockClient, "")
+	producer.Reconcile(ctx, ri)
+}

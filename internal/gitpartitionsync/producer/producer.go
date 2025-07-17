@@ -229,6 +229,22 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 	for targetPid := range ri.State {
 		util.Log().Debugw("Reconciling target", "target", targetPid)
 		state := ri.GetResourceState(targetPid)
+		// delete orphaned S3 objects - objects that exist in S3 but not in app-interface
+		if state.Config == nil && state.Desired == nil {
+			util.Log().Infow("Found orphaned S3 objects for project, deleting all objects", "project", targetPid)
+			if state.Current != nil {
+				current := state.Current.(*currentState)
+				for _, s3ObjectInfo := range current.S3ObjectInfos {
+					util.Log().Debugw("Removing orphaned s3 object", "s3ObjectInfo", s3ObjectInfo)
+					err := g.removeOutdated(ctx, s3ObjectInfo.Key)
+					if err != nil {
+						return errors.Wrapf(err, "Error while removing orphaned s3 object for project %s", targetPid)
+					}
+				}
+			}
+			continue
+		}
+
 		sync := state.Config.(GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1)
 		syncConfig := syncConfig{
 			SourceProjectName:       sync.SourceProject.Name,
@@ -295,6 +311,16 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 func (g *GitPartitionSyncProducer) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		state := ri.GetResourceState(target)
+
+		// log orphaned objects - objects that exist in S3 but not in app-interface
+		if state.Config == nil && state.Desired == nil {
+			if state.Current != nil {
+				current := state.Current.(*currentState)
+				util.Log().Infof("Orphaned project %s will have %d S3 object(s) deleted", target, len(current.S3ObjectInfos))
+			}
+			continue
+		}
+
 		var current *currentState
 		var desired *s3ObjectInfo
 
