@@ -202,7 +202,7 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 }
 
 func needsUpdate(current *currentState, desired *s3ObjectInfo) bool {
-	if current != nil {
+	if current != nil && desired != nil {
 		for _, s3ObjectInfo := range current.S3ObjectInfos {
 			// Current commit (from desired) is already in S3, thus exit
 			if s3ObjectInfo.CommitSHA == desired.CommitSHA {
