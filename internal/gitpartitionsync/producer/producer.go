@@ -202,7 +202,7 @@ func (g *GitPartitionSyncProducer) DesiredState(ctx context.Context, ri *reconci
 }
 
 func needsUpdate(current *currentState, desired *s3ObjectInfo) bool {
-	if current != nil && desired != nil {
+	if current != nil {
 		for _, s3ObjectInfo := range current.S3ObjectInfos {
 			// Current commit (from desired) is already in S3, thus exit
 			if s3ObjectInfo.CommitSHA == desired.CommitSHA {
@@ -229,40 +229,26 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 	for targetPid := range ri.State {
 		util.Log().Debugw("Reconciling target", "target", targetPid)
 		state := ri.GetResourceState(targetPid)
-		// delete orphaned S3 objects - objects that exist in S3 but not in app-interface
-		if state.Config == nil && state.Desired == nil {
-			util.Log().Infow("Found orphaned S3 objects for project, deleting all objects", "project", targetPid)
-			if state.Current != nil {
-				current := state.Current.(*currentState)
-				for _, s3ObjectInfo := range current.S3ObjectInfos {
-					util.Log().Debugw("Removing orphaned s3 object", "s3ObjectInfo", s3ObjectInfo)
-					err := g.removeOutdated(ctx, s3ObjectInfo.Key)
-					if err != nil {
-						return errors.Wrapf(err, "Error while removing orphaned s3 object for project %s", targetPid)
-					}
-				}
-			}
-			continue
-		}
-
-		sync := state.Config.(GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1)
-		syncConfig := syncConfig{
-			SourceProjectName:       sync.SourceProject.Name,
-			SourceProjectGroup:      sync.SourceProject.Group,
-			SourceBranch:            sync.SourceProject.Branch,
-			DestinationProjectName:  sync.DestinationProject.Name,
-			DestinationProjectGroup: sync.DestinationProject.Group,
-			DestinationBranch:       sync.DestinationProject.Branch,
-		}
 		var current *currentState
-		var desired *s3ObjectInfo
+		// set default desired to empty s3ObjectInfo
+		desired := &s3ObjectInfo{}
 		if state.Current != nil {
 			current = state.Current.(*currentState)
 		}
 		if state.Desired != nil {
 			desired = state.Desired.(*s3ObjectInfo)
 		}
-		if needsUpdate(current, desired) {
+		// if config is nil, we don't need to sync the repo and jump to cleanup
+		if state.Config != nil && desired.CommitSHA != "" && needsUpdate(current, desired) {
+			sync := state.Config.(GetGitlabSyncAppsApps_v1App_v1CodeComponentsAppCodeComponents_v1GitlabSyncCodeComponentGitlabSync_v1)
+			syncConfig := syncConfig{
+				SourceProjectName:       sync.SourceProject.Name,
+				SourceProjectGroup:      sync.SourceProject.Group,
+				SourceBranch:            sync.SourceProject.Branch,
+				DestinationProjectName:  sync.DestinationProject.Name,
+				DestinationProjectGroup: sync.DestinationProject.Group,
+				DestinationBranch:       sync.DestinationProject.Branch,
+			}
 			util.Log().Infow("Updating repo", "repo", targetPid)
 
 			util.Log().Debugw("Cloning repo", "repo", targetPid)
@@ -291,6 +277,7 @@ func (g *GitPartitionSyncProducer) Reconcile(ctx context.Context, ri *reconcile.
 		}
 
 		// Current is not nil means, there are old objects in S3, thus we need to check if objects need to be removed
+		// this also handles the case where the repo is not in app-interface, thus we need to clean up the old objects
 		if current != nil {
 			for _, s3ObjectInfo := range current.S3ObjectInfos {
 				if s3ObjectInfo.CommitSHA != desired.CommitSHA {
@@ -312,15 +299,6 @@ func (g *GitPartitionSyncProducer) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		state := ri.GetResourceState(target)
 
-		// log orphaned objects - objects that exist in S3 but not in app-interface
-		if state.Config == nil && state.Desired == nil {
-			if state.Current != nil {
-				current := state.Current.(*currentState)
-				util.Log().Infof("Orphaned project %s will have %d S3 object(s) deleted", target, len(current.S3ObjectInfos))
-			}
-			continue
-		}
-
 		var current *currentState
 		var desired *s3ObjectInfo
 
@@ -329,6 +307,11 @@ func (g *GitPartitionSyncProducer) LogDiff(ri *reconcile.ResourceInventory) {
 		}
 		if state.Desired != nil {
 			desired = state.Desired.(*s3ObjectInfo)
+		}
+		// log orphaned objects - objects that exist in S3 but not in app-interface
+		if state.Config == nil && state.Desired == nil && state.Current != nil {
+			util.Log().Infof("Orphaned project %s will have %d S3 object(s) deleted", target, len(current.S3ObjectInfos))
+			continue
 		}
 		if needsUpdate(current, desired) {
 			util.Log().Infof("Resource %s has changed", target)
