@@ -309,7 +309,7 @@ func (g *GitPartitionSyncProducer) LogDiff(ri *reconcile.ResourceInventory) {
 			desired = state.Desired.(*s3ObjectInfo)
 		}
 		// log orphaned objects - objects that exist in S3 but not in app-interface
-		if state.Config == nil && state.Desired == nil && state.Current != nil {
+		if state.Config == nil && state.Desired == nil && current != nil {
 			util.Log().Infof("Orphaned project %s will have %d S3 object(s) deleted", target, len(current.S3ObjectInfos))
 			continue
 		}
