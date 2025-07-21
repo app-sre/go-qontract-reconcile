@@ -176,8 +176,6 @@ func (i *IntegrationRunner) Exiter(exitCode int) {
 	if i.metrics != nil {
 		i.metrics.status.Set(float64(exitCode))
 	}
-	if i.config.RunOnce {
-		os.Exit(exitCode)
-	}
-	util.Log().Debugw("RunOnce is disabled, not exiting", "exitCode", exitCode)
+	util.Log().Infow("Exiting", "exitCode", exitCode)
+	os.Exit(exitCode)
 }
