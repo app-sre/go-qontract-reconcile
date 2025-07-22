@@ -89,6 +89,7 @@ type IntegrationRunner struct {
 	Runnable Integration
 	Name     string
 	config   *runnerConfig
+	Exiter   exitFunc
 	metrics  *integrationRunnerMetrics
 	registry *prometheus.Registry
 }
@@ -103,6 +104,13 @@ func NewIntegrationRunner(runnable Integration, name string) *IntegrationRunner 
 		config:   c,
 		registry: registry,
 		metrics:  newIntegrationRunnerMetrics(registry, name),
+	}
+	v.Exiter = func(exitCode int) {
+		if v.metrics != nil {
+			v.metrics.status.Set(float64(exitCode))
+		}
+		util.Log().Infow("Exiting", "exitCode", exitCode)
+		os.Exit(exitCode)
 	}
 	return v
 }
@@ -171,11 +179,11 @@ func (i *IntegrationRunner) Run() {
 	}
 }
 
-// Exiter exits the integration
-func (i *IntegrationRunner) Exiter(exitCode int) {
-	if i.metrics != nil {
-		i.metrics.status.Set(float64(exitCode))
-	}
-	util.Log().Infow("Exiting", "exitCode", exitCode)
-	os.Exit(exitCode)
-}
+// // Exiter exits the integration
+// func (i *IntegrationRunner) Exiter(exitCode int) {
+// 	if i.metrics != nil {
+// 		i.metrics.status.Set(float64(exitCode))
+// 	}
+// 	util.Log().Infow("Exiting", "exitCode", exitCode)
+// 	os.Exit(exitCode)
+// }
