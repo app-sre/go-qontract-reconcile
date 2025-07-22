@@ -178,12 +178,3 @@ func (i *IntegrationRunner) Run() {
 		}
 	}
 }
-
-// // Exiter exits the integration
-// func (i *IntegrationRunner) Exiter(exitCode int) {
-// 	if i.metrics != nil {
-// 		i.metrics.status.Set(float64(exitCode))
-// 	}
-// 	util.Log().Infow("Exiting", "exitCode", exitCode)
-// 	os.Exit(exitCode)
-// }
