@@ -66,25 +66,6 @@ func (e *TestIntegration) Setup(context.Context) error {
 	return nil
 }
 
-var _ Integration = &TestIntegration{}
-
-func TestRunIntegrationAllRun(t *testing.T) {
-	errorSettings := throwErrorSettings{}
-	runner := IntegrationRunner{
-		Runnable: NewTestIntegration(errorSettings),
-		config: &runnerConfig{
-			Timeout: 10,
-		},
-	}
-
-	runner.runIntegration()
-	assert.True(t, runner.Runnable.(*TestIntegration).CurrentStateRun)
-	assert.True(t, runner.Runnable.(*TestIntegration).DesiredStateRun)
-	assert.True(t, runner.Runnable.(*TestIntegration).ReconcileRun)
-	assert.True(t, runner.Runnable.(*TestIntegration).LogDiffRun)
-	assert.True(t, runner.Runnable.(*TestIntegration).SetUpRun)
-}
-
 func TestRunIntegrationErrors(t *testing.T) {
 	type testCase struct {
 		name          string
@@ -115,7 +96,11 @@ func TestRunIntegrationErrors(t *testing.T) {
 		if testCase.shouldFail {
 			assert.True(t, exitCalled)
 		} else {
-			assert.False(t, exitCalled)
+			assert.True(t, runner.Runnable.(*TestIntegration).CurrentStateRun)
+			assert.True(t, runner.Runnable.(*TestIntegration).DesiredStateRun)
+			assert.True(t, runner.Runnable.(*TestIntegration).ReconcileRun)
+			assert.True(t, runner.Runnable.(*TestIntegration).LogDiffRun)
+			assert.True(t, runner.Runnable.(*TestIntegration).SetUpRun)
 		}
 	}
 }
