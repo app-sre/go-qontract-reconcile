@@ -489,7 +489,6 @@ type User_v1 implements DatafileObject_v1 {
   org_username: String!
   github_username: String!
   quay_username: String
-  slack_username: String
   pagerduty_username: String
   aws_username: String
   cloudflare_user: String

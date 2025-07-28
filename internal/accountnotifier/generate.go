@@ -32,7 +32,6 @@ query Users  {
         name
         org_username
         github_username
-        slack_username
         pagerduty_username
         public_gpg_key
     }
