@@ -125,7 +125,6 @@ type UsersUsers_v1User_v1 struct {
 	Name               string `json:"name"`
 	Org_username       string `json:"org_username"`
 	Github_username    string `json:"github_username"`
-	Slack_username     string `json:"slack_username"`
 	Pagerduty_username string `json:"pagerduty_username"`
 	Public_gpg_key     string `json:"public_gpg_key"`
 }
@@ -141,9 +140,6 @@ func (v *UsersUsers_v1User_v1) GetOrg_username() string { return v.Org_username 
 
 // GetGithub_username returns UsersUsers_v1User_v1.Github_username, and is useful for accessing the field via an interface.
 func (v *UsersUsers_v1User_v1) GetGithub_username() string { return v.Github_username }
-
-// GetSlack_username returns UsersUsers_v1User_v1.Slack_username, and is useful for accessing the field via an interface.
-func (v *UsersUsers_v1User_v1) GetSlack_username() string { return v.Slack_username }
 
 // GetPagerduty_username returns UsersUsers_v1User_v1.Pagerduty_username, and is useful for accessing the field via an interface.
 func (v *UsersUsers_v1User_v1) GetPagerduty_username() string { return v.Pagerduty_username }
@@ -242,7 +238,6 @@ query Users {
 		name
 		org_username
 		github_username
-		slack_username
 		pagerduty_username
 		public_gpg_key
 	}

@@ -101,7 +101,6 @@ func createUserMock(pgpKey string) *UsersResponse {
 			Name:               "foobar",
 			Org_username:       "foobar",
 			Github_username:    "foobar",
-			Slack_username:     "foobar",
 			Pagerduty_username: "foobar",
 			Public_gpg_key:     pgpKey,
 		},
