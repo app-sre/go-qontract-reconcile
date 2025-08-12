@@ -114,7 +114,9 @@ func NewVaultClient() (*Client, error) {
 
 // ReadSecret do a logical read on a given Secret Path
 func (v *Client) ReadSecret(secretPath string) (*api.Secret, error) {
-	return v.client.Logical().Read(secretPath)
+	parts := strings.SplitN(secretPath, "/", 2)
+	kv2Path := fmt.Sprintf("%s/data/%s", parts[0], parts[1])
+	return v.client.Logical().Read(kv2Path)
 }
 
 // SecretList is a list of secrets
