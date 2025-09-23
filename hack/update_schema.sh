@@ -7,7 +7,7 @@ git_commit_timestamp=$(git log -1 --format=%ct ${git_commit})
 output_dir=$(echo $(realpath pwd)/bundle)
 bundle=data.json
 validator_image=quay.io/redhat-services-prod/app-sre-tenant/qontract-validator-master/qontract-validator-master
-qontract_server_image=quay.io/app-sre/qontract-server
+qontract_server_image=quay.io/redhat-services-prod/app-sre-tenant/qontract-server-master/qontract-server-master
 qontract_schemas_image=quay.io/redhat-services-prod/app-sre-tenant/qontract-schemas-main/qontract-schemas-main
 
 if [[ -d ${PWD}/.docker ]]
