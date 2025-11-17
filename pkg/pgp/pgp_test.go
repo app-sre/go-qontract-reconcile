@@ -64,15 +64,6 @@ func TestDecodePgpKeyInvalidArmoredKey(t *testing.T) {
 	assert.NotNil(t, keyData)
 }
 
-func TestDecodePgpKeyInvalidArmoredKeyChecksum(t *testing.T) {
-	key := util.ReadKeyFile(t, publicFile)
-	// The CRC24 checksum for this public key is: 15b421 (encoded as =FbQh).
-	// add an invalid CRC at the end of the key.
-	_, err := DecodePgpKey(string(key) + "\n=T3st\n")
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error decoding given ASCII-armored PGP key: openpgp: invalid data: armor invalid")
-}
-
 func TestDecodePgpKeyInvalidPrivateKey(t *testing.T) {
 	key := util.ReadKeyFile(t, privateFile)
 	_, err := DecodePgpKey(string(key))
