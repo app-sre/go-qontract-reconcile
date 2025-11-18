@@ -90,14 +90,14 @@ func DecodeAndArmorBase64Entity(encodedEntity string, armorType string) (string,
 // which will decode keys with checksum as well as non checksum and return  bytes from key part
 func decodePGPkey(encodedKeyData string) ([]byte, error) {
 	// check if the string is standard PGP key with base64 encoding WITHOUT checksum
-	decodedKeyData, err := base64.StdEncoding.DecodeString(encodedKeyData)
+	decodedKeyData, err := base64.StdEncoding.Strict().DecodeString(encodedKeyData)
 	if err != nil {
 		// check if keys is encoded using OpenPGP's Radix-64 encoding
 		// save the actual error
 		decodeErr := err
 		// create ascii armored gpg key string by adding
 		// ------ BEGIN -------
-		// encodedKeyData (base64key + '=' + checksum)
+		// encodedKeyData (base64key + '=' + checksum(optional and not checked anymore) )
 		// ------  END  -------
 
 		// remove trailing newLines if any
@@ -106,7 +106,8 @@ func decodePGPkey(encodedKeyData string) ([]byte, error) {
 		// unarmor the encodedKeyData to get the encoded pgp key part also checking if added checksum is valid
 		encodedBytes, err := parmor.Unarmor(pgpKey)
 		if err != nil {
-			if _, ok := err.(pgperr.StructuralError); ok {
+			var structuralErr pgperr.StructuralError
+			if errors.As(err, &structuralErr) {
 				return nil, fmt.Errorf("error decoding given ASCII-armored PGP key: %w", err)
 			}
 			return nil, fmt.Errorf("error decoding given PGP key: %w", decodeErr)
