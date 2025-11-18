@@ -43,10 +43,6 @@ else
 	@DOCKER_BUILDKIT=1 $(CONTAINER_ENGINE) --config=$(DOCKER_CONF) build --rm --no-cache -t $(IMAGE_NAME):validate -f Dockerfile . --progress=plain --target builder
 endif
 
-push:
-	@$(CONTAINER_ENGINE) --config=$(DOCKER_CONF) push $(IMAGE_NAME):latest
-	@$(CONTAINER_ENGINE) --config=$(DOCKER_CONF) push $(IMAGE_NAME):$(IMAGE_TAG)
-
 coveragereport:
 	go test -coverprofile=$(TMP_COVERAGE) ./...
 	go tool cover -html=$(TMP_COVERAGE) -o coverage.html
