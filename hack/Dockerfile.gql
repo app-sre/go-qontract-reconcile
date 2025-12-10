@@ -1,3 +1,3 @@
-FROM registry.access.redhat.com/ubi9/python-311:1-1763038143@sha256:0e33cb88535e0fa38142daf896ad4df26dce2779b816144a09a3db818461f960
+FROM registry.access.redhat.com/ubi9/python-311:1-1765312003@sha256:7d2cdff2b42ef82de8980bc8bc7c052e3ece1adafa95bd6aaa4808a29a53094e
 
 RUN pip install 'gql[all]==3.4.1'
