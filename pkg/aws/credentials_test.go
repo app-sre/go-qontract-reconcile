@@ -11,6 +11,10 @@ import (
 )
 
 func TestGetCredentialsFromEnv(t *testing.T) {
+	// Clear any existing AWS credentials from the environment
+	t.Setenv("AWS_ACCESS_KEY_ID", "")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "")
+	t.Setenv("AWS_REGION", "")
 	assert.Nil(t, getCredentialsFromEnv())
 
 	t.Setenv("AWS_ACCESS_KEY_ID", "foo")

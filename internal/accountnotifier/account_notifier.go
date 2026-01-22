@@ -127,13 +127,13 @@ type userSecret struct {
 // LogDiff specifies the logging for the account notifier
 func (n *AccountNotifier) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
-		current := ri.State[target].Current.(notification)
-		if current.Status == skip {
-			util.Log().Infow("Skipping notification for", "account", current.Secret.Account, "username", current.Secret.Username)
-		} else if current.Status == reencrypt {
-			util.Log().Infow("Reencrypting", "account", current.Secret.Account, "username", current.Secret.Username)
-		} else if current.Status == notifyExpired {
-			util.Log().Infow("PGP Key expired, notifying", "account", current.Secret.Account, "username", current.Secret.Username)
+		desired := ri.State[target].Desired.(notification)
+		if desired.Status == skip {
+			util.Log().Infow("Skipping notification for", "account", desired.Secret.Account, "username", desired.Secret.Username)
+		} else if desired.Status == reencrypt {
+			util.Log().Infow("Reencrypting", "account", desired.Secret.Account, "username", desired.Secret.Username)
+		} else if desired.Status == notifyExpired {
+			util.Log().Infow("PGP Key expired, notifying", "account", desired.Secret.Account, "username", desired.Secret.Username)
 		}
 	}
 }
