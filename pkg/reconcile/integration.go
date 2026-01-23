@@ -109,7 +109,7 @@ func NewIntegrationRunner(runnable Integration, name string) *IntegrationRunner 
 		if v.metrics != nil {
 			v.metrics.status.Set(float64(exitCode))
 		}
-		util.Log().Infow("Exiting", "exitCode", exitCode)
+		util.Log().Debugw("Exiting", "exitCode", exitCode)
 		os.Exit(exitCode)
 	}
 	return v
