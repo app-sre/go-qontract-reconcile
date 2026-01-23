@@ -129,7 +129,7 @@ func (n *AccountNotifier) LogDiff(ri *reconcile.ResourceInventory) {
 	for target := range ri.State {
 		desired := ri.State[target].Desired.(notification)
 		if desired.Status == skip {
-			util.Log().Infow("Skipping notification for", "account", desired.Secret.Account, "username", desired.Secret.Username)
+			util.Log().Debugw("Skipping notification for", "account", desired.Secret.Account, "username", desired.Secret.Username)
 		} else if desired.Status == reencrypt {
 			util.Log().Infow("Reencrypting", "account", desired.Secret.Account, "username", desired.Secret.Username)
 		} else if desired.Status == notifyExpired {
