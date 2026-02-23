@@ -187,7 +187,10 @@ func (n *AccountNotifier) DesiredState(ctx context.Context, ri *reconcile.Resour
 	for target, state := range ri.State {
 		user, ok := userMap[target]
 		if !ok {
-			util.Log().Errorf("User %s was delete, got stale password. Manual fix required", user.GetName())
+			c := state.Current.(notification)
+			util.Log().Warnw("User deleted from GraphQL but has stale password in Vault. Delete the stale password from Vault if user was deleted. Skipping notification.", "username", target, "vault_secret_path", c.SecretPath)
+			state.Desired = *c.newNotificationFromCurrent(skip, "", "")
+			continue
 		}
 		exists, err := n.state.Exists(ctx, target)
 		if err != nil {
