@@ -1,8 +1,6 @@
 module github.com/app-sre/go-qontract-reconcile
 
-go 1.24.0
-
-toolchain go1.24.6
+go 1.25.0
 
 require (
 	filippo.io/age v1.2.1
@@ -12,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.24
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
 	github.com/golang/mock v1.6.0
-	github.com/google/go-github/v42 v42.0.0
+	github.com/google/go-github/v84 v84.0.0
 	github.com/hashicorp/vault/api v1.22.0
 	github.com/hashicorp/vault/api/auth/kubernetes v0.10.0
 	github.com/nikoksr/notify v0.41.0
@@ -63,7 +61,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
