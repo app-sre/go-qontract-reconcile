@@ -20,7 +20,7 @@ const (
 	defaultClientTimeout = 60 // Seconds.
 
 	// How long before a client login attempt to Vault is timed out.
-	defaultClientLoginTimeout = 5 * time.Second
+	defaultClientLoginTimeout = 60 * time.Second
 
 	// How many times attempt to retry when failing
 	// to retrieve a valid client token.
