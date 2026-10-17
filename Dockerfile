@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.24.6-1763038106@sha256:380d6de9bbc5a42ca13d425be99958fb397317664bb8a00e49d464e62cc8566c as builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.26.7-1792010711@sha256:60fd6fb2998c40ad0d6561c34e83588b986a0cf7771f64e5e5c295ba87101f9b as builder
 WORKDIR /build
 COPY --chown=1001:0 . .
 
@@ -9,7 +9,7 @@ RUN go install github.com/golang/mock/mockgen && \
 # Linting, build and unit tests
 RUN make generate golint gobuild
 
-FROM registry.access.redhat.com/ubi9-minimal:9.7-1762956380@sha256:53ea1f6d835898acda5becdb3f8b1292038a480384bbcf994fc0bcf1f7e8eaf7 as prod
+FROM registry.access.redhat.com/ubi9-minimal:9.8-1791898448@sha256:c4c285d42941ebb2bd4da878479008e1e4536bb599aad1dbe568f89de9053661 as prod
 COPY --chown=1001:0 --from=builder /build/go-qontract-reconcile /
 COPY --chown=1001:0 --from=builder /build/licenses/LICENSE /licenses/LICENSE
 RUN microdnf update -y && microdnf install -y ca-certificates git && microdnf clean all
