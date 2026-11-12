@@ -2,7 +2,7 @@ module github.com/app-sre/go-qontract-reconcile
 
 go 1.24.0
 
-toolchain go1.24.6
+toolchain go1.26.11
 
 require (
 	filippo.io/age v1.2.1
